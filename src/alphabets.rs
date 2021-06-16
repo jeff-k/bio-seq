@@ -46,7 +46,7 @@ pub enum Amino {
     Y,
 }
 
-pub trait Complementary {
+pub trait Complement {
     fn complement(base: Self) -> Self;
 }
 
