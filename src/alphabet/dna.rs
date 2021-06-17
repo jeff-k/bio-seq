@@ -29,8 +29,8 @@ impl Alphabet for Dna {
         let g = bits![1, 0];
         let t = bits![1, 1];
         match b {
-            a => Dna::A,
-            c => Dna::C,
+            //[0, 0] => Dna::A,
+            //[0, 1] => Dna::C,
             g => Dna::G,
             t => Dna::T,
         }

@@ -33,14 +33,16 @@ impl<A: Alphabet + fmt::Debug> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut v = Vec::new();
         let w = A::width();
-        for i in 0..(self.bv.len() / A::width()) {
-            v.push(A::from_bits(&self.bv[(i * w)..((i * w) + w)]));
+        for c in self.bv.chunks(A::width()) {
+            v.push(A::from_bits(c));
         }
         write!(
             f,
-            "{:?} {:?}",
+            "{:?} {:?} {:?}",
             v,
-            A::from_bits(&self.bv[(4 * w)..((4 * w) + w)])
+            &self.bv[(1 * w)..((1 * w) + w)][0],
+            &self.bv[(1 * w)..((1 * w) + w)][1],
+            //&self.bv[(4 * w)..((4 * w) + w)][2],
         )
     }
 }
