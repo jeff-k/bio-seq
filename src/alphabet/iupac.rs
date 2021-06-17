@@ -1,0 +1,17 @@
+pub enum Iupac {
+    A,
+    C,
+    G,
+    T,
+    R,
+    Y,
+    S,
+    W,
+    K,
+    M,
+    B,
+    D,
+    H,
+    V,
+    N,
+}

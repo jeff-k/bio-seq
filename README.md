@@ -5,9 +5,11 @@
 ## Biological sequences backed by bit vectors <!-- omit in toc -->
 </div>
 
+```rust
+let seq = dna!("ACTGCTAGCA");
+let y: Seq<Iupac> = Iupac::from_vec([A, N, A, T, N, N, G]);
 
-```
-A: 00, C: 01, G: 10, T: 11
+assert_eq!(seq.to_usize(), 0b00011011);
 ```
 
 IUPAC nucleotide ambiguity codes are represented with 4 bits:
@@ -24,7 +26,9 @@ B 0 1 1 1
 ```
 
 ```rust
-let seq = dna!"ACGCTACGA";
+let seq = dna!("ACGCTACGA");
+
+let seq = Seq<Dna>::from("ACTGCAT");
 
 assert_eq!(seq.rc(), dna!"TCGTAGCGT");
 ```
@@ -33,3 +37,25 @@ assert_eq!(seq.rc(), dna!"TCGTAGCGT");
 let mut s: Seq<Dna> = Seq::new();
 let y: Seq<Iupac> = iupac![A, N, A, T, N, N, G];
 ```
+
+## Kmers
+
+Kmers are slices of Seqs.
+
+## Minimisers for free
+
+```rust
+// find the lexicographically minimum 8-mer
+fn minimise(seq: Seq) -> Kmer<8> {
+    seq.iter().min()
+}
+```
+
+## Drop-in compatibility with `rust-bio`
+
+replaces TextSlice
+
+## TODO
+
+* benchmarking
+* clever bit twiddling hacks for stuff like converting from `u8` to 2-bit representation
