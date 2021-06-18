@@ -10,6 +10,13 @@ pub struct Seq<A: Alphabet> {
     //width: usize,
 }
 
+pub struct SeqSlice<'a, A: Alphabet> {
+    //<A: Alphabet> {
+    bv: &'a BitSlice,
+    _p: PhantomData<A>,
+    //width: usize,
+}
+
 impl<A: Alphabet> Seq<A> {
     pub fn from_vec(vec: Vec<A>) -> Self {
         let mut bv: BitVec = BitVec::new();
@@ -35,23 +42,31 @@ impl<A: Alphabet + fmt::Debug> fmt::Display for Seq<A> {
         let w = A::width();
         //        for c in self.bv.chunks(2) {
         for i in 0..(self.bv.len() / A::width()) {
-            v.push([
-                &self.bv[(i * w)..((i * w) + w)][0],
-                &self.bv[(i * w)..((i * w) + w)][1],
-            ]);
+            v.push(A::from_bits(&self.bv[(i * w)..((i * w) + w)]));
 
             //            v.push(c.as_raw_slice()[0]);
         }
         write!(
             f,
-            "{:?} {:?} {:?}",
+            "{:?}",
             v,
-            &self.bv[(1 * w)..((1 * w) + w)][0],
-            &self.bv[(1 * w)..((1 * w) + w)][1],
             //&self.bv[(4 * w)..((4 * w) + w)][2],
         )
     }
 }
+
+//impl<A> std::ops::Index<usize> for Seq<A>
+//where
+//    //Idx: std::ops::Index<usize>,
+//    A: Alphabet,
+//{
+//    type Output = SeqSlice<A>;
+//
+//    fn index(&self, i: usize) -> Self::Output {
+//        let w = A::width();
+//        SeqSlice { bv: &self.bv[i*w..(i*w)+w], _p: PhantomData }
+//    }
+//}
 
 macro_rules! dna {
     [$seq:literal] => {

@@ -23,13 +23,14 @@ impl Alphabet for Dna {
         }
     }
 
-    fn from_bits(b: usize) -> Self {
-        match b {
-            0b00 => Dna::A,
-            0b01 => Dna::C,
-            0b10 => Dna::G,
-            0b11 => Dna::T,
-            _ => panic!(),
+    fn from_bits(b: &BitSlice) -> Self {
+        let bs: [bool; 2] = [b[0], b[1]];
+        match bs {
+            [false, false] => Dna::A,
+            [false, true] => Dna::C,
+            [true, false] => Dna::G,
+            [true, true] => Dna::T,
+            _ => panic!("got bitvector: {:?}", b),
         }
     }
 }

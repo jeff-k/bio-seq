@@ -22,8 +22,8 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let seq = Seq::from_vec(vec![T, A, C, G, T, T]);
-        assert_eq!(format!("{}", seq), "[A, C, G, T, T, T, T]");
+        let seq = Seq::from_vec(vec![A, C, G, T, T, A, T, C]);
+        assert_eq!(format!("{}", seq), "[A, C, G, T, T, A, T, C]");
     }
 
     //    #[test]
