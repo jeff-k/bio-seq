@@ -9,17 +9,13 @@ use std::marker::PhantomData;
 use std::str::FromStr;
 
 pub struct Seq<A: Alphabet> {
-    //<A: Alphabet> {
     bv: BitVec,
     _p: PhantomData<A>,
-    //width: usize,
 }
 
 pub struct SeqSlice<'a, A: Alphabet> {
-    //<A: Alphabet> {
     bv: &'a BitSlice,
     _p: PhantomData<A>,
-    //width: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -42,8 +38,6 @@ impl<A: Alphabet> Seq<A> {
             _p: PhantomData,
         }
     }
-
-    //    pub fn from_string(s: String) -> Self { }
 
     pub fn to_usize(&self) -> usize {
         self.bv.as_raw_slice()[0]
@@ -86,6 +80,7 @@ impl<A: Alphabet> FromStr for Seq<A> {
         Ok(Seq::<A>::from_vec(v))
     }
 }
+
 //impl<A> std::ops::Index<usize> for Seq<A>
 //where
 //    //Idx: std::ops::Index<usize>,
@@ -99,32 +94,20 @@ impl<A: Alphabet> FromStr for Seq<A> {
 //    }
 //}
 
-//impl Iterator for Seq<A> {
-//    fn next(&mut self) -> Option<A> {
-//        A::from_bits(self.bv.pop(A::width()))
-//    }
-//}
-
 macro_rules! dna {
     ($seq:expr) => {
-        Seq::<Dna>::from_str($seq)
+        match Seq::<Dna>::from_str($seq) {
+            Ok(s) => s,
+            Err(_) => panic!(),
+        }
     };
 }
 
 macro_rules! iupac {
     ($seq:expr) => {
-        Seq::from_str($seq)
+        match Seq::<Iupac>::from_str($seq) {
+            Ok(s) => s,
+            Err(_) => panic!(),
+        }
     };
 }
-
-macro_rules! amino {
-    ($seq:expr) => {
-        Seq::from_str($seq)
-    };
-}
-
-//impl Iterator for Seq<A> {
-//    fn next(&mut self) -> Option<A> {
-//        A::from_bits(self.bv.pop(A::width()))
-//    }
-//}
