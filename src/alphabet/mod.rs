@@ -1,4 +1,5 @@
 pub mod dna;
+pub mod iupac;
 
 use bitvec::prelude::*;
 

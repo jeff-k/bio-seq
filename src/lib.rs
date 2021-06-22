@@ -17,6 +17,8 @@ mod alphabet;
 #[macro_use]
 mod seq;
 
+mod kmer;
+
 #[cfg(test)]
 mod tests {
     use crate::alphabet::dna::Dna::*;
