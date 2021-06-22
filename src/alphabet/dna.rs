@@ -1,5 +1,7 @@
-use crate::alphabet::Alphabet;
+use crate::alphabet::{Alphabet, ParseBioErr};
 use bitvec::prelude::*;
+use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub enum Dna {
@@ -30,7 +32,26 @@ impl Alphabet for Dna {
             [false, true] => Dna::C,
             [true, false] => Dna::G,
             [true, true] => Dna::T,
-            _ => panic!("got bitvector: {:?}", b),
         }
+    }
+}
+
+impl FromStr for Dna {
+    type Err = ParseBioErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" => Ok(Dna::A),
+            "C" => Ok(Dna::C),
+            "G" => Ok(Dna::G),
+            "T" => Ok(Dna::T),
+            _ => Err(ParseBioErr),
+        }
+    }
+}
+
+impl fmt::Display for Dna {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

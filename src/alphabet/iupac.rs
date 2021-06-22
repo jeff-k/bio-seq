@@ -1,7 +1,12 @@
-use crate::alphabet::Alphabet;
+//! IUPAC nucleotide ambiguity codes
+
+use std::fmt;
+use std::str::FromStr;
+
+use crate::alphabet::{Alphabet, ParseBioErr};
 use bitvec::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Iupac {
     A,
     C,
@@ -73,5 +78,24 @@ impl Alphabet for Iupac {
             [true, true, true, true] => Iupac::N,
             [false, false, false, false] => Iupac::X,
         }
+    }
+}
+
+impl FromStr for Iupac {
+    type Err = ParseBioErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" => Ok(Iupac::A),
+            "." => Ok(Iupac::X),
+            "-" => Ok(Iupac::X),
+            _ => Err(ParseBioErr),
+        }
+    }
+}
+
+impl fmt::Display for Iupac {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

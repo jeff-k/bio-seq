@@ -2,14 +2,6 @@
 
 Bit packed biological sequences
 
-## DNA
-
-## IUPAC
-
-## Amino
-
-# Example
-
 !*/
 
 mod alphabet;
@@ -21,7 +13,8 @@ mod kmer;
 
 #[cfg(test)]
 mod tests {
-    use crate::alphabet::dna::Dna::*;
+    use crate::alphabet::dna::Dna;
+    use crate::alphabet::dna::Dna::{A, C, G, T};
     use crate::seq::Seq;
 
     #[test]
@@ -37,15 +30,11 @@ mod tests {
     }
 
     #[test]
-    fn test_display() {
+    fn test_display_dna() {
         let seq = Seq::from_vec(vec![A, C, G, T, T, A, T, C]);
         assert_eq!(format!("{}", seq), "[A, C, G, T, T, A, T, C]");
+        assert_eq!(format!("{}", dna!("ACGT")), "[A, C, G, T]");
     }
-
-    //    #[test]
-    //    fn make_dnaseq_from_macro() {
-    //        assert_eq!(dna!([A, T, C, G]), Seq::<Dna>::from_vec([Dna::A, Dna::T, Dna::C, Dna::G]));
-    //    }
 
     //    #[test]
     //    fn complement_iupac() {
