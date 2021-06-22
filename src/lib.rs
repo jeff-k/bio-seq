@@ -1,3 +1,17 @@
+/*! # `bioseq`
+
+Bit packed biological sequences
+
+## DNA
+
+## IUPAC
+
+## Amino
+
+# Example
+
+!*/
+
 mod alphabet;
 
 #[macro_use]

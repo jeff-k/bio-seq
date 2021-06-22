@@ -1,11 +1,13 @@
 <div class="title-block" style="text-align: center;" align="center">
 
-# bio-seq <!-- omit in toc -->
+# bio-seq
 
-## Biological sequences backed by bit vectors <!-- omit in toc -->
+### Bit packed biological sequences
 </div>
 
 ```rust
+use bioseq
+
 let seq = dna!("ACTGCTAGCA");
 let y: Seq<Iupac> = Iupac::from_vec([A, N, A, T, N, N, G]);
 
@@ -25,17 +27,15 @@ B 0 1 1 1
   ... etc.
 ```
 
-```rust
-let seq = dna!("ACGCTACGA");
-
-let seq = Seq<Dna>::from("ACTGCAT");
-
-assert_eq!(seq.rc(), dna!"TCGTAGCGT");
-```
+This supports membership resolution with bitwise operations:
 
 ```rust
-let mut s: Seq<Dna> = Seq::new();
-let y: Seq<Iupac> = iupac![A, N, A, T, N, N, G];
+
+let a = iupac!("ASGYTNA");
+let b = iupac!("ANTGCAT");
+
+assert_eq!(a.union(b), iupac!("TCGTAGCGT"));
+assert_eq!(a.intersection(b), iupac!("ACYACTG"));
 ```
 
 ## Kmers
@@ -46,7 +46,7 @@ Kmers are slices of Seqs.
 
 ```rust
 // find the lexicographically minimum 8-mer
-fn minimise(seq: Seq) -> Kmer<8> {
+fn minimise(seq: Seq) -> Kmer::<8> {
     seq.iter().min()
 }
 ```
