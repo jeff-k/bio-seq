@@ -1,3 +1,8 @@
+// Copyright 2021 Jeff Knaggs
+// Licensed under the MIT license (http://opensource.org/licenses/MIT)
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
 /*! # `bioseq`
 
 Bit packed biological sequences
