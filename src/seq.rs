@@ -2,14 +2,16 @@
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
+use crate::alphabet::dna::Dna;
 use crate::alphabet::Alphabet;
+use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
 use std::str::FromStr;
 
 pub struct Seq<A: Alphabet> {
-    bv: BitVec,
+    pub bv: BitVec,
     _p: PhantomData<A>,
 }
 
@@ -78,6 +80,70 @@ impl<A: Alphabet> FromStr for Seq<A> {
         }
         //Ok(Self::from_vec(v))
         Ok(Seq::<A>::from_vec(v))
+    }
+}
+
+pub struct SeqIter<A: Alphabet> {
+    seq: Seq<A>,
+    index: usize,
+}
+
+pub struct KmerIter<const K: u8> {
+    seq: Seq<Dna>,
+    index: usize,
+}
+
+impl Seq<Dna> {
+    pub fn kmers<const K: u8>(self) -> KmerIter<K> {
+        KmerIter::<K> {
+            seq: self,
+            index: 0,
+        }
+    }
+}
+
+impl<A: Alphabet> IntoIterator for Seq<A> {
+    type Item = A;
+    type IntoIter = SeqIter<A>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SeqIter::<A> {
+            seq: self,
+            index: 0,
+        }
+    }
+}
+
+impl<A: Alphabet> Iterator for SeqIter<A> {
+    type Item = A;
+    fn next(&mut self) -> Option<A> {
+        let w = A::width();
+        if self.index >= (self.seq.len()) {
+            return None;
+        }
+        self.index += 1;
+        Some(A::from_bits(
+            &self.seq.bv[(self.index * w)..((self.index * w) + w)],
+        ))
+    }
+}
+
+impl<const K: u8> Iterator for KmerIter<K> {
+    type Item = Kmer<K>;
+    fn next(&mut self) -> Option<Kmer<K>> {
+        let k = K as usize * 2;
+        let i = self.index * 2;
+        if i >= (self.seq.len() - (K as usize)) {
+            return None;
+        }
+        self.index += 1;
+        Some(Kmer::<K>::new(&self.seq.bv[i..k + i]))
+    }
+}
+
+impl<A: Alphabet> Seq<A> {
+    pub fn len(&self) -> usize {
+        self.bv.len() / A::width()
     }
 }
 

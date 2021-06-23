@@ -87,6 +87,20 @@ impl FromStr for Iupac {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "A" => Ok(Iupac::A),
+            "C" => Ok(Iupac::C),
+            "G" => Ok(Iupac::G),
+            "T" => Ok(Iupac::T),
+            "R" => Ok(Iupac::R),
+            "Y" => Ok(Iupac::Y),
+            "S" => Ok(Iupac::S),
+            "W" => Ok(Iupac::W),
+            "K" => Ok(Iupac::K),
+            "M" => Ok(Iupac::M),
+            "B" => Ok(Iupac::B),
+            "D" => Ok(Iupac::D),
+            "H" => Ok(Iupac::H),
+            "V" => Ok(Iupac::V),
+            "N" => Ok(Iupac::N),
             "." => Ok(Iupac::X),
             "-" => Ok(Iupac::X),
             _ => Err(ParseBioErr),
@@ -96,6 +110,9 @@ impl FromStr for Iupac {
 
 impl fmt::Display for Iupac {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            Iupac::X => write!(f, "-"),
+            _ => write!(f, "{:?}", self),
+        }
     }
 }

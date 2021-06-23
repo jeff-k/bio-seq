@@ -37,8 +37,12 @@ mod tests {
         assert_eq!(format!("{}", dna!("ACGT")), "ACGT");
     }
 
-    //    #[test]
-    //    fn complement_iupac() {
-    //        assert_eq!((iupac!([])).complement(), iupac!("TAGC"));
-    //    }
+    #[test]
+    fn iterate_kmers() {
+        let seq = dna!("ACGTAAGGGG");
+        let answers = ["ACGT", "CGTA", "GTAA", "TAAG", "AAGG", "AGGG", "GGGG"];
+        for (kmer, answer) in seq.kmers::<4>().zip(answers) {
+            assert_eq!(format!("{}", kmer), answer);
+        }
+    }
 }
