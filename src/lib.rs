@@ -49,8 +49,32 @@ mod tests {
     #[test]
     fn iterate_kmers() {
         let seq = dna!("ACGTAAGGGG");
-        let answers = ["ACGT", "CGTA", "GTAA", "TAAG", "AAGG", "AGGG", "GGGG"];
-        for (kmer, answer) in seq.kmers::<4>().zip(answers) {
+        for (kmer, answer) in seq
+            .kmers::<4>()
+            .zip(["ACGT", "CGTA", "GTAA", "TAAG", "AAGG", "AGGG", "GGGG"])
+        {
+            assert_eq!(format!("{}", kmer), answer);
+        }
+    }
+
+    #[test]
+    fn iterate_kmer8() {
+        let seq = dna!("AAAACCCCGGGG");
+        for (kmer, answer) in seq
+            .kmers::<8>()
+            .zip(["AAAACCCC", "AAACCCCG", "AACCCCGG", "ACCCCGGG", "CCCCGGGG"])
+        {
+            assert_eq!(format!("{}", kmer), answer);
+        }
+    }
+
+    #[test]
+    fn iterate_kmer4() {
+        let seq = dna!("AAAACCCCGGGGTTTT");
+        for (kmer, answer) in seq.kmers::<4>().zip([
+            "AAAA", "AAAC", "AACC", "ACCC", "CCCC", "CCCG", "CCGG", "CGGG", "GGGG", "GGGT", "GGTT",
+            "GTTT", "TTTT",
+        ]) {
             assert_eq!(format!("{}", kmer), answer);
         }
     }

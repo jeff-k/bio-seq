@@ -130,7 +130,7 @@ impl<const K: u8> Iterator for KmerIter<K> {
     fn next(&mut self) -> Option<Kmer<K>> {
         let k = K as usize * 2;
         let i = self.index * 2;
-        if i >= (self.seq.len() - (K as usize)) {
+        if self.index >= self.seq.len() - (K as usize - 1) {
             return None;
         }
         self.index += 1;

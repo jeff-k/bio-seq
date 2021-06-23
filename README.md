@@ -50,7 +50,7 @@ Kmers are sequences of DNA with a fixed size. These are implemented with const g
 ```rust
 // find the lexicographically minimum 8-mer
 fn minimise(seq: Seq) -> Kmer::<8> {
-    seq.kmers<8>().min()
+    seq.kmers::<8>().min()
 }
 ```
 
