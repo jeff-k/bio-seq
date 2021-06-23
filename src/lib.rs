@@ -47,6 +47,15 @@ mod tests {
     }
 
     #[test]
+    fn iterate_bases() {
+        let seq = dna!("ACGTACGT");
+        assert_eq!(
+            seq.into_iter().collect::<Vec<Dna>>(),
+            vec![A, C, G, T, A, C, G, T]
+        );
+    }
+
+    #[test]
     fn iterate_kmers() {
         let seq = dna!("ACGTAAGGGG");
         for (kmer, answer) in seq

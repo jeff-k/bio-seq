@@ -16,7 +16,7 @@ pub struct Seq<A: Alphabet> {
 }
 
 pub struct SeqSlice<'a, A: Alphabet> {
-    bv: &'a BitSlice,
+    pub bv: &'a BitSlice,
     _p: PhantomData<A>,
 }
 
@@ -115,13 +115,12 @@ impl<A: Alphabet> Iterator for SeqIter<A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let w = A::width();
-        if self.index >= (self.seq.len()) {
+        let i = self.index;
+        if self.index >= (self.seq.bv.len()) {
             return None;
         }
-        self.index += 1;
-        Some(A::from_bits(
-            &self.seq.bv[(self.index * w)..((self.index * w) + w)],
-        ))
+        self.index += w;
+        Some(A::from_bits(&self.seq.bv[i..i + w]))
     }
 }
 
