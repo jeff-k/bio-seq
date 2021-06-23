@@ -3,9 +3,8 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::alphabet::dna::Dna;
+pub use crate::alphabet::dna::Dna;
 use crate::alphabet::Alphabet;
-use crate::seq::Seq;
 use bitvec::prelude::*;
 use std::fmt;
 

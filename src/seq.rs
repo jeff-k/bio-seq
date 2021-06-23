@@ -2,13 +2,13 @@
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
-use crate::alphabet::dna::Dna;
-use crate::alphabet::Alphabet;
-use crate::kmer::Kmer;
+pub use crate::alphabet::dna::Dna;
+pub use crate::alphabet::Alphabet;
+pub use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
-use std::str::FromStr;
+pub use std::str::FromStr;
 
 pub struct Seq<A: Alphabet> {
     pub bv: BitVec,
@@ -70,15 +70,12 @@ impl<A: Alphabet> FromStr for Seq<A> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
-        let w = A::width();
         for i in s.chars() {
             match A::from_str(&i.to_string()) {
                 Ok(b) => v.push(b),
                 Err(_) => panic!(),
             }
-            //v.push(A::from_str(&i.to_string())?);
         }
-        //Ok(Self::from_vec(v))
         Ok(Seq::<A>::from_vec(v))
     }
 }
@@ -160,6 +157,7 @@ impl<A: Alphabet> Seq<A> {
 //    }
 //}
 
+#[macro_export]
 macro_rules! dna {
     ($seq:expr) => {
         match Seq::<Dna>::from_str($seq) {
@@ -169,6 +167,7 @@ macro_rules! dna {
     };
 }
 
+#[macro_export]
 macro_rules! iupac {
     ($seq:expr) => {
         match Seq::<Iupac>::from_str($seq) {

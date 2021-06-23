@@ -9,12 +9,16 @@ Bit packed biological sequences
 
 !*/
 
-mod alphabet;
+pub mod alphabet;
 
 #[macro_use]
-mod seq;
+pub mod seq;
 
-mod kmer;
+pub mod kmer;
+
+pub use alphabet::dna::Dna;
+pub use seq::Seq;
+pub use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
