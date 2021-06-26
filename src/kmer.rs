@@ -8,7 +8,7 @@ use crate::alphabet::Alphabet;
 use bitvec::prelude::*;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<const K: u8> {
     bv: BitVec,
 }

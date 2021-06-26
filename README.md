@@ -47,9 +47,11 @@ Kmers are sequences of DNA with a fixed size. These are implemented with const g
 
 ## Minimisers for free
 
+The 2-bit representation of DNA sequences is lexicographically ordered:
+
 ```rust
 // find the lexicographically minimum 8-mer
-fn minimise(seq: Seq) -> Kmer::<8> {
+fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
     seq.kmers::<8>().min()
 }
 ```
