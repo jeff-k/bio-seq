@@ -8,22 +8,22 @@ use bitvec::prelude::*;
 
 #[derive(Debug, PartialEq)]
 pub enum Iupac {
-    A,
-    C,
-    G,
-    T,
-    R,
-    Y,
-    S,
-    W,
-    K,
-    M,
-    B,
-    D,
-    H,
-    V,
-    N,
-    X,
+    A = 0b0001,
+    C = 0b0010,
+    G = 0b0100,
+    T = 0b1000,
+    R = 0b0101,
+    Y = 0b1010,
+    S = 0b0110,
+    W = 0b1001,
+    K = 0b1100,
+    M = 0b0011,
+    B = 0b1110,
+    D = 0b1101,
+    H = 0b1011,
+    V = 0b0111,
+    N = 0b1111,
+    X = 0b0000,
 }
 
 impl Alphabet for Iupac {

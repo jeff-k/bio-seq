@@ -5,10 +5,10 @@ use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub enum Dna {
-    A,
-    C,
-    G,
-    T,
+    A = 0b00,
+    C = 0b01,
+    G = 0b10,
+    T = 0b11,
 }
 
 impl Alphabet for Dna {

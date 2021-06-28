@@ -3,11 +3,13 @@ Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
 pub use crate::alphabet::dna::Dna;
+pub use crate::alphabet::iupac::Iupac;
 pub use crate::alphabet::Alphabet;
 pub use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
+use std::ops::{BitAnd, BitOr};
 pub use std::str::FromStr;
 
 pub struct Seq<A: Alphabet> {
@@ -36,7 +38,7 @@ impl<A: Alphabet> Seq<A> {
             bv.extend(b.to_bits());
         }
         Seq {
-            bv: bv,
+            bv,
             _p: PhantomData,
         }
     }
@@ -140,6 +142,32 @@ impl<const K: u8> Iterator for KmerIter<K> {
 impl<A: Alphabet> Seq<A> {
     pub fn len(&self) -> usize {
         self.bv.len() / A::width()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
+impl BitAnd for Seq<Iupac> {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self {
+            bv: self.bv & rhs.bv,
+            _p: PhantomData,
+        }
+    }
+}
+
+impl BitOr for Seq<Iupac> {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self {
+            bv: self.bv | rhs.bv,
+            _p: PhantomData,
+        }
     }
 }
 

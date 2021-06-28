@@ -6,7 +6,7 @@
 </div>
 
 ```rust
-use bioseq::*;
+use bio_seq::*;
 
 let seq = dna!("ACTGCTAGCA");
 
@@ -15,9 +15,9 @@ for kmer in seq.kmers::<8>() {
 }
 ```
 
-* `bioseq::alphabet::Dna`: DNA use the lexicographically ordered 2-bit representation
+* `bio_seq::alphabet::Dna`: DNA use the lexicographically ordered 2-bit representation
 
-* `bioseq::alphabet::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
+* `bio_seq::alphabet::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
 
 	```
 	  A C G T
@@ -32,14 +32,17 @@ for kmer in seq.kmers::<8>() {
 	This supports membership resolution with bitwise operations:
 
 	```rust
-	let a = iupac!("ASGYTNA");
-	let b = iupac!("ANTGCAT");
-
-	assert_eq!(a.union(b), iupac!(_));
-	assert_eq!(a.intersection(b), iupac!(_));
+    assert_eq!(
+        format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
+        "ANTGYWNA"
+    );
+    assert_eq!(
+        format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
+        "A----WKA"
+    );
 	```
 
-* *TODO* `bioseq::alphabet::amino`: Amino acid sequences
+* *TODO* `bio_seq::alphabet::amino`: Amino acid sequences
 
 ## Kmers
 

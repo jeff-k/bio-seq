@@ -3,7 +3,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-/*! # `bioseq`
+/*! # `bio-seq`
 
 Bit packed biological sequences
 
@@ -17,6 +17,7 @@ pub mod seq;
 pub mod kmer;
 
 pub use alphabet::dna::Dna;
+pub use alphabet::iupac::Iupac;
 pub use seq::Seq;
 pub use std::str::FromStr;
 
@@ -24,6 +25,7 @@ pub use std::str::FromStr;
 mod tests {
     use crate::alphabet::dna::Dna;
     use crate::alphabet::dna::Dna::{A, C, G, T};
+    use crate::alphabet::iupac::Iupac;
     use crate::seq::Seq;
     use std::str::FromStr;
 
@@ -86,5 +88,17 @@ mod tests {
         ]) {
             assert_eq!(format!("{}", kmer), answer);
         }
+    }
+
+    #[test]
+    fn iupac_bitwise_ops() {
+        assert_eq!(
+            format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
+            "ANTGYWNA"
+        );
+        assert_eq!(
+            format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
+            "A----WKA"
+        );
     }
 }
