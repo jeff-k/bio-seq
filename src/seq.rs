@@ -1,3 +1,8 @@
+// Copyright 2021 Jeff Knaggs
+// Licensed under the MIT license (http://opensource.org/licenses/MIT)
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
 /*!
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
@@ -12,6 +17,7 @@ use std::marker::PhantomData;
 use std::ops::{BitAnd, BitOr};
 pub use std::str::FromStr;
 
+/// A sequence of bit packed characters
 pub struct Seq<A: Alphabet> {
     pub bv: BitVec,
     _p: PhantomData<A>,
@@ -32,6 +38,7 @@ impl fmt::Display for ParseSeqErr {
 }
 
 impl<A: Alphabet> Seq<A> {
+    /// Pack binary representations into a bitvector
     pub fn from_vec(vec: Vec<A>) -> Self {
         let mut bv: BitVec = BitVec::new();
         for b in vec.iter() {
@@ -44,6 +51,7 @@ impl<A: Alphabet> Seq<A> {
     }
 
     pub fn to_usize(&self) -> usize {
+        assert!(self.bv.as_raw_slice().len() == 1);
         self.bv.as_raw_slice()[0]
     }
 }
@@ -93,6 +101,9 @@ pub struct KmerIter<const K: u8> {
 }
 
 impl Seq<Dna> {
+    /// Iterate over the k-mers of a sequence.
+    ///
+    /// K: The number of (characters)[Alphabet] in the biological sequence
     pub fn kmers<const K: u8>(self) -> KmerIter<K> {
         KmerIter::<K> {
             seq: self,
@@ -171,16 +182,18 @@ impl BitOr for Seq<Iupac> {
     }
 }
 
-//impl<A> std::ops::Index<usize> for Seq<A>
+//impl<Idx> std::ops::Index<Idx> for Seq<Dna>
 //where
-//    //Idx: std::ops::Index<usize>,
-//    A: Alphabet,
+//    Idx: std::slice::SliceIndex<BitSlice>, //+ std::ops::Mul<Output = usize>,
 //{
-//    type Output = SeqSlice<A>;
+//    type Output = Idx::Output;
 //
-//    fn index(&self, i: usize) -> Self::Output {
-//        let w = A::width();
-//        SeqSlice { bv: &self.bv[i*w..(i*w)+w], _p: PhantomData }
+//    fn index(&self, i: Idx) -> &Self::Output {
+//        let w = Dna::width() as Idx;
+//        SeqSlice {
+//            bv: &self.bv[i * w..(i * w) + w],
+//            _p: PhantomData,
+//        }
 //    }
 //}
 

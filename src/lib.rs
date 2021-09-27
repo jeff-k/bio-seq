@@ -3,9 +3,28 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-/*! # `bio-seq`
+/*! # bio-seq
 
-Bit packed biological sequences
+Bit packed types for biological [sequences](seq) and [k-mers](kmer).
+
+Add `bio-seq` to your project's `Cargo.toml`:
+
+```toml
+[dependencies]
+bio-seq = "*"
+```
+
+## Example: Kmers
+
+```rust
+use bio_seq::*;
+
+let seq = dna!("ACTGCTAGCA");
+
+for kmer in seq.kmers::<8>() {
+        println!("{}", kmer);
+}
+```
 
 !*/
 
