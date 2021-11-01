@@ -41,8 +41,11 @@ for kmer in seq.kmers::<8>() {
         "A----WKA"
     );
 	```
+The Iupac struct implements `From<Dna>`
 
-* *TODO* `bio_seq::alphabet::amino`: Amino acid sequences
+* `bio_seq::alphabet::Amino`: Amino acid sequences are represented with 6 bits.
+
+TODO: deal with alternate (e.g. mamalian mitochondrial) codes
 
 ## Kmers
 
@@ -59,6 +62,18 @@ fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
 }
 ```
 
+## Conversion with `From` and `Into`
+
+`Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
+
+`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>`
+  * Sequence length not a multiple of 3 is an error
+
+`Seq<Iupac>` from `Amino`; `Seq<Iupac>` from `Seq<Amino>`
+
+`Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length.
+
+
 ## Drop-in compatibility with `rust-bio`
 
 meant to replace Text/TextSlice
@@ -67,3 +82,4 @@ meant to replace Text/TextSlice
 
 * benchmarking
 * clever bit twiddling hacks for stuff like converting from `u8` to 2-bit representation
+* macros for defining alphabet bit strings more concisely

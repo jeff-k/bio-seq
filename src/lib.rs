@@ -35,6 +35,7 @@ pub mod seq;
 
 pub mod kmer;
 
+pub use alphabet::amino::Amino;
 pub use alphabet::dna::Dna;
 pub use alphabet::iupac::Iupac;
 pub use seq::Seq;
@@ -42,6 +43,7 @@ pub use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
+    use crate::alphabet::amino::Amino;
     use crate::alphabet::dna::Dna;
     use crate::alphabet::dna::Dna::{A, C, G, T};
     use crate::alphabet::iupac::Iupac;
@@ -65,6 +67,13 @@ mod tests {
         let seq = Seq::from_vec(vec![A, C, G, T, T, A, T, C]);
         assert_eq!(format!("{}", seq), "ACGTTATC");
         assert_eq!(format!("{}", dna!("ACGT")), "ACGT");
+    }
+
+    #[test]
+    fn test_display_amino() {
+        let seq = Seq::from_vec(vec![Amino::K, Amino::K]);
+        assert_eq!(format!("{}", seq), "KK");
+        assert_eq!(format!("{}", amino!("KK")), "KK");
     }
 
     #[test]

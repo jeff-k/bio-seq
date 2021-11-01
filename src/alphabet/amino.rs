@@ -1,23 +1,82 @@
+//! Amino acids
+
+use std::fmt;
+use std::str::FromStr;
+
+use crate::alphabet::dna::Dna;
+use crate::alphabet::{Alphabet, ParseBioErr};
+use crate::Seq;
+use bitvec::prelude::*;
+
 #[derive(Debug, PartialEq)]
 pub enum Amino {
-    A,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-    I,
-    K,
-    L,
-    M,
-    N,
-    P,
-    Q,
-    R,
-    S,
-    T,
-    V,
-    W,
-    Y,
+    A = 0b000110,    // GCA
+    C = 0b011011,    // TGC
+    D = 0b010010,    // GAC
+    E = 0b000010,    // GAA
+    F = 0b011111,    // TTC
+    G = 0b001010,    // GGA
+    H = 0b010001,    // CAC
+    I = 0b001100,    // ATA
+    K = 0b000000,    // AAA
+    L = 0b001101,    // CTA
+    M = 0b101100,    // ATG
+    N = 0b010000,    // AAC
+    P = 0b000101,    // CCA
+    Q = 0b000001,    // CAA
+    R = 0b001000,    // AGA
+    S = 0b011000,    // AGC
+    T = 0b000100,    // ACA
+    V = 0b001110,    // GTA
+    W = 0b101011,    // TGG
+    Y = 0b010011,    // TAC
+    Stop = 0b000011, // TAA
+}
+
+impl Alphabet for Amino {
+    fn width() -> usize {
+        6
+    }
+
+    fn to_bits(&self) -> BitVec {
+        match &self {
+            Amino::K => bitvec![0, 0, 0, 0, 0, 0],
+            _ => unimplemented!(),
+        }
+    }
+
+    fn from_bits(b: &BitSlice) -> Self {
+        let bs: [bool; 6] = [b[0], b[1], b[2], b[3], b[4], b[5]];
+        match bs {
+            [false, false, false, false, false, false] => Amino::K,
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl From<Seq<Dna>> for Amino {
+    fn from(_item: Seq<Dna>) -> Self {
+        unimplemented!()
+    }
+}
+
+impl FromStr for Amino {
+    type Err = ParseBioErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" => Ok(Amino::A),
+            "K" => Ok(Amino::K),
+            _ => Err(ParseBioErr),
+        }
+    }
+}
+
+impl fmt::Display for Amino {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Amino::Stop => write!(f, "*"),
+            _ => write!(f, "{:?}", self),
+        }
+    }
 }

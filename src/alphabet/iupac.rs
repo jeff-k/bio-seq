@@ -3,6 +3,7 @@
 use std::fmt;
 use std::str::FromStr;
 
+use crate::alphabet::dna::Dna;
 use crate::alphabet::{Alphabet, ParseBioErr};
 use bitvec::prelude::*;
 
@@ -77,6 +78,17 @@ impl Alphabet for Iupac {
             [true, true, true, false] => Iupac::V,
             [true, true, true, true] => Iupac::N,
             [false, false, false, false] => Iupac::X,
+        }
+    }
+}
+
+impl From<Dna> for Iupac {
+    fn from(dna: Dna) -> Self {
+        match dna {
+            Dna::A => Iupac::A,
+            Dna::C => Iupac::C,
+            Dna::G => Iupac::G,
+            Dna::T => Iupac::T,
         }
     }
 }

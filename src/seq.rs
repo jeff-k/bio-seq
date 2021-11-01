@@ -7,6 +7,7 @@
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
+pub use crate::alphabet::amino::Amino;
 pub use crate::alphabet::dna::Dna;
 pub use crate::alphabet::iupac::Iupac;
 pub use crate::alphabet::Alphabet;
@@ -201,6 +202,16 @@ impl BitOr for Seq<Iupac> {
 macro_rules! dna {
     ($seq:expr) => {
         match Seq::<Dna>::from_str($seq) {
+            Ok(s) => s,
+            Err(_) => panic!(),
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! amino {
+    ($seq:expr) => {
+        match Seq::<Amino>::from_str($seq) {
             Ok(s) => s,
             Err(_) => panic!(),
         }
