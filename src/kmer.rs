@@ -14,7 +14,7 @@ pub struct Kmer<const K: usize> {
 }
 
 impl<const _K: usize> Kmer<_K> {
-    pub fn new<const K: usize>(s: &BitSlice::<Msb0, u8>) -> Kmer<K> {
+    pub fn new<const K: usize>(s: &BitSlice<Msb0, u8>) -> Kmer<K> {
         assert_eq!(K, s.len() / Dna::WIDTH);
         Kmer {
             bv: BitVec::<Msb0, u8>::from(s),

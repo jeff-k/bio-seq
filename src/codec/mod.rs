@@ -1,8 +1,7 @@
 //! Bit packable enums representing biological alphabets
 
-pub mod amino;
 pub mod dna;
-pub mod iupac;
+//pub mod iupac;
 
 use bitvec::prelude::*;
 use std::fmt;
@@ -10,10 +9,10 @@ use std::str::FromStr;
 
 pub trait Codec: FromStr + fmt::Display + fmt::Debug {
     const WIDTH: usize;
-    fn to_bits(&self) -> BitArray::<Msb0, u8>;
-    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self;
-    fn from_ascii(c: u8) -> Self;
-    fn to_ascii(c: u8) -> Self;
+    fn to_bits(&self) -> BitArray<Msb0, u8>;
+    fn from_bits(b: &BitSlice<Msb0, u8>) -> Self;
+    fn from_char(c: u8) -> Result<Self, ParseBioErr>;
+    fn to_char(c: Self) -> u8;
 }
 
 pub trait Complement {
@@ -31,23 +30,19 @@ impl fmt::Display for ParseBioErr {
 
 #[cfg(test)]
 mod tests {
-    use super::amino::Amino;
-    use super::dna::Dna;
-    use super::iupac::Iupac;
-    use crate::dna;
-    use crate::kmer::Kmer;
-    use crate::seq::Seq;
-    use std::str::FromStr;
+    /*
+        use super::dna::Dna;
+        use super::iupac::Iupac;
+        use crate::dna;
+        use crate::kmer::Kmer;
+        use crate::seq::Seq;
+        use std::str::FromStr;
 
-    #[test]
-    fn dna_to_iupac() {
-        assert_eq!(Iupac::from(Dna::A), Iupac::A);
-        assert_ne!(Iupac::from(Dna::A), Iupac::T);
-        assert_eq!(Iupac::from(Dna::C), Iupac::C);
-    }
-
-    #[test]
-    fn codon_to_amino() {
-        assert_eq!(Amino::from(Kmer::<3>::new(&dna!("AAA").bv)), Amino::K);
-    }
+        #[test]
+        fn dna_to_iupac() {
+            assert_eq!(Iupac::from(Dna::A), Iupac::A);
+            assert_ne!(Iupac::from(Dna::A), Iupac::T);
+            assert_eq!(Iupac::from(Dna::C), Iupac::C);
+        }
+    */
 }

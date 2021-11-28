@@ -35,31 +35,29 @@ pub mod seq;
 
 pub mod kmer;
 
-pub use codec::amino::Amino;
 pub use codec::dna::Dna;
-pub use codec::iupac::Iupac;
+//pub use codec::iupac::Iupac;
 pub use seq::Seq;
 pub use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::amino::Amino;
     use crate::codec::dna::Dna;
     use crate::codec::dna::Dna::{A, C, G, T};
-    use crate::codec::iupac::Iupac;
+    //use crate::codec::iupac::Iupac;
     use crate::seq::Seq;
     use std::str::FromStr;
 
     #[test]
     fn make_from_vector() {
-        assert_eq!(Seq::from_vec(vec![A, C, G, T]).to_usize(), 0b11011000);
-        assert_eq!(Seq::from_vec(vec![C, G, C, G]).to_usize(), 0b01100110);
-        assert_eq!(Seq::from_vec(vec![T, T]).to_usize(), 0b1111);
-        assert_eq!(
-            Seq::from_vec(vec![C, G, T, A, C, G, A, T]).to_usize(),
+        assert_eq!(Seq::from_vec(vec![A, C, G, T]).to_u8(), 0b11011000);
+        assert_eq!(Seq::from_vec(vec![C, G, C, G]).to_u8(), 0b01100110);
+        assert_eq!(Seq::from_vec(vec![T, T]).to_u8(), 0b1111);
+        /*        assert_eq!(
+            Seq::from_vec(vec![C, G, T, A, C, G, A, T]).to_u8(),
             0b1100011000110110
-        );
-        assert_eq!(Seq::from_vec(vec![A,]).to_usize(), 0b00);
+        ); */
+        assert_eq!(Seq::from_vec(vec![A,]).to_u8(), 0b00);
     }
 
     #[test]
@@ -67,13 +65,6 @@ mod tests {
         let seq = Seq::from_vec(vec![A, C, G, T, T, A, T, C]);
         assert_eq!(format!("{}", seq), "ACGTTATC");
         assert_eq!(format!("{}", dna!("ACGT")), "ACGT");
-    }
-
-    #[test]
-    fn test_display_amino() {
-        let seq = Seq::from_vec(vec![Amino::K, Amino::K]);
-        assert_eq!(format!("{}", seq), "KK");
-        assert_eq!(format!("{}", amino!("KK")), "KK");
     }
 
     #[test]
@@ -118,6 +109,7 @@ mod tests {
         }
     }
 
+    /*
     #[test]
     fn iupac_bitwise_ops() {
         assert_eq!(
@@ -129,4 +121,5 @@ mod tests {
             "A----WKA"
         );
     }
+    */
 }

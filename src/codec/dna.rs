@@ -3,24 +3,27 @@ use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Codec)]
+#[derive(Debug, PartialEq)]
 pub enum Dna {
-    A,C,G,T,
+    A,
+    C,
+    G,
+    T,
 }
 
 impl Codec for Dna {
     const WIDTH: usize = 2;
 
-    fn to_bits(&self) -> BitArray::<Msb0, u8> {
+    fn to_bits(&self) -> BitArray<Msb0, u8> {
         match &self {
-            Dna::A => Dna::A as u8,
-            Dna::C => bitvec![0, 1],
-            Dna::G => bitvec![1, 0],
-            Dna::T => bitvec![1, 1],
+            Dna::A => BitArray::new(0b00),
+            Dna::C => BitArray::new(0b01),
+            Dna::G => BitArray::new(0b10),
+            Dna::T => BitArray::new(0b11),
         }
     }
 
-    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self {
+    fn from_bits(b: &BitSlice<Msb0, u8>) -> Self {
         let bs: [bool; 2] = [b[0], b[1]];
         match bs {
             [false, false] => Dna::A,
@@ -30,12 +33,18 @@ impl Codec for Dna {
         }
     }
 
-    fn from_ascii(c: u8) -> Self {
-        unimplemented!()
+    fn from_char(c: u8) -> Result<Self, ParseBioErr> {
+        match c {
+            b'A' => Ok(Dna::A),
+            _ => unimplemented!(),
+        }
     }
 
-    fn to_ascii(c: u8) -> Self {
-        unimplemented!()
+    fn to_char(c: Self) -> u8 {
+        match c {
+            Dna::A => b'A',
+            _ => unimplemented!(),
+        }
     }
 }
 

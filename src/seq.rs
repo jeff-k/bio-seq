@@ -7,20 +7,19 @@
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
-pub use crate::codec::amino::Amino;
 pub use crate::codec::dna::Dna;
-pub use crate::codec::iupac::Iupac;
+//pub use crate::codec::iupac::Iupac;
 pub use crate::codec::Codec;
 pub use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::{BitAnd, BitOr};
+//use std::ops::{BitAnd, BitOr};
 pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
 pub struct Seq<A: Codec> {
-    pub bv: BitVec::<Msb0, u8>,
+    pub bv: BitVec<Msb0, u8>,
     _p: PhantomData<A>,
 }
 
@@ -41,7 +40,7 @@ impl fmt::Display for ParseSeqErr {
 impl<A: Codec> Seq<A> {
     /// Pack binary representations into a bitvector
     pub fn from_vec(vec: Vec<A>) -> Self {
-        let mut bv: BitVec::<Msb0, u8> = BitVec::new();
+        let mut bv: BitVec<Msb0, u8> = BitVec::new();
         for b in vec.iter() {
             bv.extend(b.to_bits());
         }
@@ -51,7 +50,7 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    pub fn to_usize(&self) -> usize {
+    pub fn to_u8(&self) -> u8 {
         assert!(self.bv.as_raw_slice().len() == 1);
         self.bv.as_raw_slice()[0]
     }
@@ -82,7 +81,7 @@ impl<A: Codec> FromStr for Seq<A> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
         for i in s.chars() {
-            match A::from_str(&i.to_string()) {
+            match A::from_char(i as u8) {
                 Ok(b) => v.push(b),
                 Err(_) => panic!(),
             }
@@ -161,6 +160,7 @@ impl<A: Codec> Seq<A> {
     }
 }
 
+/*
 impl BitAnd for Seq<Iupac> {
     type Output = Self;
 
@@ -182,6 +182,7 @@ impl BitOr for Seq<Iupac> {
         }
     }
 }
+*/
 
 //impl<Idx> std::ops::Index<Idx> for Seq<Dna>
 //where
@@ -202,16 +203,6 @@ impl BitOr for Seq<Iupac> {
 macro_rules! dna {
     ($seq:expr) => {
         match Seq::<Dna>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! amino {
-    ($seq:expr) => {
-        match Seq::<Amino>::from_str($seq) {
             Ok(s) => s,
             Err(_) => panic!(),
         }
