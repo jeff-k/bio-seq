@@ -42,7 +42,14 @@ impl<A: Codec> Seq<A> {
     pub fn from_vec(vec: Vec<A>) -> Self {
         let mut bv: BitVec<Msb0, u8> = BitVec::new();
         for b in vec.iter() {
-            bv.extend(b.to_bits());
+            println!(
+                "bits: {} {} {}",
+                &b.to_bits(),
+                &b.to_bits()[..2],
+                &b.to_bits()[6..]
+            );
+            bv.extend_from_bitslice(&b.to_bits()[6..]);
+            println!("bv: {}", &bv);
         }
         Seq {
             bv,
@@ -50,21 +57,18 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    pub fn to_u8(&self) -> u8 {
-        assert!(self.bv.as_raw_slice().len() == 1);
-        self.bv.as_raw_slice()[0]
+    pub fn raw(&self) -> &[u8] {
+        self.bv.as_raw_slice()
     }
 }
 
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        let w = A::WIDTH;
-        //        for c in self.bv.chunks(2) {
-        for i in 0..(self.bv.len() / A::WIDTH) {
-            s.push_str(&A::from_bits(&self.bv[(i * w)..((i * w) + w)]).to_string());
-
-            //            v.push(c.as_raw_slice()[0]);
+        println!("my bv:\t{}", self.bv);
+        for c in self.bv.chunks_exact(2) {
+            println!("exact chunk\t{}", c);
+            s.push_str(&A::from_bits(c).to_string());
         }
         write!(
             f,

@@ -24,18 +24,24 @@ impl Codec for Dna {
     }
 
     fn from_bits(b: &BitSlice<Msb0, u8>) -> Self {
-        let bs: [bool; 2] = [b[0], b[1]];
+        println!("frombits: {}, as slice: {}", b, b[..2].as_raw_slice()[0]);
+        //        let bs = b.as_raw_slice()[0];
+        let bs = &b.as_deref() as u8;
         match bs {
-            [false, false] => Dna::A,
-            [false, true] => Dna::C,
-            [true, false] => Dna::G,
-            [true, true] => Dna::T,
+            0b00 => Dna::A,
+            0b01 => Dna::C,
+            0b10 => Dna::G,
+            0b11 => Dna::T,
+            _ => panic!(),
         }
     }
 
     fn from_char(c: u8) -> Result<Self, ParseBioErr> {
         match c {
             b'A' => Ok(Dna::A),
+            b'C' => Ok(Dna::C),
+            b'G' => Ok(Dna::G),
+            b'T' => Ok(Dna::T),
             _ => unimplemented!(),
         }
     }
@@ -43,7 +49,9 @@ impl Codec for Dna {
     fn to_char(c: Self) -> u8 {
         match c {
             Dna::A => b'A',
-            _ => unimplemented!(),
+            Dna::C => b'C',
+            Dna::G => b'G',
+            Dna::T => b'T',
         }
     }
 }
