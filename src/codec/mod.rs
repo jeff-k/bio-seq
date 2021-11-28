@@ -8,7 +8,7 @@ use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
 
-pub trait Alphabet: FromStr + fmt::Display + fmt::Debug {
+pub trait Codec: FromStr + fmt::Display + fmt::Debug {
     const WIDTH: usize;
     fn to_bits(&self) -> BitVec;
     //    fn from_u8(&self, b: u8) -> Self;

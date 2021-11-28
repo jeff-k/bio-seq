@@ -7,10 +7,10 @@
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
-pub use crate::alphabet::amino::Amino;
-pub use crate::alphabet::dna::Dna;
-pub use crate::alphabet::iupac::Iupac;
-pub use crate::alphabet::Alphabet;
+pub use crate::codec::amino::Amino;
+pub use crate::codec::dna::Dna;
+pub use crate::codec::iupac::Iupac;
+pub use crate::codec::Codec;
 pub use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
@@ -19,12 +19,12 @@ use std::ops::{BitAnd, BitOr};
 pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
-pub struct Seq<A: Alphabet> {
+pub struct Seq<A: Codec> {
     pub bv: BitVec,
     _p: PhantomData<A>,
 }
 
-pub struct SeqSlice<'a, A: Alphabet> {
+pub struct SeqSlice<'a, A: Codec> {
     pub bv: &'a BitSlice,
     _p: PhantomData<A>,
 }
@@ -38,7 +38,7 @@ impl fmt::Display for ParseSeqErr {
     }
 }
 
-impl<A: Alphabet> Seq<A> {
+impl<A: Codec> Seq<A> {
     /// Pack binary representations into a bitvector
     pub fn from_vec(vec: Vec<A>) -> Self {
         let mut bv: BitVec = BitVec::new();
@@ -57,7 +57,7 @@ impl<A: Alphabet> Seq<A> {
     }
 }
 
-impl<A: Alphabet> fmt::Display for Seq<A> {
+impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
         let w = A::WIDTH;
@@ -76,7 +76,7 @@ impl<A: Alphabet> fmt::Display for Seq<A> {
     }
 }
 
-impl<A: Alphabet> FromStr for Seq<A> {
+impl<A: Codec> FromStr for Seq<A> {
     type Err = ParseSeqErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -91,12 +91,12 @@ impl<A: Alphabet> FromStr for Seq<A> {
     }
 }
 
-pub struct SeqIter<A: Alphabet> {
+pub struct SeqIter<A: Codec> {
     seq: Seq<A>,
     index: usize,
 }
 
-pub struct KmerIter<const K: u8> {
+pub struct KmerIter<const K: usize> {
     seq: Seq<Dna>,
     index: usize,
 }
@@ -104,8 +104,8 @@ pub struct KmerIter<const K: u8> {
 impl Seq<Dna> {
     /// Iterate over the k-mers of a sequence.
     ///
-    /// K: The number of (characters)[Alphabet] in the biological sequence
-    pub fn kmers<const K: u8>(self) -> KmerIter<K> {
+    /// K: The number of (characters)[Codec] in the biological sequence
+    pub fn kmers<const K: usize>(self) -> KmerIter<K> {
         KmerIter::<K> {
             seq: self,
             index: 0,
@@ -113,7 +113,7 @@ impl Seq<Dna> {
     }
 }
 
-impl<A: Alphabet> IntoIterator for Seq<A> {
+impl<A: Codec> IntoIterator for Seq<A> {
     type Item = A;
     type IntoIter = SeqIter<A>;
 
@@ -125,7 +125,7 @@ impl<A: Alphabet> IntoIterator for Seq<A> {
     }
 }
 
-impl<A: Alphabet> Iterator for SeqIter<A> {
+impl<A: Codec> Iterator for SeqIter<A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let w = A::WIDTH;
@@ -138,12 +138,12 @@ impl<A: Alphabet> Iterator for SeqIter<A> {
     }
 }
 
-impl<const K: u8> Iterator for KmerIter<K> {
+impl<const K: usize> Iterator for KmerIter<K> {
     type Item = Kmer<K>;
     fn next(&mut self) -> Option<Kmer<K>> {
-        let k = K as usize * 2;
+        let k = K * 2;
         let i = self.index * 2;
-        if self.index >= self.seq.len() - (K as usize - 1) {
+        if self.index >= self.seq.len() - (K - 1) {
             return None;
         }
         self.index += 1;
@@ -151,7 +151,7 @@ impl<const K: u8> Iterator for KmerIter<K> {
     }
 }
 
-impl<A: Alphabet> Seq<A> {
+impl<A: Codec> Seq<A> {
     pub fn len(&self) -> usize {
         self.bv.len() / A::WIDTH
     }

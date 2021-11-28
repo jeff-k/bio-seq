@@ -3,26 +3,26 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub use crate::alphabet::dna::Dna;
-use crate::alphabet::Alphabet;
+pub use crate::codec::dna::Dna;
+use crate::codec::Codec;
 use bitvec::prelude::*;
 use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Kmer<const K: u8> {
+pub struct Kmer<const K: usize> {
     pub bv: BitVec,
 }
 
-impl<const _K: u8> Kmer<_K> {
-    pub fn new<const K: u8>(s: &BitSlice) -> Kmer<K> {
-        assert_eq!(K as usize, s.len() / Dna::WIDTH);
+impl<const _K: usize> Kmer<_K> {
+    pub fn new<const K: usize>(s: &BitSlice) -> Kmer<K> {
+        assert_eq!(K, s.len() / Dna::WIDTH);
         Kmer {
             bv: BitVec::from(s),
         }
     }
 }
 
-impl<const K: u8> fmt::Display for Kmer<K> {
+impl<const K: usize> fmt::Display for Kmer<K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
         let w = Dna::WIDTH;

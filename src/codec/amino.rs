@@ -3,8 +3,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::alphabet::dna::Dna;
-use crate::alphabet::{Alphabet, ParseBioErr};
+use crate::codec::dna::Dna;
+use crate::codec::{Codec, ParseBioErr};
 use crate::kmer::Kmer;
 use crate::Seq;
 use bitvec::prelude::*;
@@ -34,7 +34,7 @@ pub enum Amino {
     Stop = 0b000011, // TAA
 }
 
-impl Alphabet for Amino {
+impl Codec for Amino {
     const WIDTH: usize = 6;
 
     fn to_bits(&self) -> BitVec {

@@ -28,25 +28,25 @@ for kmer in seq.kmers::<8>() {
 
 !*/
 
-pub mod alphabet;
+pub mod codec;
 
 #[macro_use]
 pub mod seq;
 
 pub mod kmer;
 
-pub use alphabet::amino::Amino;
-pub use alphabet::dna::Dna;
-pub use alphabet::iupac::Iupac;
+pub use codec::amino::Amino;
+pub use codec::dna::Dna;
+pub use codec::iupac::Iupac;
 pub use seq::Seq;
 pub use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use crate::alphabet::amino::Amino;
-    use crate::alphabet::dna::Dna;
-    use crate::alphabet::dna::Dna::{A, C, G, T};
-    use crate::alphabet::iupac::Iupac;
+    use crate::codec::amino::Amino;
+    use crate::codec::dna::Dna;
+    use crate::codec::dna::Dna::{A, C, G, T};
+    use crate::codec::iupac::Iupac;
     use crate::seq::Seq;
     use std::str::FromStr;
 

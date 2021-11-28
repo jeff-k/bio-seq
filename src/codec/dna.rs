@@ -1,4 +1,4 @@
-use crate::alphabet::{Alphabet, ParseBioErr};
+use crate::codec::{Codec, ParseBioErr};
 use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
@@ -11,7 +11,7 @@ pub enum Dna {
     T = 0b11,
 }
 
-impl Alphabet for Dna {
+impl Codec for Dna {
     const WIDTH: usize = 2;
 
     fn to_bits(&self) -> BitVec {

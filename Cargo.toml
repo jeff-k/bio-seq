@@ -2,7 +2,7 @@
 name = "bio-seq"
 version = "0.1.5"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Bit packed and well-typed biological sequences"
 homepage = "https://github.com/jeff-k/bio-seq"
 documentation = "https://docs.rs/bio-seq"

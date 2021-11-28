@@ -3,8 +3,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::alphabet::dna::Dna;
-use crate::alphabet::{Alphabet, ParseBioErr};
+use crate::codec::dna::Dna;
+use crate::codec::{Codec, ParseBioErr};
 use bitvec::prelude::*;
 
 #[derive(Debug, PartialEq)]
@@ -27,7 +27,7 @@ pub enum Iupac {
     X = 0b0000,
 }
 
-impl Alphabet for Iupac {
+impl Codec for Iupac {
     const WIDTH: usize = 4;
 
     fn to_bits(&self) -> BitVec {
