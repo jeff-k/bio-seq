@@ -12,9 +12,7 @@ pub enum Dna {
 }
 
 impl Alphabet for Dna {
-    fn width() -> usize {
-        2
-    }
+    const WIDTH: usize = 2;
 
     fn to_bits(&self) -> BitVec {
         match &self {

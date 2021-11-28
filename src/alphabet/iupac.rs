@@ -28,9 +28,7 @@ pub enum Iupac {
 }
 
 impl Alphabet for Iupac {
-    fn width() -> usize {
-        4
-    }
+    const WIDTH: usize = 4;
 
     fn to_bits(&self) -> BitVec {
         match &self {

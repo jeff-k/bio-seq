@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use crate::alphabet::dna::Dna;
 use crate::alphabet::{Alphabet, ParseBioErr};
+use crate::kmer::Kmer;
 use crate::Seq;
 use bitvec::prelude::*;
 
@@ -34,9 +35,7 @@ pub enum Amino {
 }
 
 impl Alphabet for Amino {
-    fn width() -> usize {
-        6
-    }
+    const WIDTH: usize = 6;
 
     fn to_bits(&self) -> BitVec {
         match &self {
@@ -57,6 +56,21 @@ impl Alphabet for Amino {
 impl From<Seq<Dna>> for Amino {
     fn from(_item: Seq<Dna>) -> Self {
         unimplemented!()
+    }
+}
+
+impl From<[Dna; 3]> for Amino {
+    fn from(codon: [Dna; 3]) -> Self {
+        match codon {
+            [Dna::A, Dna::A, Dna::A] => Amino::K,
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl From<Kmer<3>> for Amino {
+    fn from(codon: Kmer<3>) -> Self {
+        Amino::from_bits(&codon.bv[0..5])
     }
 }
 

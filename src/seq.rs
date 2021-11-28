@@ -60,9 +60,9 @@ impl<A: Alphabet> Seq<A> {
 impl<A: Alphabet> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        let w = A::width();
+        let w = A::WIDTH;
         //        for c in self.bv.chunks(2) {
-        for i in 0..(self.bv.len() / A::width()) {
+        for i in 0..(self.bv.len() / A::WIDTH) {
             s.push_str(&A::from_bits(&self.bv[(i * w)..((i * w) + w)]).to_string());
 
             //            v.push(c.as_raw_slice()[0]);
@@ -128,7 +128,7 @@ impl<A: Alphabet> IntoIterator for Seq<A> {
 impl<A: Alphabet> Iterator for SeqIter<A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
-        let w = A::width();
+        let w = A::WIDTH;
         let i = self.index;
         if self.index >= (self.seq.bv.len()) {
             return None;
@@ -153,7 +153,7 @@ impl<const K: u8> Iterator for KmerIter<K> {
 
 impl<A: Alphabet> Seq<A> {
     pub fn len(&self) -> usize {
-        self.bv.len() / A::width()
+        self.bv.len() / A::WIDTH
     }
 
     pub fn is_empty(&self) -> bool {
@@ -190,7 +190,7 @@ impl BitOr for Seq<Iupac> {
 //    type Output = Idx::Output;
 //
 //    fn index(&self, i: Idx) -> &Self::Output {
-//        let w = Dna::width() as Idx;
+//        let w = Dna::WIDTH as Idx;
 //        SeqSlice {
 //            bv: &self.bv[i * w..(i * w) + w],
 //            _p: PhantomData,
