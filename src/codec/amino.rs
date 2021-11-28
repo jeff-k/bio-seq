@@ -37,19 +37,27 @@ pub enum Amino {
 impl Codec for Amino {
     const WIDTH: usize = 6;
 
-    fn to_bits(&self) -> BitVec {
+    fn to_bits(&self) -> BitArray::<Msb0, u8> {
         match &self {
-            Amino::K => bitvec![0, 0, 0, 0, 0, 0],
+            Amino::K => BitArray::new(0b000000),
             _ => unimplemented!(),
         }
     }
 
-    fn from_bits(b: &BitSlice) -> Self {
+    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self {
         let bs: [bool; 6] = [b[0], b[1], b[2], b[3], b[4], b[5]];
         match bs {
             [false, false, false, false, false, false] => Amino::K,
             _ => unimplemented!(),
         }
+    }
+
+    fn from_ascii(c: u8) -> Self {
+        unimplemented!()
+    }
+
+    fn to_ascii(c: u8) -> Self {
+        unimplemented!()
     }
 }
 

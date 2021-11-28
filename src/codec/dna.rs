@@ -3,27 +3,24 @@ use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Codec)]
 pub enum Dna {
-    A = 0b00,
-    C = 0b01,
-    G = 0b10,
-    T = 0b11,
+    A,C,G,T,
 }
 
 impl Codec for Dna {
     const WIDTH: usize = 2;
 
-    fn to_bits(&self) -> BitVec {
+    fn to_bits(&self) -> BitArray::<Msb0, u8> {
         match &self {
-            Dna::A => bitvec![0, 0],
+            Dna::A => Dna::A as u8,
             Dna::C => bitvec![0, 1],
             Dna::G => bitvec![1, 0],
             Dna::T => bitvec![1, 1],
         }
     }
 
-    fn from_bits(b: &BitSlice) -> Self {
+    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self {
         let bs: [bool; 2] = [b[0], b[1]];
         match bs {
             [false, false] => Dna::A,
@@ -31,6 +28,14 @@ impl Codec for Dna {
             [true, false] => Dna::G,
             [true, true] => Dna::T,
         }
+    }
+
+    fn from_ascii(c: u8) -> Self {
+        unimplemented!()
+    }
+
+    fn to_ascii(c: u8) -> Self {
+        unimplemented!()
     }
 }
 

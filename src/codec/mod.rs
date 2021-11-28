@@ -10,9 +10,10 @@ use std::str::FromStr;
 
 pub trait Codec: FromStr + fmt::Display + fmt::Debug {
     const WIDTH: usize;
-    fn to_bits(&self) -> BitVec;
-    //    fn from_u8(&self, b: u8) -> Self;
-    fn from_bits(b: &BitSlice) -> Self;
+    fn to_bits(&self) -> BitArray::<Msb0, u8>;
+    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self;
+    fn from_ascii(c: u8) -> Self;
+    fn to_ascii(c: u8) -> Self;
 }
 
 pub trait Complement {

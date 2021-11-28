@@ -9,52 +9,37 @@ use bitvec::prelude::*;
 
 #[derive(Debug, PartialEq)]
 pub enum Iupac {
-    A = 0b0001,
-    C = 0b0010,
-    G = 0b0100,
-    T = 0b1000,
-    R = 0b0101,
-    Y = 0b1010,
-    S = 0b0110,
-    W = 0b1001,
-    K = 0b1100,
-    M = 0b0011,
-    B = 0b1110,
-    D = 0b1101,
-    H = 0b1011,
-    V = 0b0111,
-    N = 0b1111,
-    X = 0b0000,
+    A, C, G, T, R, Y, S, W, K, M, B, D, H,V, N, X,
 }
 
 impl Codec for Iupac {
     const WIDTH: usize = 4;
 
-    fn to_bits(&self) -> BitVec {
+    fn to_bits(&self) -> BitArray::<Msb0, u8> {
         match &self {
-            Iupac::A => bitvec![1, 0, 0, 0],
-            Iupac::C => bitvec![0, 1, 0, 0],
-            Iupac::G => bitvec![0, 0, 1, 0],
-            Iupac::T => bitvec![0, 0, 0, 1],
+            Iupac::A => BitArray::new(0b1000),
+            Iupac::C => BitArray::new(0b0100),
+            Iupac::G => BitArray::new(0b0010),
+            Iupac::T => BitArray::new(0b0001),
 
-            Iupac::R => bitvec![1, 0, 1, 0],
-            Iupac::Y => bitvec![0, 1, 0, 1],
-            Iupac::S => bitvec![0, 1, 1, 0],
-            Iupac::W => bitvec![1, 0, 0, 1],
+            Iupac::R => BitArray::new(0b1000),
+            Iupac::Y => BitArray::new(0b0100),
+            Iupac::S => BitArray::new(0b0010),
+            Iupac::W => BitArray::new(0b0001),
 
-            Iupac::K => bitvec![0, 0, 1, 1],
-            Iupac::M => bitvec![1, 1, 0, 0],
-            Iupac::B => bitvec![0, 1, 1, 1],
-            Iupac::D => bitvec![1, 0, 1, 1],
+            Iupac::K => BitArray::new(0b1000),
+            Iupac::M => BitArray::new(0b0100),
+            Iupac::B => BitArray::new(0b0010),
+            Iupac::D => BitArray::new(0b0001),
 
-            Iupac::H => bitvec![1, 1, 0, 1],
-            Iupac::V => bitvec![1, 1, 1, 0],
-            Iupac::N => bitvec![1, 1, 1, 1],
-            Iupac::X => bitvec![0, 0, 0, 0],
+            Iupac::H => BitArray::new(0b1000),
+            Iupac::V => BitArray::new(0b0100),
+            Iupac::N => BitArray::new(0b0010),
+            Iupac::X => BitArray::new(0b0001),
         }
     }
 
-    fn from_bits(b: &BitSlice) -> Self {
+    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self {
         let bs: [bool; 4] = [b[0], b[1], b[2], b[3]];
         match bs {
             [true, false, false, false] => Iupac::A,
@@ -77,6 +62,14 @@ impl Codec for Iupac {
             [true, true, true, true] => Iupac::N,
             [false, false, false, false] => Iupac::X,
         }
+    }
+
+    fn to_ascii(c: u8) -> Self {
+        unimplemented!()
+    }
+
+    fn from_ascii(c: u8) -> Self {
+        unimplemented!()
     }
 }
 

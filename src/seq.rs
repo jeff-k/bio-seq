@@ -20,12 +20,12 @@ pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
 pub struct Seq<A: Codec> {
-    pub bv: BitVec,
+    pub bv: BitVec::<Msb0, u8>,
     _p: PhantomData<A>,
 }
 
 pub struct SeqSlice<'a, A: Codec> {
-    pub bv: &'a BitSlice,
+    pub bv: &'a BitSlice<Msb0, u8>,
     _p: PhantomData<A>,
 }
 
@@ -41,7 +41,7 @@ impl fmt::Display for ParseSeqErr {
 impl<A: Codec> Seq<A> {
     /// Pack binary representations into a bitvector
     pub fn from_vec(vec: Vec<A>) -> Self {
-        let mut bv: BitVec = BitVec::new();
+        let mut bv: BitVec::<Msb0, u8> = BitVec::new();
         for b in vec.iter() {
             bv.extend(b.to_bits());
         }

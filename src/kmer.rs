@@ -10,14 +10,14 @@ use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<const K: usize> {
-    pub bv: BitVec,
+    pub bv: BitVec<Msb0, u8>,
 }
 
 impl<const _K: usize> Kmer<_K> {
-    pub fn new<const K: usize>(s: &BitSlice) -> Kmer<K> {
+    pub fn new<const K: usize>(s: &BitSlice::<Msb0, u8>) -> Kmer<K> {
         assert_eq!(K, s.len() / Dna::WIDTH);
         Kmer {
-            bv: BitVec::from(s),
+            bv: BitVec::<Msb0, u8>::from(s),
         }
     }
 }

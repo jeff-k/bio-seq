@@ -15,9 +15,9 @@ for kmer in seq.kmers::<8>() {
 }
 ```
 
-* `bio_seq::alphabet::Dna`: DNA use the lexicographically ordered 2-bit representation
+* `bio_seq::Dna`: DNA use the lexicographically ordered 2-bit representation
 
-* `bio_seq::alphabet::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
+* `bio_seq::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
 
 	```
 	  A C G T
@@ -43,13 +43,20 @@ for kmer in seq.kmers::<8>() {
 	```
 The Iupac struct implements `From<Dna>`
 
-* `bio_seq::alphabet::Amino`: Amino acid sequences are represented with 6 bits.
+* `bio_seq::Amino`: Amino acid sequences are represented with 6 bits.
 
 TODO: deal with alternate (e.g. mamalian mitochondrial) codes
 
 ## Kmers
 
 Kmers are sequences of DNA with a fixed size. These are implemented with const generics.
+
+K is meant to fit in a `usize`. For larger Kmers or amino acid sequences use SeqSlices:
+
+```rust
+
+
+```
 
 ## Minimisers for free
 
@@ -82,4 +89,4 @@ meant to replace Text/TextSlice
 
 * benchmarking
 * clever bit twiddling hacks for stuff like converting from `u8` to 2-bit representation
-* macros for defining alphabet bit strings more concisely
+* macros for defining alphabet codecs more concisely
