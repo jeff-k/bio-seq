@@ -24,15 +24,16 @@ impl Codec for Dna {
     }
 
     fn from_bits(b: &BitSlice<Msb0, u8>) -> Self {
-        println!("frombits: {}, as slice: {}", b, b[..2].as_raw_slice()[0]);
-        //        let bs = b.as_raw_slice()[0];
-        let bs = &b.as_deref() as u8;
-        match bs {
-            0b00 => Dna::A,
-            0b01 => Dna::C,
-            0b10 => Dna::G,
-            0b11 => Dna::T,
-            _ => panic!(),
+        if b == BitArray::<Msb0, u8>::new(0b00)[8 - Self::WIDTH..] {
+            Dna::A
+        } else if b == BitArray::<Msb0, u8>::new(0b01)[8 - Self::WIDTH..] {
+            Dna::C
+        } else if b == BitArray::<Msb0, u8>::new(0b10)[8 - Self::WIDTH..] {
+            Dna::G
+        } else if b == BitArray::<Msb0, u8>::new(0b11)[8 - Self::WIDTH..] {
+            Dna::T
+        } else {
+            panic!()
         }
     }
 

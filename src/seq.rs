@@ -42,14 +42,7 @@ impl<A: Codec> Seq<A> {
     pub fn from_vec(vec: Vec<A>) -> Self {
         let mut bv: BitVec<Msb0, u8> = BitVec::new();
         for b in vec.iter() {
-            println!(
-                "bits: {} {} {}",
-                &b.to_bits(),
-                &b.to_bits()[..2],
-                &b.to_bits()[6..]
-            );
-            bv.extend_from_bitslice(&b.to_bits()[6..]);
-            println!("bv: {}", &bv);
+            bv.extend_from_bitslice(&b.to_bits()[8 - A::WIDTH..]);
         }
         Seq {
             bv,
@@ -65,9 +58,7 @@ impl<A: Codec> Seq<A> {
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        println!("my bv:\t{}", self.bv);
-        for c in self.bv.chunks_exact(2) {
-            println!("exact chunk\t{}", c);
+        for c in self.bv.chunks_exact(A::WIDTH) {
             s.push_str(&A::from_bits(c).to_string());
         }
         write!(
