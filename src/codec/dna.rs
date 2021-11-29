@@ -5,10 +5,10 @@ use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub enum Dna {
-    A,
-    C,
-    G,
-    T,
+    A = 0b00,
+    C = 0b01,
+    G = 0b10,
+    T = 0b11,
 }
 
 impl Codec for Dna {
@@ -37,13 +37,13 @@ impl Codec for Dna {
         }
     }
 
-    fn from_char(c: u8) -> Result<Self, ParseBioErr> {
+    fn from_char(c: &u8) -> Result<Self, ParseBioErr> {
         match c {
             b'A' => Ok(Dna::A),
             b'C' => Ok(Dna::C),
             b'G' => Ok(Dna::G),
             b'T' => Ok(Dna::T),
-            _ => unimplemented!(),
+            _ => Err(ParseBioErr),
         }
     }
 
@@ -61,13 +61,7 @@ impl FromStr for Dna {
     type Err = ParseBioErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "A" => Ok(Dna::A),
-            "C" => Ok(Dna::C),
-            "G" => Ok(Dna::G),
-            "T" => Ok(Dna::T),
-            _ => Err(ParseBioErr),
-        }
+        Dna::from_char(&s.as_bytes()[0])
     }
 }
 

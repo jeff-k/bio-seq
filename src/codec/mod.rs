@@ -11,7 +11,7 @@ pub trait Codec: FromStr + fmt::Display + fmt::Debug {
     const WIDTH: usize;
     fn to_bits(&self) -> BitArray<Msb0, u8>;
     fn from_bits(b: &BitSlice<Msb0, u8>) -> Self;
-    fn from_char(c: u8) -> Result<Self, ParseBioErr>;
+    fn from_char(c: &u8) -> Result<Self, ParseBioErr>;
     fn to_char(c: Self) -> u8;
 }
 

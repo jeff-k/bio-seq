@@ -76,7 +76,7 @@ impl<A: Codec> FromStr for Seq<A> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
         for i in s.chars() {
-            match A::from_char(i as u8) {
+            match A::from_char(&(i as u8)) {
                 Ok(b) => v.push(b),
                 Err(_) => panic!(),
             }
