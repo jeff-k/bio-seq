@@ -13,3 +13,4 @@ keywords = ["bioinformatics", "kmers", "sequencing", "dna"]
 
 [dependencies]
 bitvec = "^0.22.3"
+bio_seq_derive = ["../bio-seq/bio_seq_derive"]

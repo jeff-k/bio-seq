@@ -7,70 +7,24 @@ use crate::codec::dna::Dna;
 use crate::codec::{Codec, ParseBioErr};
 use bitvec::prelude::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Codec)]
 pub enum Iupac {
-    A, C, G, T, R, Y, S, W, K, M, B, D, H,V, N, X,
-}
-
-impl Codec for Iupac {
-    const WIDTH: usize = 4;
-
-    fn to_bits(&self) -> BitArray::<Msb0, u8> {
-        match &self {
-            Iupac::A => BitArray::new(0b1000),
-            Iupac::C => BitArray::new(0b0100),
-            Iupac::G => BitArray::new(0b0010),
-            Iupac::T => BitArray::new(0b0001),
-
-            Iupac::R => BitArray::new(0b1000),
-            Iupac::Y => BitArray::new(0b0100),
-            Iupac::S => BitArray::new(0b0010),
-            Iupac::W => BitArray::new(0b0001),
-
-            Iupac::K => BitArray::new(0b1000),
-            Iupac::M => BitArray::new(0b0100),
-            Iupac::B => BitArray::new(0b0010),
-            Iupac::D => BitArray::new(0b0001),
-
-            Iupac::H => BitArray::new(0b1000),
-            Iupac::V => BitArray::new(0b0100),
-            Iupac::N => BitArray::new(0b0010),
-            Iupac::X => BitArray::new(0b0001),
-        }
-    }
-
-    fn from_bits(b: &BitSlice::<Msb0, u8>) -> Self {
-        let bs: [bool; 4] = [b[0], b[1], b[2], b[3]];
-        match bs {
-            [true, false, false, false] => Iupac::A,
-            [false, true, false, false] => Iupac::C,
-            [false, false, true, false] => Iupac::G,
-            [false, false, false, true] => Iupac::T,
-
-            [true, false, true, false] => Iupac::R,
-            [false, true, false, true] => Iupac::Y,
-            [false, true, true, false] => Iupac::S,
-            [true, false, false, true] => Iupac::W,
-
-            [false, false, true, true] => Iupac::K,
-            [true, true, false, false] => Iupac::M,
-            [false, true, true, true] => Iupac::B,
-            [true, false, true, true] => Iupac::D,
-
-            [true, true, false, true] => Iupac::H,
-            [true, true, true, false] => Iupac::V,
-            [true, true, true, true] => Iupac::N,
-            [false, false, false, false] => Iupac::X,
-        }
-    }
-
-    fn to_ascii(c: u8) -> Self {
-        unimplemented!()
-    }
-
-    fn from_ascii(c: u8) -> Self {
-        unimplemented!()
-    }
+    A = 0b1000,
+    C = 0b0100,
+    G = 0b0010,
+    T = 0b0001,
+    R = 0b1010,
+    Y = 0b0000,
+    S = 0b0000,
+    W = 0b0000,
+    K = 0b0000,
+    M = 0b0000,
+    B = 0b0000,
+    D = 0b0000,
+    H = 0b0000,
+    V = 0b0000,
+    N = 0b0000,
+    X = 0b0000,
 }
 
 impl From<Dna> for Iupac {
