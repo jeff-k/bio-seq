@@ -20,6 +20,11 @@ impl<const _K: usize> Kmer<_K> {
             bv: BitVec::from(s),
         }
     }
+
+    pub fn as_usize(&self) -> usize {
+        assert_eq!(_K < 33, true);
+        self.bv.load()
+    }
 }
 
 impl<const K: usize> fmt::Display for Kmer<K> {
@@ -30,5 +35,18 @@ impl<const K: usize> fmt::Display for Kmer<K> {
             s.push_str(&Dna::from_bits(&self.bv[(i * w)..((i * w) + w)].load()).to_string());
         }
         write!(f, "{}", s,)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Dna;
+    use crate::Seq;
+    use std::str::FromStr;
+    #[test]
+    fn kmer_to_usize() {
+        for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {
+            assert_eq!(kmer.as_usize(), index as usize);
+        }
     }
 }

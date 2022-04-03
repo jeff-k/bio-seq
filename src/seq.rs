@@ -177,20 +177,22 @@ impl BitOr for Seq<Iupac> {
     }
 }
 
-//impl<Idx> std::ops::Index<Idx> for Seq<Dna>
-//where
-//    Idx: std::slice::SliceIndex<BitSlice>, //+ std::ops::Mul<Output = usize>,
-//{
-//    type Output = Idx::Output;
-//
-//    fn index(&self, i: Idx) -> &Self::Output {
-//        let w = Dna::WIDTH as Idx;
-//        SeqSlice {
-//            bv: &self.bv[i * w..(i * w) + w],
-//            _p: PhantomData,
-//        }
-//    }
-//}
+/*
+impl<Idx> std::ops::Index<Idx> for Seq<Dna>
+where
+    Idx: std::slice::SliceIndex<BitSlice>, //+ std::ops::Mul<Output = usize>,
+{
+    type Output = Idx::Output;
+
+    fn index(&self, i: Idx) -> &Self::Output {
+        let w = Dna::WIDTH as Idx;
+        SeqSlice {
+            bv: &self.bv[i * w..(i * w) + w],
+            _p: PhantomData,
+        }
+    }
+}
+*/
 
 #[macro_export]
 macro_rules! dna {
