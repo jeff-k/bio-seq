@@ -4,9 +4,12 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn;
 
-#[proc_macro_derive(Codec)]
+#[proc_macro_derive(Codec, attributes(width))]
 pub fn codec_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
+
+    // parse the width helper ?? 
+    let attr = input.attrs.iter().find(|attr| attr.path.is_ident("width"));
 
     impl_codec(&ast)
 }
@@ -24,7 +27,7 @@ fn impl_codec(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
         impl Codec for #name {
-            const WIDTH: usize = 2;
+            const WIDTH: usize = #width;
 
             fn to_bits(&self) -> BitArray<Msb0, u8> {
                 match &self { 

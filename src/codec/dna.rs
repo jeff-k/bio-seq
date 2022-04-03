@@ -3,6 +3,7 @@ use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
 
+//#[derive(Debug, PartialEq, Codec)]
 #[derive(Debug, PartialEq, Codec)]
 pub enum Dna {
     A = 0b00,

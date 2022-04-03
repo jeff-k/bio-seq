@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.1.5"
+version = "0.1.9"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 description = "Bit packed and well-typed biological sequences"
@@ -8,9 +8,9 @@ homepage = "https://github.com/jeff-k/bio-seq"
 documentation = "https://docs.rs/bio-seq"
 readme = "README.md"
 license = "MIT"
-keywords = ["bioinformatics", "kmers", "sequencing", "dna"]
+keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
 
 
 [dependencies]
-bitvec = "^0.22.3"
-bio_seq_derive = ["../bio-seq/bio_seq_derive"]
+bitvec = "^1.0.0"
+#bio-seq-derive = { path = "bio-seq-derive" }

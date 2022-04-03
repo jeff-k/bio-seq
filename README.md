@@ -69,6 +69,15 @@ fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
 }
 ```
 
+## little end first
+
+Kmers can be casted to `usize` indexes
+
+```rust
+dna!"C" == 0b01 // not 0b0100_0000
+dna!"CT" == 0b0111
+```
+
 ## Conversion with `From` and `Into`
 
 `Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
@@ -90,3 +99,4 @@ meant to replace Text/TextSlice
 * benchmarking
 * clever bit twiddling hacks for stuff like converting from `u8` to 2-bit representation
 * macros for defining alphabet codecs more concisely
+* wider SIMD-sized Kmers
