@@ -1,9 +1,8 @@
 use crate::codec::{Codec, ParseBioErr};
-use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Dna {
     A = 0b00,
     C = 0b01,
@@ -14,26 +13,21 @@ pub enum Dna {
 impl Codec for Dna {
     const WIDTH: usize = 2;
 
-    fn to_bits(&self) -> BitVec {
-        match &self {
-            Dna::A => bitvec![0, 0],
-            Dna::C => bitvec![0, 1],
-            Dna::G => bitvec![1, 0],
-            Dna::T => bitvec![1, 1],
+    fn to_bits(&self) -> u8 {
+        *self as u8
+    }
+
+    fn from_bits(b: &u8) -> Self {
+        match b {
+            0b00 => Dna::A,
+            0b01 => Dna::C,
+            0b10 => Dna::G,
+            0b11 => Dna::T,
+            _ => Dna::A,
         }
     }
 
-    fn from_bits(b: &BitSlice) -> Self {
-        let bs: [bool; 2] = [b[0], b[1]];
-        match bs {
-            [false, false] => Dna::A,
-            [false, true] => Dna::C,
-            [true, false] => Dna::G,
-            [true, true] => Dna::T,
-        }
-    }
-
-    fn to_char(&self) -> u8 {
+    fn to_char(&self) -> char {
         match &self {
             Dna::A => 'A',
             Dna::C => 'C',
@@ -42,12 +36,13 @@ impl Codec for Dna {
         }
     }
 
-    fn from_char(c: u8) -> Self {
+    fn from_char(c: &char) -> Result<Self, ParseBioErr> {
         match c {
-            'A' => Dna::A,
-            'C' => Dna::C,
-            'G' => Dna::G,
-            'T' => Dna::T,
+            'A' => Ok(Dna::A),
+            'C' => Ok(Dna::C),
+            'G' => Ok(Dna::G),
+            'T' => Ok(Dna::T),
+            _ => Err(ParseBioErr),
         }
     }
 }
@@ -56,7 +51,7 @@ impl FromStr for Dna {
     type Err = ParseBioErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Dna::from_char(&s.as_bytes()[0])
+        Dna::from_char(&(s.as_bytes()[0] as char))
     }
 }
 

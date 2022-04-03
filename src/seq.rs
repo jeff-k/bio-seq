@@ -19,12 +19,12 @@ pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
 pub struct Seq<A: Codec> {
-    pub bv: BitVec<Msb0, u8>,
+    pub bv: BitVec,
     _p: PhantomData<A>,
 }
 
 pub struct SeqSlice<'a, A: Codec> {
-    pub bv: &'a BitSlice<Msb0, u8>,
+    pub bv: &'a BitSlice,
     _p: PhantomData<A>,
 }
 
@@ -40,9 +40,9 @@ impl fmt::Display for ParseSeqErr {
 impl<A: Codec> Seq<A> {
     /// Pack binary representations into a bitvector
     pub fn from_vec(vec: Vec<A>) -> Self {
-        let mut bv: BitVec<Msb0, u8> = BitVec::new();
+        let mut bv: BitVec = BitVec::new();
         for b in vec.iter() {
-            bv.extend_from_bitslice(&b.to_bits()[8 - A::WIDTH..]);
+            bv.extend_from_bitslice(&b.to_bits().view_bits::<Lsb0>()[..A::WIDTH]);
         }
         Seq {
             bv,
@@ -50,7 +50,7 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    pub fn raw(&self) -> &[u8] {
+    pub fn raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
     }
 }
@@ -59,7 +59,7 @@ impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
         for c in self.bv.chunks_exact(A::WIDTH) {
-            s.push_str(&A::from_bits(c).to_string());
+            s.push_str(&A::from_bits(&c.load()).to_string());
         }
         write!(
             f,
@@ -76,7 +76,7 @@ impl<A: Codec> FromStr for Seq<A> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
         for i in s.chars() {
-            match A::from_char(&(i as u8)) {
+            match A::from_char(&i) {
                 Ok(b) => v.push(b),
                 Err(_) => panic!(),
             }
@@ -128,7 +128,7 @@ impl<A: Codec> Iterator for SeqIter<A> {
             return None;
         }
         self.index += w;
-        Some(A::from_bits(&self.seq.bv[i..i + w]))
+        Some(A::from_bits(&self.seq.bv[i..i + w].load()))
     }
 }
 

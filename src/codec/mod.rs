@@ -3,16 +3,15 @@
 pub mod dna;
 //pub mod iupac;
 
-use bitvec::prelude::*;
 use std::fmt;
 use std::str::FromStr;
 
 pub trait Codec: FromStr + fmt::Display + fmt::Debug {
     const WIDTH: usize;
-    fn to_bits(&self) -> BitArray<Msb0, u8>;
-    fn from_bits(b: &BitSlice<Msb0, u8>) -> Self;
-    fn from_char(c: &u8) -> Result<Self, ParseBioErr>;
-    fn to_char(c: Self) -> u8;
+    fn to_bits(&self) -> u8;
+    fn from_bits(b: &u8) -> Self;
+    fn from_char(c: &char) -> Result<Self, ParseBioErr>;
+    fn to_char(&self) -> char;
 }
 
 pub trait Complement {
