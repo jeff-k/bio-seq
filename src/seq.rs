@@ -8,13 +8,13 @@ Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
 pub use crate::codec::dna::Dna;
-//pub use crate::codec::iupac::Iupac;
+pub use crate::codec::iupac::Iupac;
 pub use crate::codec::Codec;
 pub use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
-//use std::ops::{BitAnd, BitOr};
+use std::ops::{BitAnd, BitOr};
 pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
@@ -155,7 +155,6 @@ impl<A: Codec> Seq<A> {
     }
 }
 
-/*
 impl BitAnd for Seq<Iupac> {
     type Output = Self;
 
@@ -177,7 +176,6 @@ impl BitOr for Seq<Iupac> {
         }
     }
 }
-*/
 
 //impl<Idx> std::ops::Index<Idx> for Seq<Dna>
 //where

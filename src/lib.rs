@@ -44,7 +44,7 @@ pub use std::str::FromStr;
 mod tests {
     use crate::codec::dna::Dna;
     use crate::codec::dna::Dna::{A, C, G, T};
-    //use crate::codec::iupac::Iupac;
+    use crate::codec::iupac::Iupac;
     use crate::seq::Seq;
     use std::str::FromStr;
 
@@ -112,7 +112,6 @@ mod tests {
         }
     }
 
-    /*
     #[test]
     fn iupac_bitwise_ops() {
         assert_eq!(
@@ -124,5 +123,4 @@ mod tests {
             "A----WKA"
         );
     }
-    */
 }

@@ -1,7 +1,7 @@
 //! Bit packable enums representing biological alphabets
 
 pub mod dna;
-//pub mod iupac;
+pub mod iupac;
 
 use std::fmt;
 use std::str::FromStr;
@@ -30,16 +30,12 @@ impl fmt::Display for ParseBioErr {
 #[cfg(test)]
 mod tests {
     use super::dna::Dna;
-    //    use super::iupac::Iupac;
-    use crate::dna;
-    use crate::kmer::Kmer;
-    use crate::seq::Seq;
-    use std::str::FromStr;
+    use super::iupac::Iupac;
 
-    //    #[test]
-    //    fn dna_to_iupac() {
-    //        assert_eq!(Iupac::from(Dna::A), Iupac::A);
-    //        assert_ne!(Iupac::from(Dna::A), Iupac::T);
-    //        assert_eq!(Iupac::from(Dna::C), Iupac::C);
-    //    }
+    #[test]
+    fn dna_to_iupac() {
+        assert_eq!(Iupac::from(Dna::A), Iupac::A);
+        assert_ne!(Iupac::from(Dna::A), Iupac::T);
+        assert_eq!(Iupac::from(Dna::C), Iupac::C);
+    }
 }
