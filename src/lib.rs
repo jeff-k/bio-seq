@@ -50,12 +50,15 @@ mod tests {
 
     #[test]
     fn make_from_vector() {
-        assert_eq!(Seq::from_vec(vec![A, C, G, T]).raw(), &[0b0001_1011]);
-        assert_eq!(Seq::from_vec(vec![C, G, C, G]).raw(), &[0b0110_0110]);
-        assert_eq!(Seq::from_vec(vec![T, T]).raw(), &[0b1111_0000]);
+        assert_eq!(Seq::from_vec(vec![A, C, G, T]).raw(), &[0b11_10_01_00]);
+        assert_eq!(Seq::from_vec(vec![C, G, C, G]).raw(), &[0b10_01_10_01]);
+        assert_eq!(Seq::from_vec(vec![T, T]).raw(), &[0b11_11]);
+        assert_eq!(Seq::from_vec(vec![T, C, A]).raw(), &[0b00_01_11]);
+        assert_eq!(Seq::from_vec(vec![T, G, A]).raw(), &[0b00_10_11]);
+
         assert_eq!(
             Seq::from_vec(vec![C, G, T, A, C, G, A, T]).raw(),
-            &[0b0110_1100, 0b0110_0011]
+            &[0b11_00_10_01_00_11_10_01]
         );
         assert_eq!(Seq::from_vec(vec![A,]).raw(), &[0b00]);
     }
