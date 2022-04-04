@@ -42,7 +42,8 @@ impl<A: Codec> Seq<A> {
     pub fn from_vec(vec: Vec<A>) -> Self {
         let mut bv: BitVec = BitVec::new();
         for b in vec.iter() {
-            bv.extend_from_bitslice(&b.to_bits().view_bits::<Lsb0>()[..A::WIDTH]);
+            let byte: u8 = (*b).into();
+            bv.extend_from_bitslice(&(byte as u8).view_bits::<Lsb0>()[..A::WIDTH as usize]);
         }
         Seq {
             bv,
@@ -58,15 +59,10 @@ impl<A: Codec> Seq<A> {
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        for c in self.bv.chunks_exact(A::WIDTH) {
-            s.push_str(&A::from_bits(&c.load()).to_string());
+        for c in self.bv.chunks_exact(A::WIDTH.into()) {
+            s.push_str(&A::from(c.load()).to_string());
         }
-        write!(
-            f,
-            "{}",
-            s,
-            //&self.bv[(4 * w)..((4 * w) + w)][2],
-        )
+        write!(f, "{}", s,)
     }
 }
 
@@ -122,13 +118,13 @@ impl<A: Codec> IntoIterator for Seq<A> {
 impl<A: Codec> Iterator for SeqIter<A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
-        let w = A::WIDTH;
+        let w = A::WIDTH as usize;
         let i = self.index;
         if self.index >= (self.seq.bv.len()) {
             return None;
         }
         self.index += w;
-        Some(A::from_bits(&self.seq.bv[i..i + w].load()))
+        Some(A::from(self.seq.bv[i..i + w].load()))
     }
 }
 
@@ -147,7 +143,7 @@ impl<const K: usize> Iterator for KmerIter<K> {
 
 impl<A: Codec> Seq<A> {
     pub fn len(&self) -> usize {
-        self.bv.len() / A::WIDTH
+        self.bv.len() / A::WIDTH as usize
     }
 
     pub fn is_empty(&self) -> bool {

@@ -5,6 +5,7 @@
 
 pub use crate::codec::dna::Dna;
 use crate::codec::Codec;
+use crate::Complement;
 use bitvec::prelude::*;
 use std::fmt;
 
@@ -15,7 +16,7 @@ pub struct Kmer<const K: usize> {
 
 impl<const _K: usize> Kmer<_K> {
     pub fn new<const K: usize>(s: &BitSlice) -> Kmer<K> {
-        assert_eq!(K, s.len() / Dna::WIDTH);
+        assert_eq!(K, s.len() / Dna::WIDTH as usize);
         Kmer {
             bv: BitVec::from(s),
         }
@@ -30,11 +31,23 @@ impl<const _K: usize> Kmer<_K> {
 impl<const K: usize> fmt::Display for Kmer<K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        let w = Dna::WIDTH;
-        for i in 0..(self.bv.len() / Dna::WIDTH) {
-            s.push_str(&Dna::from_bits(&self.bv[(i * w)..((i * w) + w)].load()).to_string());
+        let w = Dna::WIDTH as usize;
+        for i in 0..(self.bv.len() / w) {
+            s.push_str(&Dna::from(self.bv[(i * w)..((i * w) + w)].load::<u8>()).to_string());
         }
         write!(f, "{}", s,)
+    }
+}
+
+impl<const K: usize> From<usize> for Kmer<K> {
+    fn from(_uint: usize) -> Self {
+        unimplemented!();
+    }
+}
+
+impl<const K: usize> Complement for Kmer<K> {
+    fn complement(_kmer: Kmer<K>) -> Kmer<K> {
+        unimplemented!()
     }
 }
 

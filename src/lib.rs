@@ -40,6 +40,10 @@ pub use codec::dna::Dna;
 pub use seq::Seq;
 pub use std::str::FromStr;
 
+pub trait Complement {
+    fn complement(s: Self) -> Self;
+}
+
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::Dna;
