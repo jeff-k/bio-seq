@@ -29,29 +29,11 @@ pub enum Iupac {
 
 impl Codec for Iupac {
     const WIDTH: u8 = 4;
+}
 
-    fn to_char(&self) -> char {
-        match &self {
-            Iupac::A => 'A',
-            Iupac::C => 'C',
-            Iupac::G => 'G',
-            Iupac::T => 'T',
-            Iupac::R => 'R',
-            Iupac::Y => 'Y',
-            Iupac::S => 'S',
-            Iupac::W => 'W',
-            Iupac::K => 'K',
-            Iupac::M => 'M',
-            Iupac::B => 'B',
-            Iupac::D => 'D',
-            Iupac::H => 'H',
-            Iupac::V => 'V',
-            Iupac::N => 'N',
-            Iupac::X => '-',
-        }
-    }
-
-    fn from_char(c: &char) -> Result<Self, ParseBioErr> {
+impl TryFrom<char> for Iupac {
+    type Error = ParseBioErr;
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
             'A' => Ok(Iupac::A),
             'C' => Ok(Iupac::C),
@@ -71,6 +53,29 @@ impl Codec for Iupac {
             '-' => Ok(Iupac::X),
             '.' => Ok(Iupac::X),
             _ => Err(ParseBioErr),
+        }
+    }
+}
+
+impl From<Iupac> for char {
+    fn from(iupac: Iupac) -> char {
+        match iupac {
+            Iupac::A => 'A',
+            Iupac::C => 'C',
+            Iupac::G => 'G',
+            Iupac::T => 'T',
+            Iupac::R => 'R',
+            Iupac::Y => 'Y',
+            Iupac::S => 'S',
+            Iupac::W => 'W',
+            Iupac::K => 'K',
+            Iupac::M => 'M',
+            Iupac::B => 'B',
+            Iupac::D => 'D',
+            Iupac::H => 'H',
+            Iupac::V => 'V',
+            Iupac::N => 'N',
+            Iupac::X => '-',
         }
     }
 }
@@ -120,7 +125,7 @@ impl FromStr for Iupac {
     type Err = ParseBioErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Iupac::from_char(&(s.as_bytes()[0] as char))
+        Iupac::try_from(s.as_bytes()[0] as char)
     }
 }
 

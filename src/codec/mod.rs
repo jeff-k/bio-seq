@@ -6,12 +6,18 @@ pub mod iupac;
 use std::fmt;
 use std::str::FromStr;
 
-pub trait Codec: FromStr + fmt::Display + fmt::Debug + From<u8> + Into<u8> + Copy + Clone {
+pub trait Codec:
+    FromStr
+    + fmt::Display
+    + fmt::Debug
+    + From<u8>
+    + Into<u8>
+    + TryFrom<char>
+    + Into<char>
+    + Copy
+    + Clone
+{
     const WIDTH: u8;
-    //    fn to_bits(&self) -> u8;
-    //    fn from_bits(b: &u8) -> Self;
-    fn from_char(c: &char) -> Result<Self, ParseBioErr>;
-    fn to_char(&self) -> char;
 }
 
 #[derive(Debug, Clone)]

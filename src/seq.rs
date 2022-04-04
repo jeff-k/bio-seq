@@ -72,9 +72,9 @@ impl<A: Codec> FromStr for Seq<A> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
         for i in s.chars() {
-            match A::from_char(&i) {
+            match A::try_from(i) {
                 Ok(b) => v.push(b),
-                Err(_) => panic!(),
+                Err(_) => return Err(ParseSeqErr),
             }
         }
         Ok(Seq::<A>::from_vec(v))

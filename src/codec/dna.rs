@@ -13,23 +13,22 @@ pub enum Dna {
 
 impl Codec for Dna {
     const WIDTH: u8 = 2;
+}
 
-    /*    fn to_bits(&self) -> u8 {
-            *self as u8
-        }
-
-       }
-    */
-    fn to_char(&self) -> char {
-        match &self {
+impl From<Dna> for char {
+    fn from(dna: Dna) -> char {
+        match dna {
             Dna::A => 'A',
             Dna::C => 'C',
             Dna::G => 'G',
             Dna::T => 'T',
         }
     }
+}
 
-    fn from_char(c: &char) -> Result<Self, ParseBioErr> {
+impl TryFrom<char> for Dna {
+    type Error = ParseBioErr;
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
             'A' => Ok(Dna::A),
             'C' => Ok(Dna::C),
@@ -62,7 +61,7 @@ impl FromStr for Dna {
     type Err = ParseBioErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Dna::from_char(&(s.as_bytes()[0] as char))
+        Dna::try_from(s.as_bytes()[0] as char)
     }
 }
 
