@@ -69,13 +69,13 @@ fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
 }
 ```
 
-## little end first
+## Little endian
 
-Kmers can be casted to `usize` indexes
+DNA Kmers can be casted to `usize` indexes for K < 33
 
 ```rust
-dna!"C" == 0b01 // not 0b0100_0000
-dna!"CT" == 0b0111
+dna!("C") == 0b01 // not 0b0100_0000
+dna!("CT") == 0b11_01
 ```
 
 ## Conversion with `From` and `Into`
@@ -97,6 +97,5 @@ meant to replace Text/TextSlice
 ## TODO
 
 * benchmarking
-* clever bit twiddling hacks for stuff like converting from `u8` to 2-bit representation
 * macros for defining alphabet codecs more concisely
 * wider SIMD-sized Kmers

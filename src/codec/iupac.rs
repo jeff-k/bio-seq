@@ -6,6 +6,7 @@ use std::str::FromStr;
 use crate::codec::dna::Dna;
 use crate::codec::{Codec, ParseBioErr};
 
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Iupac {
     A = 0b1000,
@@ -27,33 +28,7 @@ pub enum Iupac {
 }
 
 impl Codec for Iupac {
-    const WIDTH: usize = 4;
-
-    fn to_bits(&self) -> u8 {
-        *self as u8
-    }
-
-    fn from_bits(b: &u8) -> Self {
-        match b {
-            0b1000 => Iupac::A,
-            0b0100 => Iupac::C,
-            0b0010 => Iupac::G,
-            0b0001 => Iupac::T,
-            0b1010 => Iupac::R,
-            0b0101 => Iupac::Y,
-            0b0110 => Iupac::S,
-            0b1001 => Iupac::W,
-            0b0011 => Iupac::K,
-            0b1100 => Iupac::M,
-            0b0111 => Iupac::B,
-            0b1011 => Iupac::D,
-            0b1101 => Iupac::H,
-            0b1110 => Iupac::V,
-            0b1111 => Iupac::N,
-            0b0000 => Iupac::X,
-            _ => Iupac::X,
-        }
-    }
+    const WIDTH: u8 = 4;
 
     fn to_char(&self) -> char {
         match &self {
@@ -108,6 +83,36 @@ impl From<Dna> for Iupac {
             Dna::G => Iupac::G,
             Dna::T => Iupac::T,
         }
+    }
+}
+
+impl From<u8> for Iupac {
+    fn from(b: u8) -> Self {
+        match b {
+            0b1000 => Iupac::A,
+            0b0100 => Iupac::C,
+            0b0010 => Iupac::G,
+            0b0001 => Iupac::T,
+            0b1010 => Iupac::R,
+            0b0101 => Iupac::Y,
+            0b0110 => Iupac::S,
+            0b1001 => Iupac::W,
+            0b0011 => Iupac::K,
+            0b1100 => Iupac::M,
+            0b0111 => Iupac::B,
+            0b1011 => Iupac::D,
+            0b1101 => Iupac::H,
+            0b1110 => Iupac::V,
+            0b1111 => Iupac::N,
+            0b0000 => Iupac::X,
+            _ => Iupac::X,
+        }
+    }
+}
+
+impl From<Iupac> for u8 {
+    fn from(iupac: Iupac) -> Self {
+        iupac as u8
     }
 }
 

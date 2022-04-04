@@ -6,16 +6,12 @@ pub mod iupac;
 use std::fmt;
 use std::str::FromStr;
 
-pub trait Codec: FromStr + fmt::Display + fmt::Debug {
-    const WIDTH: usize;
-    fn to_bits(&self) -> u8;
-    fn from_bits(b: &u8) -> Self;
+pub trait Codec: FromStr + fmt::Display + fmt::Debug + From<u8> + Into<u8> + Copy + Clone {
+    const WIDTH: u8;
+    //    fn to_bits(&self) -> u8;
+    //    fn from_bits(b: &u8) -> Self;
     fn from_char(c: &char) -> Result<Self, ParseBioErr>;
     fn to_char(&self) -> char;
-}
-
-pub trait Complement {
-    fn complement(base: Self) -> Self;
 }
 
 #[derive(Debug, Clone)]
@@ -23,7 +19,7 @@ pub struct ParseBioErr;
 
 impl fmt::Display for ParseBioErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "invalid biological sequence")
+        write!(f, "Could not encode")
     }
 }
 
