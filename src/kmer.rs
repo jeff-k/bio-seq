@@ -21,10 +21,12 @@ impl<const _K: usize> Kmer<_K> {
             bv: BitVec::from(s),
         }
     }
+}
 
-    pub fn as_usize(&self) -> usize {
-        assert_eq!(_K < 33, true);
-        self.bv.load()
+impl<const K: usize> From<&Kmer<K>> for usize {
+    fn from(kmer: &Kmer<K>) -> usize {
+        assert!(K < 33);
+        kmer.bv.load()
     }
 }
 
@@ -59,7 +61,7 @@ mod tests {
     #[test]
     fn kmer_to_usize() {
         for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {
-            assert_eq!(kmer.as_usize(), index as usize);
+            assert_eq!(index as usize, (&kmer).into());
         }
     }
 }
