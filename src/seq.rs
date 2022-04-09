@@ -9,8 +9,8 @@ Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 
 pub use crate::codec::dna::Dna;
 pub use crate::codec::iupac::Iupac;
-pub use crate::codec::Codec;
-pub use crate::kmer::Kmer;
+use crate::codec::Codec;
+use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;

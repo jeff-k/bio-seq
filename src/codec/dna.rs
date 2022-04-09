@@ -2,8 +2,9 @@ use crate::codec::{Codec, ParseBioErr};
 use std::fmt;
 use std::str::FromStr;
 
+#[derive(Clone, Copy, Debug, Codec)]
+//#[codec(width=2)]
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Dna {
     A = 0b00,
     C = 0b01,
@@ -11,10 +12,29 @@ pub enum Dna {
     T = 0b11,
 }
 
-impl Codec for Dna {
+/*
+impl codec::Codec for Dna {
     const WIDTH: u8 = 2;
+    fn unsafe_from_bits(b: u8) -> Self {
+        match b {
+            _ => Self::A,
+        }
+    }
+    fn try_from_bits(b: u8) -> Result<Self, codec::ParseBioErr> {
+        match b {
+            _ => Err(ParseBioErr),
+        }
+    }
+    fn from_char(c: char) -> Result<Self, codec::ParseBioErr> {
+        Ok(Self::A)
+    }
+    fn to_char(a: Self) -> char {
+        match a {
+            _ => 'A',
+        }
+    }
 }
-
+*/
 impl From<Dna> for char {
     fn from(dna: Dna) -> char {
         match dna {

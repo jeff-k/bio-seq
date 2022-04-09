@@ -13,4 +13,6 @@ keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
 
 [dependencies]
 bitvec = "^1.0.0"
-#bio-seq-derive = { path = "bio-seq-derive" }
+bio-seq-derive = { path = "bio-seq-derive" }
+
+[workspace]

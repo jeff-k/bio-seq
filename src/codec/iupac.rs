@@ -1,13 +1,14 @@
 //! IUPAC nucleotide ambiguity codes
 
+use crate::codec;
+use crate::codec::dna::Dna;
+use crate::codec::{Codec, ParseBioErr};
 use std::fmt;
 use std::str::FromStr;
 
-use crate::codec::dna::Dna;
-use crate::codec::{Codec, ParseBioErr};
-
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq)]
+//#[width(4)]
 pub enum Iupac {
     A = 0b1000,
     C = 0b0100,
@@ -28,7 +29,25 @@ pub enum Iupac {
 }
 
 impl Codec for Iupac {
-    const WIDTH: u8 = 4;
+    const WIDTH: u8 = 2;
+    fn unsafe_from_bits(b: u8) -> Self {
+        match b {
+            _ => Self::A,
+        }
+    }
+    fn try_from_bits(b: u8) -> Result<Self, codec::ParseBioErr> {
+        match b {
+            _ => Err(ParseBioErr),
+        }
+    }
+    fn from_char(c: char) -> Result<Self, codec::ParseBioErr> {
+        Ok(Self::A)
+    }
+    fn to_char(a: Self) -> char {
+        match a {
+            _ => 'A',
+        }
+    }
 }
 
 impl TryFrom<char> for Iupac {
