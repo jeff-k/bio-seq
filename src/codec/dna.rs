@@ -2,8 +2,8 @@ use crate::codec::{Codec, ParseBioErr};
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Codec)]
-//#[codec(width=2)]
+#[derive(Clone, Copy, Debug, PartialEq, Codec)]
+//#[width = 2]
 #[repr(u8)]
 pub enum Dna {
     A = 0b00,
