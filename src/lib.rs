@@ -119,12 +119,12 @@ mod tests {
     #[test]
     fn iupac_bitwise_ops() {
         assert_eq!(
-            format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
+            format!("{}", iupac!("ASXGYTNA") | iupac!("ANTGCATX")),
             "ANTGYWNA"
         );
         assert_eq!(
             format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
-            "A----WKA"
+            "AXXXXWKA"
         );
     }
 }

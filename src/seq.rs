@@ -60,7 +60,7 @@ impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
         for c in self.bv.chunks_exact(A::WIDTH.into()) {
-            s.push_str(&A::from(c.load()).to_string());
+            s.push_str(&A::unsafe_from_bits(c.load()).to_char().to_string());
         }
         write!(f, "{}", s,)
     }
@@ -72,7 +72,7 @@ impl<A: Codec> FromStr for Seq<A> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
         for i in s.chars() {
-            match A::try_from(i) {
+            match A::from_char(i) {
                 Ok(b) => v.push(b),
                 Err(_) => return Err(ParseSeqErr),
             }
@@ -124,7 +124,7 @@ impl<A: Codec> Iterator for SeqIter<A> {
             return None;
         }
         self.index += w;
-        Some(A::from(self.seq.bv[i..i + w].load()))
+        Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
     }
 }
 

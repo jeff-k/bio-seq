@@ -4,27 +4,17 @@ pub mod dna;
 pub mod iupac;
 
 use std::fmt;
-use std::str::FromStr;
 
 use bio_seq_derive::Codec;
 
-pub trait Codec:
-    FromStr
-    + fmt::Display
-    + fmt::Debug
-    + From<u8>
-    + Into<u8>
-    + TryFrom<char>
-    + Into<char>
-    + Copy
-    + Clone
-{
+pub trait Codec: Copy + Clone + Into<u8> {
+    type Error;
     const WIDTH: u8;
 
     fn unsafe_from_bits(b: u8) -> Self;
     fn try_from_bits(b: u8) -> Result<Self, Self::Error>;
     fn from_char(c: char) -> Result<Self, Self::Error>;
-    fn to_char(a: Self) -> char;
+    fn to_char(self) -> char;
 }
 
 #[derive(Debug, Clone)]

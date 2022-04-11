@@ -4,7 +4,7 @@ use crate::proc_macro::TokenStream;
 
 use quote::quote;
 
-use syn::{parse_macro_input, DeriveInput, Item};
+use syn::parse_macro_input;
 
 struct WidthAttr {
     width: syn::LitInt,
@@ -35,20 +35,14 @@ fn codec_width(attrs: &Vec<syn::Attribute>) -> u8 {
 
 #[proc_macro_derive(Codec, attributes(width))]
 pub fn codec_derive(input: TokenStream) -> TokenStream {
-    //    let ast = parse_macro_input!(input as DeriveInput);
-
     let ast = parse_macro_input!(input as syn::Item);
 
-    //let width = codec_width(&ast.into());
-
-    //let ident = ast.ident;
-
     match ast {
-        //let variants = match ast.data {
         syn::Item::Enum(e) => {
             let variants = e.variants;
             let ident = e.ident;
             let width: u8 = codec_width(&e.attrs);
+
             // TODO
             // We can check whether the max value of the variants fits into the
             // specified bit width
@@ -57,12 +51,12 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
             //let width: u8 = 4;
 
             for v in variants.iter() {
-                let ident = &v.ident;
+                //let ident = &v.ident;
                 let discriminant = &v.discriminant;
 
                 match discriminant {
                     // get max value out of the discriminant Expr (should be LitByte() with value member)
-                    Some((_, d)) => (),
+                    Some((_, _d)) => (),
                     _ => panic!(),
                     //None => return syn::Error::new_spanned(ident, "Codec derivations require discriminants").to_compile_error().into(),
                 }
@@ -82,7 +76,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 let discriminant = &v.discriminant;
 
                 match discriminant {
-                    Some(d) => {
+                    Some(_d) => {
                         let char_repr: char = ident.to_string().chars().next().unwrap();
                         quote! { Self::#ident => #char_repr }
                     }
@@ -94,7 +88,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 let discriminant = &v.discriminant;
 
                 match discriminant {
-                    Some(d) => {
+                    Some(_d) => {
                         let char_repr: char = ident.to_string().chars().next().unwrap();
                         quote! { #char_repr => Ok(Self::#ident) }
                     }
@@ -126,6 +120,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
 
             let output = quote! {
                 impl Codec for #ident {
+                    type Error = ParseBioErr;
                     const WIDTH: u8 = #width;
                     fn unsafe_from_bits(b: u8) -> Self {
                         match b {
@@ -148,8 +143,8 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                         }
                     }
 
-                    fn to_char(a: Self) -> char {
-                        match a {
+                    fn to_char(self) -> char {
+                        match self {
                             #(#variants_to_char),*,
                         }
                     }

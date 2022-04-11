@@ -14,37 +14,20 @@ pub enum Dna {
 
 impl From<Dna> for char {
     fn from(dna: Dna) -> char {
-        match dna {
-            Dna::A => 'A',
-            Dna::C => 'C',
-            Dna::G => 'G',
-            Dna::T => 'T',
-        }
+        dna.to_char()
     }
 }
 
 impl TryFrom<char> for Dna {
     type Error = ParseBioErr;
     fn try_from(c: char) -> Result<Self, Self::Error> {
-        match c {
-            'A' => Ok(Dna::A),
-            'C' => Ok(Dna::C),
-            'G' => Ok(Dna::G),
-            'T' => Ok(Dna::T),
-            _ => Err(ParseBioErr),
-        }
+        Dna::from_char(c)
     }
 }
 
 impl From<u8> for Dna {
     fn from(b: u8) -> Self {
-        match b {
-            0b00 => Dna::A,
-            0b01 => Dna::C,
-            0b10 => Dna::G,
-            0b11 => Dna::T,
-            _ => Dna::A, // unsafe mode
-        }
+        Dna::unsafe_from_bits(b)
     }
 }
 
