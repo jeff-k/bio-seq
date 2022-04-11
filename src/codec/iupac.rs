@@ -7,7 +7,7 @@ use std::fmt;
 use std::str::FromStr;
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Codec)]
 //#[width(4)]
 pub enum Iupac {
     A = 0b1000,
@@ -28,6 +28,7 @@ pub enum Iupac {
     X = 0b0000,
 }
 
+/*
 impl Codec for Iupac {
     const WIDTH: u8 = 2;
     fn unsafe_from_bits(b: u8) -> Self {
@@ -49,7 +50,7 @@ impl Codec for Iupac {
         }
     }
 }
-
+*/
 impl TryFrom<char> for Iupac {
     type Error = ParseBioErr;
     fn try_from(c: char) -> Result<Self, Self::Error> {
