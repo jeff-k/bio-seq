@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.1.9"
+version = "0.2.4"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 description = "Bit packed and well-typed biological sequences"
