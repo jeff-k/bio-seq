@@ -53,12 +53,8 @@ Kmers are sequences of DNA with a fixed size. These are implemented with const g
 
 K is meant to fit in a `usize`. For larger Kmers or amino acid sequences use SeqSlices:
 
-```rust
 
-
-```
-
-## Minimisers for free
+### Minimisers for free
 
 The 2-bit representation of DNA sequences is lexicographically ordered:
 
@@ -68,6 +64,24 @@ fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
     seq.kmers::<8>().min()
 }
 ```
+
+## Derived codecs
+
+Alphebet coding/decoding is derived from the variant names and discriminants of enum types:
+
+```rust
+#[derive(Clone, Copy, Debug, PartialEq, Codec)]
+#[width = 2]
+#[repr(u8)]
+pub enum Dna {
+    A = 0b00,
+    C = 0b01,
+    G = 0b10,
+    T = 0b11,
+}
+```
+
+The `width` attribute specifies how many bits the encoding requires per symbol.
 
 ## Little endian
 
