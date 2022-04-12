@@ -45,14 +45,14 @@ The Iupac struct implements `From<Dna>`
 
 * `bio_seq::Amino`: Amino acid sequences are represented with 6 bits.
 
-TODO: deal with alternate (e.g. mamalian mitochondrial) codes
+   The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
+   TODO: deal with alternate (e.g. mamalian mitochondrial) translation codes
 
 ## Kmers
 
-Kmers are sequences of DNA with a fixed size. These are implemented with const generics.
+Kmers are sequences with a fixed size. These are implemented with const generics.
 
-K is meant to fit in a `usize`. For larger Kmers or amino acid sequences use SeqSlices:
-
+`K * Codec::WIDTH` must fit in a `usize` (i.e. 64). For larger Kmers use `bigk::Kmer`: (TODO)
 
 ### Minimisers for free
 
@@ -67,7 +67,7 @@ fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
 
 ## Derived codecs
 
-Alphebet coding/decoding is derived from the variant names and discriminants of enum types:
+Alphabet coding/decoding is derived from the variant names and discriminants of enum types:
 
 ```rust
 #[derive(Clone, Copy, Debug, PartialEq, Codec)]
@@ -85,7 +85,7 @@ The `width` attribute specifies how many bits the encoding requires per symbol.
 
 ## Little endian
 
-DNA Kmers can be casted to `usize` indexes for K < 33
+Kmers are represented stored as `usize`s with the least significant bit first.
 
 ```rust
 dna!("C") == 0b01 // not 0b0100_0000
@@ -96,13 +96,16 @@ dna!("CT") == 0b11_01
 
 `Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
 
-`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>`
+`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>` (TODO)
   * Sequence length not a multiple of 3 is an error
 
-`Seq<Iupac>` from `Amino`; `Seq<Iupac>` from `Seq<Amino>`
+`Seq<Iupac>` from `Amino`; `Seq<Iupac>` from `Seq<Amino>` (TODO)
 
-`Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length.
+`Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length. (TODO)
 
+### Deref coercion
+
+TODO: find out if `Kmer<Dna, K>` -> `Kmer<Amino, K/3>` is possible
 
 ## Drop-in compatibility with `rust-bio`
 

@@ -28,6 +28,7 @@ for kmer in seq.kmers::<8>() {
 
 !*/
 
+pub mod bigk;
 pub mod codec;
 
 #[macro_use]
