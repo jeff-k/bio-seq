@@ -83,4 +83,14 @@ mod tests {
             assert_eq!(index as usize, (&kmer).into());
         }
     }
+
+    #[test]
+    fn amino_kmer_iter() {
+        for (kmer, target) in amino!("SSLMNHKKL")
+            .kmers::<3>()
+            .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
+        {
+            assert_eq!(format!("{}", kmer), target);
+        }
+    }
 }
