@@ -12,6 +12,8 @@ pub enum Dna {
     T = 0b11,
 }
 
+//type Kmer<const K: usize> = usize;
+
 impl From<Dna> for char {
     fn from(dna: Dna) -> char {
         dna.to_char()

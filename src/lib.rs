@@ -17,6 +17,7 @@ bio-seq = "*"
 ## Example: Kmers
 
 ```rust
+use bio_seq::codec::Dna;
 use bio_seq::*;
 
 let seq = dna!("ACTGCTAGCA");
@@ -36,7 +37,6 @@ pub mod seq;
 
 pub mod kmer;
 
-pub use codec::dna::Dna;
 //pub use codec::iupac::Iupac;
 pub use seq::Seq;
 pub use std::str::FromStr;
