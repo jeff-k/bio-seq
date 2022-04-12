@@ -8,6 +8,8 @@ use std::fmt;
 
 use bio_seq_derive::Codec;
 
+pub use dna::Dna;
+
 pub trait Codec: Copy + Clone + Into<u8> {
     type Error;
     const WIDTH: u8;

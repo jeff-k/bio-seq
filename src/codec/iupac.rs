@@ -1,7 +1,6 @@
 //! IUPAC nucleotide ambiguity codes
 
-use crate::codec::dna::Dna;
-use crate::codec::{Codec, ParseBioErr};
+use crate::codec::{Codec, Dna, ParseBioErr};
 use std::fmt;
 use std::str::FromStr;
 

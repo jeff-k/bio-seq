@@ -7,8 +7,7 @@
 Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
 !*/
 
-pub use crate::codec::dna::Dna;
-pub use crate::codec::iupac::Iupac;
+use crate::codec::iupac::Iupac;
 use crate::codec::Codec;
 use crate::kmer::Kmer;
 use bitvec::prelude::*;
@@ -200,6 +199,15 @@ macro_rules! dna {
     };
 }
 
+#[macro_export]
+macro_rules! amino {
+    ($seq:expr) => {
+        match Seq::<Amino>::from_str($seq) {
+            Ok(s) => s,
+            Err(_) => panic!(),
+        }
+    };
+}
 #[macro_export]
 macro_rules! iupac {
     ($seq:expr) => {

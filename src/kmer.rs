@@ -3,7 +3,6 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-pub use crate::codec::dna::Dna;
 use crate::codec::Codec;
 //use crate::Complement;
 use bitvec::prelude::*;
@@ -64,12 +63,23 @@ impl<const K: usize> Complement for Kmer<K> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Dna;
+    use crate::codec::amino::Amino;
+    use crate::codec::dna::Dna;
     use crate::Seq;
     use std::str::FromStr;
     #[test]
     fn kmer_to_usize() {
         for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {
+            assert_eq!(index as usize, (&kmer).into());
+        }
+    }
+
+    #[test]
+    fn amino_kmer_to_usize() {
+        for (kmer, index) in amino!("SRY")
+            .kmers::<2>()
+            .zip([0b001000_011000, 0b010011_001000])
+        {
             assert_eq!(index as usize, (&kmer).into());
         }
     }
