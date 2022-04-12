@@ -1,4 +1,4 @@
-// Copyright 2021 Jeff Knaggs
+// Copyright 2021, 2022 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -86,17 +86,17 @@ pub struct SeqIter<A: Codec> {
     index: usize,
 }
 
-pub struct KmerIter<const K: usize> {
-    seq: Seq<Dna>,
+pub struct KmerIter<A: Codec, const K: usize> {
+    seq: Seq<A>,
     index: usize,
 }
 
-impl Seq<Dna> {
+impl<A: Codec> Seq<A> {
     /// Iterate over the k-mers of a sequence.
     ///
     /// K: The number of (characters)[Codec] in the biological sequence
-    pub fn kmers<const K: usize>(self) -> KmerIter<K> {
-        KmerIter::<K> {
+    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
+        KmerIter::<A, K> {
             seq: self,
             index: 0,
         }
@@ -128,16 +128,16 @@ impl<A: Codec> Iterator for SeqIter<A> {
     }
 }
 
-impl<const K: usize> Iterator for KmerIter<K> {
-    type Item = Kmer<K>;
-    fn next(&mut self) -> Option<Kmer<K>> {
-        let k = K * 2;
-        let i = self.index * 2;
+impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
+    type Item = Kmer<A, K>;
+    fn next(&mut self) -> Option<Kmer<A, K>> {
+        let k = K * A::WIDTH as usize;
+        let i = self.index * A::WIDTH as usize;
         if self.index >= self.seq.len() - (K - 1) {
             return None;
         }
         self.index += 1;
-        Some(Kmer::<K>::new(&self.seq.bv[i..k + i]))
+        Some(Kmer::<A, K>::new(&self.seq.bv[i..k + i]))
     }
 }
 

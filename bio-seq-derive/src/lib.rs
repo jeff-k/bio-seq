@@ -18,7 +18,7 @@ impl syn::parse::Parse for WidthAttr {
     }
 }
 
-fn codec_width(attrs: &Vec<syn::Attribute>) -> u8 {
+fn codec_width(attrs: &[syn::Attribute]) -> u8 {
     let mut width: u8 = 4;
     for attr in attrs {
         if attr.path.is_ident("width") {

@@ -5,53 +5,62 @@
 
 pub use crate::codec::dna::Dna;
 use crate::codec::Codec;
-use crate::Complement;
+//use crate::Complement;
 use bitvec::prelude::*;
 use std::fmt;
+use std::marker::PhantomData;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Kmer<const K: usize> {
-    pub bv: BitVec,
+pub struct Kmer<C: Codec, const K: usize> {
+    bs: usize,
+    _p: PhantomData<C>,
 }
 
-impl<const _K: usize> Kmer<_K> {
-    pub fn new<const K: usize>(s: &BitSlice) -> Kmer<K> {
-        assert_eq!(K, s.len() / Dna::WIDTH as usize);
+impl<_C: Codec, const _K: usize> Kmer<_C, _K> {
+    pub fn new<C: Codec, const K: usize>(s: &BitSlice) -> Kmer<C, K> {
+        assert_eq!(K, s.len() / C::WIDTH as usize);
         Kmer {
-            bv: BitVec::from(s),
+            bs: s.load::<usize>(),
+            _p: PhantomData,
         }
     }
 }
 
-impl<const K: usize> From<&Kmer<K>> for usize {
-    fn from(kmer: &Kmer<K>) -> usize {
-        assert!(K < 33);
-        kmer.bv.load()
+impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
+    fn from(kmer: &Kmer<A, K>) -> usize {
+        kmer.bs
     }
 }
 
-impl<const K: usize> fmt::Display for Kmer<K> {
+impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        let w = Dna::WIDTH as usize;
-        for i in 0..(self.bv.len() / w) {
-            s.push_str(&Dna::from(self.bv[(i * w)..((i * w) + w)].load::<u8>()).to_string());
+        for chunk in BitArray::<usize, Lsb0>::from(self.bs)[..K * A::WIDTH as usize]
+            .chunks(A::WIDTH as usize)
+        {
+            s.push_str(
+                &A::unsafe_from_bits(chunk.load::<u8>())
+                    .to_char()
+                    .to_string(),
+            );
         }
         write!(f, "{}", s,)
     }
 }
 
-impl<const K: usize> From<usize> for Kmer<K> {
+impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     fn from(_uint: usize) -> Self {
         unimplemented!();
     }
 }
 
+/*
 impl<const K: usize> Complement for Kmer<K> {
     fn complement(_kmer: Kmer<K>) -> Kmer<K> {
         unimplemented!()
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
