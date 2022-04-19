@@ -4,7 +4,7 @@
 // except according to those terms.
 
 /*!
-Sequences of bio alphabet characters. Slicable, Boxable, Iterable.
+Biological sequence types
 !*/
 
 use crate::codec::iupac::Iupac;
@@ -173,18 +173,13 @@ impl BitOr for Seq<Iupac> {
 }
 
 /*
-impl<Idx> std::ops::Index<Idx> for Seq<Dna>
-where
-    Idx: std::slice::SliceIndex<BitSlice>, //+ std::ops::Mul<Output = usize>,
+impl<A: Codec> std::ops::Index<usize> for Seq<A>
 {
-    type Output = Idx::Output;
+    type Output<'a> = &'a A;
 
-    fn index(&self, i: Idx) -> &Self::Output {
-        let w = Dna::WIDTH as Idx;
-        SeqSlice {
-            bv: &self.bv[i * w..(i * w) + w],
-            _p: PhantomData,
-        }
+    fn index(&self, i: usize) -> Self::Output {
+        let w = A::WIDTH as usize;
+        A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
     }
 }
 */
