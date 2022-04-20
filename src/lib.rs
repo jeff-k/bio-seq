@@ -41,12 +41,13 @@ pub mod kmer;
 pub use seq::Seq;
 pub use std::str::FromStr;
 
-pub trait Complement {
-    fn complement(s: Self) -> Self;
+pub trait ReverseComplement {
+    fn rc(s: Self) -> Self;
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::codec::amino::Amino;
     use crate::codec::dna::Dna;
     use crate::codec::dna::Dna::{A, C, G, T};
     use crate::codec::iupac::Iupac;
@@ -127,5 +128,17 @@ mod tests {
             format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
             "AXXXXWKA"
         );
+    }
+
+    #[test]
+    fn nth_chars() {
+        assert_eq!(iupac!("ACGTRYSWKMBDHVNX").nth(0), Iupac::A);
+        assert_ne!(iupac!("ACGTRYSWKMBDHVNX").nth(0), Iupac::C);
+        assert_eq!(iupac!("ACGTRYSWKMBDHVNX").nth(15), Iupac::X);
+        assert_eq!(iupac!("ACGTRYSWKMBDHVNX").nth(3), Iupac::from(Dna::T));
+        assert_ne!(iupac!("ACGTRYSWKMBDHVNX").nth(3), Iupac::from(Dna::G));
+
+        assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
+        assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
     }
 }

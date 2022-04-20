@@ -50,6 +50,29 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    pub fn nth(&self, i: usize) -> A {
+        let w = A::WIDTH as usize;
+        A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
+    }
+
+    pub fn len(&self) -> usize {
+        self.bv.len() / A::WIDTH as usize
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Iterate over the k-mers of a sequence.
+    ///
+    /// K: The number of (characters)[Codec] in the biological sequence
+    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
+        KmerIter::<A, K> {
+            seq: self,
+            index: 0,
+        }
+    }
+
     pub fn raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
     }
@@ -90,18 +113,6 @@ pub struct KmerIter<A: Codec, const K: usize> {
     index: usize,
 }
 
-impl<A: Codec> Seq<A> {
-    /// Iterate over the k-mers of a sequence.
-    ///
-    /// K: The number of (characters)[Codec] in the biological sequence
-    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
-        KmerIter::<A, K> {
-            seq: self,
-            index: 0,
-        }
-    }
-}
-
 impl<A: Codec> IntoIterator for Seq<A> {
     type Item = A;
     type IntoIter = SeqIter<A>;
@@ -140,16 +151,6 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
     }
 }
 
-impl<A: Codec> Seq<A> {
-    pub fn len(&self) -> usize {
-        self.bv.len() / A::WIDTH as usize
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-}
-
 impl BitAnd for Seq<Iupac> {
     type Output = Self;
 
@@ -171,18 +172,6 @@ impl BitOr for Seq<Iupac> {
         }
     }
 }
-
-/*
-impl<A: Codec> std::ops::Index<usize> for Seq<A>
-{
-    type Output<'a> = &'a A;
-
-    fn index(&self, i: usize) -> Self::Output {
-        let w = A::WIDTH as usize;
-        A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
-    }
-}
-*/
 
 #[macro_export]
 macro_rules! dna {
