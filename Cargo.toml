@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.2.9"
+version = "0.3.0"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 description = "Bit packed and well-typed biological sequences"
@@ -13,6 +13,4 @@ keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
 
 [dependencies]
 bitvec = "^1.0.0"
-bio-seq-derive = { path = "bio-seq-derive" }
-
-[workspace]
+bio-seq-derive = "1.0.0"
