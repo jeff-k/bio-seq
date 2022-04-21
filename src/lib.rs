@@ -86,6 +86,35 @@ mod tests {
     }
 
     #[test]
+    fn rev_seq() {
+        let seq = dna!("ACGTACGT");
+        assert_eq!(
+            seq.rev().collect::<Vec<Dna>>(),
+            vec![T, G, C, A, T, G, C, A]
+        );
+
+        assert_eq!(
+            iupac!("GNX").rev().collect::<Vec<Iupac>>(),
+            vec![Iupac::X, Iupac::N, Iupac::G]
+        );
+
+        assert_eq!(
+            amino!("DCMNLKGHI").rev().collect::<Vec<Amino>>(),
+            vec![
+                Amino::I,
+                Amino::H,
+                Amino::G,
+                Amino::K,
+                Amino::L,
+                Amino::N,
+                Amino::M,
+                Amino::C,
+                Amino::D
+            ]
+        );
+    }
+
+    #[test]
     fn iterate_kmers() {
         let seq = dna!("ACGTAAGGGG");
         for (kmer, answer) in seq

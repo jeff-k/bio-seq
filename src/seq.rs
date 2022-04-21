@@ -73,6 +73,11 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    pub fn rev(self) -> RevIter<A> {
+        let index = self.bv.len();
+        RevIter::<A> { seq: self, index }
+    }
+
     pub fn raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
     }
@@ -102,15 +107,23 @@ impl<A: Codec> FromStr for Seq<A> {
         Ok(Seq::<A>::from_vec(v))
     }
 }
-
-pub struct SeqIter<A: Codec> {
+pub struct RevIter<A: Codec> {
     seq: Seq<A>,
     index: usize,
 }
 
-pub struct KmerIter<A: Codec, const K: usize> {
-    seq: Seq<A>,
-    index: usize,
+impl<A: Codec> Iterator for RevIter<A> {
+    type Item = A;
+    fn next(&mut self) -> Option<A> {
+        let w = A::WIDTH as usize;
+        if self.index == 0 {
+            return None;
+        }
+
+        self.index -= w;
+        let i = self.index;
+        Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
+    }
 }
 
 impl<A: Codec> IntoIterator for Seq<A> {
@@ -125,6 +138,11 @@ impl<A: Codec> IntoIterator for Seq<A> {
     }
 }
 
+pub struct SeqIter<A: Codec> {
+    seq: Seq<A>,
+    index: usize,
+}
+
 impl<A: Codec> Iterator for SeqIter<A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
@@ -136,6 +154,11 @@ impl<A: Codec> Iterator for SeqIter<A> {
         self.index += w;
         Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
     }
+}
+
+pub struct KmerIter<A: Codec, const K: usize> {
+    seq: Seq<A>,
+    index: usize,
 }
 
 impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {

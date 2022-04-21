@@ -18,7 +18,7 @@ pub struct Kmer<'a, A: Codec, const K: usize> {
 impl<'a, _A: Codec, const _K: usize> Kmer<'a, _A, _K> {
     pub fn new<A: Codec, const K: usize>(s: &'a BitSlice) -> Kmer<'a, A, K> {
         Kmer {
-            bv: &s,
+            bv: s,
             _p: PhantomData,
         }
     }
