@@ -33,7 +33,31 @@ fn codec_width(attrs: &[syn::Attribute]) -> u8 {
     width
 }
 
-#[proc_macro_derive(Codec, attributes(width))]
+struct AltAttr {
+    chr: syn::LitChar,
+}
+
+impl syn::parse::Parse for AltAttr {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _: syn::Token![=] = input.parse()?;
+        let chr: syn::LitChar = input.parse()?;
+        Ok(Self { chr })
+    }
+}
+
+fn codec_altrepr(attrs: &[syn::Attribute]) -> Option<char> {
+    for attr in attrs {
+        if attr.path.is_ident("alt") {
+            return match syn::parse2::<AltAttr>(attr.tokens.clone()) {
+                Ok(c) => Some(c.chr.value()),
+                _ => panic!("expecting char in alt repr attribute"),
+            };
+        };
+    }
+    None
+}
+
+#[proc_macro_derive(Codec, attributes(width, alt))]
 pub fn codec_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as syn::Item);
 
@@ -53,7 +77,6 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
             for v in variants.iter() {
                 //let ident = &v.ident;
                 let discriminant = &v.discriminant;
-
                 match discriminant {
                     // get max value out of the discriminant Expr (should be LitByte() with value member)
                     Some((_, _d)) => (),
@@ -75,24 +98,34 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 let ident = &v.ident;
                 let discriminant = &v.discriminant;
 
-                match discriminant {
-                    Some(_d) => {
-                        let char_repr: char = ident.to_string().chars().next().unwrap();
-                        quote! { Self::#ident => #char_repr }
-                    }
-                    None => panic!(),
+                let alt_char = codec_altrepr(&v.attrs);
+
+                match alt_char {
+                    Some(alt) => quote! { Self::#ident => #alt },
+                    None => match discriminant {
+                        Some(_d) => {
+                            let char_repr: char = ident.to_string().chars().next().unwrap();
+                            quote! { Self::#ident => #char_repr }
+                        }
+                        None => panic!(),
+                    },
                 }
             });
             let chars_to_variant = variants.iter().map(|v| {
                 let ident = &v.ident;
                 let discriminant = &v.discriminant;
 
-                match discriminant {
-                    Some(_d) => {
-                        let char_repr: char = ident.to_string().chars().next().unwrap();
-                        quote! { #char_repr => Ok(Self::#ident) }
-                    }
-                    None => panic!(),
+                let alt_char = codec_altrepr(&v.attrs);
+
+                match alt_char {
+                    Some(alt) => quote! { #alt => Ok(Self::#ident) },
+                    None => match discriminant {
+                        Some(_d) => {
+                            let char_repr: char = ident.to_string().chars().next().unwrap();
+                            quote! { #char_repr => Ok(Self::#ident) }
+                        }
+                        None => panic!(),
+                    },
                 }
             });
             let bits_to_variant = variants.iter().map(|v| {

@@ -55,6 +55,11 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
+    fn amino_alt_repr() {
+        assert_eq!(format!("{}", amino!("G")), "G");
+    }
+
+    #[test]
     fn make_from_vector() {
         assert_eq!(Seq::from_vec(vec![A, C, G, T]).raw(), &[0b11_10_01_00]);
         assert_eq!(Seq::from_vec(vec![C, G, C, G]).raw(), &[0b10_01_10_01]);
@@ -94,7 +99,7 @@ mod tests {
         );
 
         assert_eq!(
-            iupac!("GNX").rev().collect::<Vec<Iupac>>(),
+            iupac!("GN-").rev().collect::<Vec<Iupac>>(),
             vec![Iupac::X, Iupac::N, Iupac::G]
         );
 
@@ -150,22 +155,22 @@ mod tests {
     #[test]
     fn iupac_bitwise_ops() {
         assert_eq!(
-            format!("{}", iupac!("ASXGYTNA") | iupac!("ANTGCATX")),
+            format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
             "ANTGYWNA"
         );
         assert_eq!(
             format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
-            "AXXXXWKA"
+            "A----WKA"
         );
     }
 
     #[test]
     fn nth_chars() {
-        assert_eq!(iupac!("ACGTRYSWKMBDHVNX").nth(0), Iupac::A);
-        assert_ne!(iupac!("ACGTRYSWKMBDHVNX").nth(0), Iupac::C);
-        assert_eq!(iupac!("ACGTRYSWKMBDHVNX").nth(15), Iupac::X);
-        assert_eq!(iupac!("ACGTRYSWKMBDHVNX").nth(3), Iupac::from(Dna::T));
-        assert_ne!(iupac!("ACGTRYSWKMBDHVNX").nth(3), Iupac::from(Dna::G));
+        assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::A);
+        assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::C);
+        assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(15), Iupac::X);
+        assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::T));
+        assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::G));
 
         assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
         assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
