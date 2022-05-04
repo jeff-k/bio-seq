@@ -7,69 +7,82 @@
 
 ```rust
 use bio_seq::*;
+use bio_seq::codec::Dna;
 
-let seq = dna!("ACTGCTAGCA");
+let seq = Seq::<Dna>::from_str("TACGATCGATCGATCGATC").unwrap();
 
 for kmer in seq.kmers::<8>() {
 	println!("{}", kmer);
 }
 ```
 
-* `bio_seq::Dna`: DNA use the lexicographically ordered 2-bit representation
+There are four built in alphabets:
 
-* `bio_seq::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
+* `codec::Dna`: DNA use the lexicographically ordered 2-bit representation
 
-	```
-	  A C G T
-	  -------
-	S 0 1 1 0
-	- 0 0 0 0
-	C 0 1 0 0
-	N 1 1 1 1
-	B 0 1 1 1
-	  ... etc.
-	```
-	This supports membership resolution with bitwise operations:
+* `codec::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
 
-	```rust
-    assert_eq!(
-        format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
-        "ANTGYWNA"
-    );
-    assert_eq!(
-        format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
-        "A----WKA"
-    );
-	```
+|   | A | C | G | T |
+| - | - | - | - | - |
+| S | 0 | 1 | 1 | 0 |
+| - | 0 | 0 | 0 | 0 |
+| C | 0 | 1 | 0 | 0 |
+| N | 1 | 1 | 1 | 1 |
+| B | 0 | 1 | 1 | 1 |
+
+This supports membership resolution with bitwise operations:
+
+```rust
+use bio_seq::*;
+use bio_seq::codec::iupac::Iupac;
+
+assert_eq!(
+    format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
+    "ANTGYWNA"
+);
+assert_eq!(
+    format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
+    "A----WKA"
+);
+```
 The Iupac struct implements `From<Dna>`
 
-* `bio_seq::Amino`: Amino acid sequences are represented with 6 bits.
+* `codec::Amino`: Amino acid sequences are represented with 6 bits.
 
    The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
-   TODO: deal with alternate (e.g. mamalian mitochondrial) translation codes
 
-## Kmers
+* `codec::ascii::Dna` for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
 
-Kmers are sequences with a fixed size. These are implemented with const generics.
+## kmers
 
-`K * Codec::WIDTH` must fit in a `usize` (i.e. 64). For larger Kmers use `bigk::Kmer`: (TODO)
+kmers are sequences with a fixed size that can fit into a register. these are implemented with const generics.
 
-### Minimisers for free
+`k * Codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: TODO
+
+### Kmer minimisers
 
 The 2-bit representation of DNA sequences is lexicographically ordered:
 
 ```rust
+use bio_seq::codec::Dna;
+use bio_seq::kmer::Kmer;
+use bio_seq::Seq;
+
 // find the lexicographically minimum 8-mer
-fn minimise(seq: Seq<Dna>) -> Option<Kmer::<8>> {
-    seq.kmers::<8>().min()
+fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
+    seq.kmers().min()
 }
 ```
 
-## Derived codecs
+## Derivable codecs
 
 Alphabet coding/decoding is derived from the variant names and discriminants of enum types:
 
 ```rust
+use bio_seq_derive::Codec;
+use bio_seq::*;
+use bio_seq::codec::{Codec, ParseBioErr};
+
 #[derive(Clone, Copy, Debug, PartialEq, Codec)]
 #[width = 2]
 #[repr(u8)]
@@ -79,18 +92,17 @@ pub enum Dna {
     G = 0b10,
     T = 0b11,
 }
+
+impl From<Dna> for u8 {
+    fn from(dna: Dna) -> Self {
+        dna as u8
+    }
+}
 ```
 
-The `width` attribute specifies how many bits the encoding requires per symbol.
+The `width` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8.
 
-## Little endian
-
-Kmers are represented stored as `usize`s with the least significant bit first.
-
-```rust
-dna!("C") == 0b01 // not 0b0100_0000
-dna!("CT") == 0b11_01
-```
+Kmers are stored as `usize`s with the least significant bit first.
 
 ## Conversion with `From` and `Into`
 
@@ -103,16 +115,4 @@ dna!("CT") == 0b11_01
 
 `Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length. (TODO)
 
-### Deref coercion
-
-TODO: find out if `Kmer<Dna, K>` -> `Kmer<Amino, K/3>` is possible
-
-## Drop-in compatibility with `rust-bio`
-
-meant to replace Text/TextSlice
-
-## TODO
-
-* benchmarking
-* macros for defining alphabet codecs more concisely
-* wider SIMD-sized Kmers
+TODO: deal with alternate (e.g. mamalian mitochondrial) translation codes

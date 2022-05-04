@@ -22,8 +22,8 @@ pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
 }
 
-pub struct SeqSlice<'a, A: Codec> {
-    pub bv: &'a BitSlice,
+pub struct SeqSlice<A: Codec> {
+    pub bs: BitVec,
     _p: PhantomData<A>,
 }
 
@@ -132,14 +132,17 @@ impl<A: Codec> IntoIterator for Seq<A> {
 
     fn into_iter(self) -> Self::IntoIter {
         SeqIter::<A> {
-            seq: self,
+            seq: SeqSlice {
+                bs: self.bv,
+                _p: self._p,
+            },
             index: 0,
         }
     }
 }
 
 pub struct SeqIter<A: Codec> {
-    seq: Seq<A>,
+    seq: SeqSlice<A>,
     index: usize,
 }
 
@@ -148,11 +151,11 @@ impl<A: Codec> Iterator for SeqIter<A> {
     fn next(&mut self) -> Option<A> {
         let w = A::WIDTH as usize;
         let i = self.index;
-        if self.index >= (self.seq.bv.len()) {
+        if self.index >= (self.seq.bs.len()) {
             return None;
         }
         self.index += w;
-        Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
+        Some(A::unsafe_from_bits(self.seq.bs[i..i + w].load()))
     }
 }
 

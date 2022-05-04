@@ -2,7 +2,7 @@ use crate::codec::{Codec, ParseBioErr};
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, PartialEq, Codec)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Codec)]
 #[width = 2]
 #[repr(u8)]
 pub enum Dna {

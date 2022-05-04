@@ -9,6 +9,12 @@ use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
 
+/// ## kmers
+///
+/// kmers are encoded sequences with a fixed size that can fit into a register. these are implemented with const generics.
+///
+/// `k * codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: (todo)
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<C: Codec, const K: usize> {
     bs: usize,

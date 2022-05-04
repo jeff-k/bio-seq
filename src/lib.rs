@@ -3,32 +3,8 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-/*! # bio-seq
-
-Bit packed types for biological [sequences](seq) and [k-mers](kmer).
-
-Add `bio-seq` to your project's `Cargo.toml`:
-
-```toml
-[dependencies]
-bio-seq = "*"
-```
-
-## Example: Kmers
-
-```rust
-use bio_seq::codec::Dna;
-use bio_seq::*;
-
-let seq = dna!("ACTGCTAGCA");
-
-for kmer in seq.kmers::<8>() {
-        println!("{}", kmer);
-}
-```
-
-!*/
-
+#![feature(generic_associated_types)]
+#[doc = include_str!("../README.md")]
 pub mod bigk;
 pub mod codec;
 
@@ -90,6 +66,14 @@ mod tests {
         );
     }
 
+    #[test]
+    fn from_string() {
+        let seq = Seq::<Dna>::from_str("ACGTACGT").unwrap();
+        assert_eq!(
+            seq.into_iter().collect::<Vec<Dna>>(),
+            vec![A, C, G, T, A, C, G, T]
+        );
+    }
     #[test]
     fn rev_seq() {
         let seq = dna!("ACGTACGT");
