@@ -3,11 +3,12 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(generic_associated_types)]
 #[doc = include_str!("../README.md")]
-pub mod bigk;
+
+
 pub mod codec;
 
+//#![feature(generic_associated_types)]
 #[macro_use]
 pub mod seq;
 

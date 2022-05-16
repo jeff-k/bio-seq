@@ -3,9 +3,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-/*!
-Biological sequence types
-!*/
+///Biological sequence types
 
 use crate::codec::iupac::Iupac;
 use crate::codec::Codec;
