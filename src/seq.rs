@@ -8,6 +8,7 @@ use crate::codec::Codec;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
+use std::ops::{Index, Range};
 pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
@@ -87,6 +88,26 @@ impl<A: Codec> Seq<A> {
     }
 }
 
+impl<A: Codec> Index<Range<usize>> for Seq<A> {
+    type Output = BitSlice;
+
+    fn index(&self, range: Range<usize>) -> &Self::Output {
+        let s = range.start * A::WIDTH as usize;
+        let e = range.end * A::WIDTH as usize;
+        &self.bv[s..e]
+    }
+}
+
+impl<A: Codec> Index<usize> for Seq<A> {
+    type Output = BitSlice;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        let s = i * A::WIDTH as usize;
+        let e = s + A::WIDTH as usize;
+        &self.bv[s..e]
+    }
+}
+
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
@@ -161,5 +182,23 @@ impl<A: Codec> Iterator for SeqIter<A> {
         }
         self.index += w;
         Some(A::unsafe_from_bits(self.seq.bs[i..i + w].load()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::codec::dna::*;
+    use crate::seq::{FromStr, Seq};
+
+    #[test]
+    fn slice_indices() {
+        let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
+        let s2 = dna!("ACGTGTGTGCTAGCTAATCGATCAAAAAG");
+
+        assert_eq!(s1[0], s2[0]);
+        assert_ne!(s1[1], s2[1]);
+        assert_eq!(s1[2..4], s2[2..4]);
+        assert_eq!(s1[15..21], s2[19..25]);
+        assert_ne!(s1[2..20], s2[2..20]);
     }
 }
