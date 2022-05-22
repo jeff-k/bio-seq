@@ -1,4 +1,4 @@
-//! Bit packable enums representing biological alphabets
+//! Bit-packable enums representing biological alphabets
 
 pub mod amino;
 pub mod dna;
@@ -28,6 +28,12 @@ impl fmt::Display for ParseBioErr {
         write!(f, "Could not encode")
     }
 }
+
+/*impl<A: Codec> dyn From<&SeqSlice<A>> {
+    fn from(slice: &SeqSlice<A>) {
+        A::unsafe_from_bits(slice.load())
+    }
+}*/
 
 #[cfg(test)]
 mod tests {

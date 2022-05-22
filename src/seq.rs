@@ -4,7 +4,6 @@
 // except according to those terms.
 
 ///Biological sequence types
-
 use crate::codec::iupac::Iupac;
 use crate::codec::Codec;
 use crate::kmer::Kmer;
@@ -21,7 +20,7 @@ pub struct Seq<A: Codec> {
 }
 
 pub struct SeqSlice<A: Codec> {
-    pub bs: BitVec,
+    pub bs: BitBox,
     _p: PhantomData<A>,
 }
 
@@ -66,8 +65,10 @@ impl<A: Codec> Seq<A> {
     /// K: The number of (characters)[Codec] in the biological sequence
     pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
         KmerIter::<A, K> {
-            seq: self,
+            bs: BitBox::from_bitslice(&self.bv),
             index: 0,
+            len: self.len(),
+            _p: PhantomData,
         }
     }
 
@@ -121,6 +122,7 @@ impl<A: Codec> Iterator for RevIter<A> {
         self.index -= w;
         let i = self.index;
         Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
+        //Some(self.seq.bv[i..i+w].as_ref())
     }
 }
 
@@ -131,7 +133,7 @@ impl<A: Codec> IntoIterator for Seq<A> {
     fn into_iter(self) -> Self::IntoIter {
         SeqIter::<A> {
             seq: SeqSlice {
-                bs: self.bv,
+                bs: BitBox::from_bitslice(&self.bv),
                 _p: self._p,
             },
             index: 0,
@@ -158,8 +160,10 @@ impl<A: Codec> Iterator for SeqIter<A> {
 }
 
 pub struct KmerIter<A: Codec, const K: usize> {
-    seq: Seq<A>,
+    bs: BitBox,
     index: usize,
+    len: usize,
+    _p: PhantomData<A>,
 }
 
 impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
@@ -167,11 +171,12 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
     fn next(&mut self) -> Option<Kmer<A, K>> {
         let k = K * A::WIDTH as usize;
         let i = self.index * A::WIDTH as usize;
-        if self.index >= self.seq.len() - (K - 1) {
+        if self.index >= self.len - (K - 1) {
             return None;
         }
         self.index += 1;
-        Some(Kmer::<A, K>::new(&self.seq.bv[i..k + i]))
+        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
+        //        Some(Kmer::<A, K>::new(&self.seq.bv[i..k + i]))
     }
 }
 

@@ -3,9 +3,6 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[doc = include_str!("../README.md")]
-
-
 pub mod codec;
 
 //#![feature(generic_associated_types)]
