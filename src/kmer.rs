@@ -4,6 +4,7 @@
 // except according to those terms.
 
 use crate::codec::Codec;
+use crate::seq::Seq;
 //use crate::Complement;
 use bitvec::prelude::*;
 use std::fmt;
@@ -13,7 +14,7 @@ use std::marker::PhantomData;
 ///
 /// kmers are encoded sequences with a fixed size that can fit into a register. these are implemented with const generics.
 ///
-/// `k * codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: (todo)
+/// `k * codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `SeqSlice`
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<C: Codec, const K: usize> {
@@ -66,6 +67,38 @@ impl<const K: usize> Complement for Kmer<K> {
     }
 }
 */
+
+pub struct KmerIter<A: Codec, const K: usize> {
+    bs: BitBox,
+    index: usize,
+    len: usize,
+    _p: PhantomData<A>,
+}
+
+impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
+    type Item = Kmer<A, K>;
+    fn next(&mut self) -> Option<Kmer<A, K>> {
+        let k = K * A::WIDTH as usize;
+        let i = self.index * A::WIDTH as usize;
+        if self.index >= self.len - (K - 1) {
+            return None;
+        }
+        self.index += 1;
+        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
+        //        Some(Kmer::<A, K>::new(&self.seq.bv[i..k + i]))
+    }
+}
+
+impl<A: Codec> Seq<A> {
+    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
+        KmerIter::<A, K> {
+            bs: BitBox::from_bitslice(&self.bv),
+            index: 0,
+            len: self.len(),
+            _p: PhantomData,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

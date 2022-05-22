@@ -4,13 +4,10 @@
 // except according to those terms.
 
 ///Biological sequence types
-use crate::codec::iupac::Iupac;
 use crate::codec::Codec;
-use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::{BitAnd, BitOr};
 pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
@@ -47,6 +44,13 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    pub fn from_bitslice(slice: &BitSlice) -> Self {
+        Seq {
+            bv: BitVec::from_bitslice(slice),
+            _p: PhantomData,
+        }
+    }
+
     pub fn nth(&self, i: usize) -> A {
         let w = A::WIDTH as usize;
         A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
@@ -60,18 +64,19 @@ impl<A: Codec> Seq<A> {
         self.len() == 0
     }
 
-    /// Iterate over the k-mers of a sequence.
-    ///
-    /// K: The number of (characters)[Codec] in the biological sequence
-    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
-        KmerIter::<A, K> {
-            bs: BitBox::from_bitslice(&self.bv),
-            index: 0,
-            len: self.len(),
-            _p: PhantomData,
+    /*
+        /// Iterate over the k-mers of a sequence.
+        ///
+        /// K: The number of (characters)[Codec] in the biological sequence
+        pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
+            KmerIter::<A, K> {
+                bs: BitBox::from_bitslice(&self.bv),
+                index: 0,
+                len: self.len(),
+                _p: PhantomData,
+            }
         }
-    }
-
+    */
     pub fn rev(self) -> RevIter<A> {
         let index = self.bv.len();
         RevIter::<A> { seq: self, index }
@@ -157,76 +162,4 @@ impl<A: Codec> Iterator for SeqIter<A> {
         self.index += w;
         Some(A::unsafe_from_bits(self.seq.bs[i..i + w].load()))
     }
-}
-
-pub struct KmerIter<A: Codec, const K: usize> {
-    bs: BitBox,
-    index: usize,
-    len: usize,
-    _p: PhantomData<A>,
-}
-
-impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
-    type Item = Kmer<A, K>;
-    fn next(&mut self) -> Option<Kmer<A, K>> {
-        let k = K * A::WIDTH as usize;
-        let i = self.index * A::WIDTH as usize;
-        if self.index >= self.len - (K - 1) {
-            return None;
-        }
-        self.index += 1;
-        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
-        //        Some(Kmer::<A, K>::new(&self.seq.bv[i..k + i]))
-    }
-}
-
-impl BitAnd for Seq<Iupac> {
-    type Output = Self;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self {
-            bv: self.bv & rhs.bv,
-            _p: PhantomData,
-        }
-    }
-}
-
-impl BitOr for Seq<Iupac> {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self {
-            bv: self.bv | rhs.bv,
-            _p: PhantomData,
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! dna {
-    ($seq:expr) => {
-        match Seq::<Dna>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! amino {
-    ($seq:expr) => {
-        match Seq::<Amino>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
-        }
-    };
-}
-#[macro_export]
-macro_rules! iupac {
-    ($seq:expr) => {
-        match Seq::<Iupac>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
-        }
-    };
 }

@@ -3,10 +3,10 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[macro_use]
 pub mod codec;
 
 //#![feature(generic_associated_types)]
-#[macro_use]
 pub mod seq;
 
 pub mod kmer;

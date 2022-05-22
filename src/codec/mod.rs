@@ -1,14 +1,15 @@
 //! Bit-packable enums representing biological alphabets
 
+#[macro_use]
 pub mod amino;
+#[macro_use]
 pub mod dna;
+#[macro_use]
 pub mod iupac;
 
 use std::fmt;
 
 use bio_seq_derive::Codec;
-
-pub use dna::Dna;
 
 pub trait Codec: Copy + Clone + Into<u8> {
     type Error;

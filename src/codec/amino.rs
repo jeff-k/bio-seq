@@ -45,3 +45,13 @@ impl fmt::Display for Amino {
         write!(f, "{:?}", self)
     }
 }
+
+#[macro_export]
+macro_rules! amino {
+    ($seq:expr) => {
+        match Seq::<Amino>::from_str($seq) {
+            Ok(s) => s,
+            Err(_) => panic!(),
+        }
+    };
+}

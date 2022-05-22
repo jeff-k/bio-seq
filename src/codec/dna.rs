@@ -52,3 +52,13 @@ impl fmt::Display for Dna {
         write!(f, "{:?}", self)
     }
 }
+
+#[macro_export]
+macro_rules! dna {
+    ($seq:expr) => {
+        match Seq::<Dna>::from_str($seq) {
+            Ok(s) => s,
+            Err(_) => panic!(),
+        }
+    };
+}
