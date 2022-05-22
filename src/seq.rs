@@ -22,6 +22,15 @@ pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
 }
 
+impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
+    fn from(slice: &BitSlice) -> SeqSlice<A> {
+        SeqSlice {
+            bs: BitBox::from_bitslice(slice),
+            _p: PhantomData,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ParseSeqErr;
 
@@ -118,6 +127,16 @@ impl<A: Codec> fmt::Display for Seq<A> {
     }
 }
 
+impl<A: Codec> fmt::Display for SeqSlice<A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        for c in self.bs.chunks_exact(A::WIDTH.into()) {
+            s.push_str(&A::unsafe_from_bits(c.load()).to_char().to_string());
+        }
+        write!(f, "{}", s,)
+    }
+}
+
 impl<A: Codec> FromStr for Seq<A> {
     type Err = ParseSeqErr;
 
@@ -188,7 +207,7 @@ impl<A: Codec> Iterator for SeqIter<A> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::*;
-    use crate::seq::{FromStr, Seq};
+    use crate::seq::{FromStr, Seq, SeqSlice};
 
     #[test]
     fn slice_indices() {
@@ -200,5 +219,12 @@ mod tests {
         assert_eq!(s1[2..4], s2[2..4]);
         assert_eq!(s1[15..21], s2[19..25]);
         assert_ne!(s1[2..20], s2[2..20]);
+    }
+
+    #[test]
+    fn from_slice() {
+        let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
+        let s: SeqSlice<Dna> = s1[15..21].into();
+        assert_eq!(format!("{}", s), "GATCAA");
     }
 }

@@ -1,5 +1,30 @@
 //! IUPAC nucleotide ambiguity codes
 
+/// IUPAC  nucleotide ambiguity codes are represented with 4 bits
+///
+/// |   | A | C | G | T |
+/// | - | - | - | - | - |
+/// | S | 0 | 1 | 1 | 0 |
+/// | - | 0 | 0 | 0 | 0 |
+/// | C | 0 | 1 | 0 | 0 |
+/// | N | 1 | 1 | 1 | 1 |
+/// | B | 0 | 1 | 1 | 1 |
+///
+/// This supports membership resolution with bitwise operations:
+///
+/// ```rust
+/// use bio_seq::*;
+/// use bio_seq::codec::iupac::Iupac;
+///
+/// assert_eq!(
+///     format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
+///     "ANTGYWNA"
+/// );
+/// assert_eq!(
+///     format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
+///     "A----WKA"
+/// );
+/// ```
 use crate::codec::{dna::Dna, Codec, ParseBioErr};
 use crate::seq::Seq;
 use std::fmt;
