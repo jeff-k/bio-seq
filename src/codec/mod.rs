@@ -1,6 +1,7 @@
 //! Bit packable enums representing biological alphabets
 
 pub mod amino;
+pub mod ascii;
 pub mod dna;
 pub mod iupac;
 

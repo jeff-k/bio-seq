@@ -7,13 +7,14 @@
 Biological sequence types
 !*/
 
+use crate::codec::ascii;
 use crate::codec::iupac::Iupac;
 use crate::codec::Codec;
 use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::{BitAnd, BitOr};
+use std::ops::{BitAnd, BitOr, Deref, Index};
 pub use std::str::FromStr;
 
 /// A sequence of bit packed characters
@@ -22,9 +23,33 @@ pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
 }
 
-pub struct SeqSlice<A: Codec> {
-    pub bs: BitVec,
+pub struct SeqSlice<'a, A: Codec> {
+    pub bs: &'a BitSlice,
     _p: PhantomData<A>,
+}
+
+impl<A: Codec> Index<usize> for Seq<A> {
+    type Output = A;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        self.nth(i)
+    }
+}
+
+impl<A: Codec> Deref for SeqSlice<A> {
+    type Target = u8;
+
+    fn deref(&self) -> &Self::Target {
+        &(self.bs.load::<u8>())
+    }
+}
+
+impl From<&Vec<u8>> for SeqSlice<ascii::Iupac> {
+    fn from(seq: &Vec<u8>) -> Self {
+        SeqSlice {
+            bs: seq.view_bits(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -50,9 +75,9 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    pub fn nth(&self, i: usize) -> A {
+    pub fn nth<'a>(&'a self, i: usize) -> &'a A {
         let w = A::WIDTH as usize;
-        A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
+        &A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load()).clone()
     }
 
     pub fn len(&self) -> usize {
