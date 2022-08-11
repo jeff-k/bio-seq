@@ -1,11 +1,10 @@
-// Copyright 2021 Jeff Knaggs
+// Copyright 2021, 2022 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::codec::Codec;
+use crate::codec::{Codec, ParseBioErr};
 use crate::seq::Seq;
-//use crate::Complement;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
@@ -18,13 +17,13 @@ use std::marker::PhantomData;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<C: Codec, const K: usize> {
-    bs: usize,
-    _p: PhantomData<C>,
+    pub bs: usize,
+    pub _p: PhantomData<C>,
 }
 
-impl<_C: Codec, const _K: usize> Kmer<_C, _K> {
-    pub fn new<C: Codec, const K: usize>(s: &BitSlice) -> Kmer<C, K> {
-        assert_eq!(K, s.len() / C::WIDTH as usize);
+impl<A: Codec, const K: usize> Kmer<A, K> {
+    pub fn new(s: &BitSlice) -> Kmer<A, K> {
+        assert_eq!(K, s.len() / A::WIDTH as usize);
         Kmer {
             bs: s.load::<usize>(),
             _p: PhantomData,
@@ -55,18 +54,10 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
 }
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
-    fn from(_uint: usize) -> Self {
+    fn from(_uint: usize) -> Kmer<A, K> {
         unimplemented!();
     }
 }
-
-/*
-impl<const K: usize> Complement for Kmer<K> {
-    fn complement(_kmer: Kmer<K>) -> Kmer<K> {
-        unimplemented!()
-    }
-}
-*/
 
 pub struct KmerIter<A: Codec, const K: usize> {
     bs: BitBox,
@@ -96,6 +87,18 @@ impl<A: Codec> Seq<A> {
             index: 0,
             len: self.len(),
             _p: PhantomData,
+        }
+    }
+}
+
+impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
+    type Error = ParseBioErr;
+
+    fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
+        if seq.len() != K {
+            Err(ParseBioErr)
+        } else {
+            Ok(Kmer::<A, K>::new(&seq.bv[0..(K * A::WIDTH as usize)]))
         }
     }
 }

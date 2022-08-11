@@ -6,13 +6,15 @@
 </div>
 
 ```rust
-use bio_seq::*;
-use bio_seq::codec::Dna;
+use bio_seq::{Seq, FromStr};
+use bio_seq::codec::dna::Dna;
 
-let seq = Seq::<Dna>::from_str("TACGATCGATCGATCGATC").unwrap();
+fn main() {
+    let seq = Seq::<Dna>::from_str("TACGATCGATCGATCGATC").unwrap();
 
-for kmer in seq.kmers::<8>() {
-	println!("{}", kmer);
+    for kmer in seq.kmers::<8>() {
+        println!("{}", kmer);
+    }
 }
 ```
 
@@ -29,6 +31,7 @@ There are four built in alphabets:
 | C | 0 | 1 | 0 | 0 |
 | N | 1 | 1 | 1 | 1 |
 | B | 0 | 1 | 1 | 1 |
+|...                |
 
 This supports membership resolution with bitwise operations:
 
@@ -53,11 +56,13 @@ The Iupac struct implements `From<Dna>`
 
 * `codec::ascii::Dna` for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
 
-## kmers
+## Kmers
 
 kmers are sequences with a fixed size that can fit into a register. these are implemented with const generics.
 
 `k * Codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: TODO
+
+### Hashing
 
 ### Kmer minimisers
 

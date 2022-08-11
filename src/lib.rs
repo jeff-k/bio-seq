@@ -1,22 +1,23 @@
-// Copyright 2021 Jeff Knaggs
+// Copyright 2021, 2022 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
 #[macro_use]
 pub mod codec;
-
-//#![feature(generic_associated_types)]
+pub mod kmer;
 pub mod seq;
 
-pub mod kmer;
-
-//pub use codec::iupac::Iupac;
 pub use seq::Seq;
 pub use std::str::FromStr;
 
+pub trait Complement {
+    fn comp(self: Self) -> Self;
+}
+
 pub trait ReverseComplement {
-    fn rc(s: Self) -> Self;
+    /// Reverse complementable
+    fn revcomp(self: Self) -> Self;
 }
 
 #[cfg(test)]
