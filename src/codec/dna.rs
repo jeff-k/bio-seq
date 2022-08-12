@@ -1,15 +1,13 @@
 /// 2-bit DNA representation
 ///
 use std::fmt;
-use std::ops::BitXor;
 use std::str::FromStr;
 
 use crate::codec::{Codec, ParseBioErr};
 use crate::kmer::Kmer;
 use crate::Complement;
 
-use bitvec::field::BitField;
-use bitvec::prelude::{LocalBits, Lsb0, Msb0};
+use bitvec::prelude::Lsb0;
 use bitvec::view::BitView;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Codec)]
@@ -24,7 +22,7 @@ pub enum Dna {
 
 impl<const K: usize> Complement for Kmer<Dna, K> {
     fn comp(self: Kmer<Dna, K>) -> Kmer<Dna, K> {
-        Kmer::new(&(self.bs ^ usize::MAX).view_bits::<LocalBits>()[..K * Dna::WIDTH as usize])
+        Kmer::new(&(self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize])
     }
 }
 

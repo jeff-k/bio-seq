@@ -31,7 +31,7 @@ use std::fmt;
 use std::ops::{BitAnd, BitOr};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, PartialEq, Codec)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
 #[width = 4]
 #[repr(u8)]
 pub enum Iupac {

@@ -12,12 +12,12 @@ pub use seq::Seq;
 pub use std::str::FromStr;
 
 pub trait Complement {
-    fn comp(self: Self) -> Self;
+    fn comp(self) -> Self;
 }
 
 pub trait ReverseComplement {
     /// Reverse complementable
-    fn revcomp(self: Self) -> Self;
+    fn revcomp(self) -> Self;
 }
 
 #[cfg(test)]

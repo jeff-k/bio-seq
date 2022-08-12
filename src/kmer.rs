@@ -7,6 +7,7 @@ use crate::codec::{Codec, ParseBioErr};
 use crate::seq::Seq;
 use bitvec::prelude::*;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 /// ## kmers
@@ -50,6 +51,13 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
             );
         }
         write!(f, "{}", s,)
+    }
+}
+
+impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bs.hash(state);
+        K.hash(state);
     }
 }
 

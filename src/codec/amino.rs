@@ -7,7 +7,7 @@ use crate::codec::{Codec, ParseBioErr};
 use std::fmt;
 //use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, PartialEq, Codec)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
 #[width = 6]
 #[repr(u8)]
 pub enum Amino {
