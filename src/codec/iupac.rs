@@ -16,10 +16,13 @@
 /// use bio_seq::*;
 /// use bio_seq::codec::iupac::Iupac;
 ///
+/// // Set union:
 /// assert_eq!(
 ///     format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
 ///     "ANTGYWNA"
 /// );
+///
+/// // Set intersection:
 /// assert_eq!(
 ///     format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
 ///     "A----WKA"

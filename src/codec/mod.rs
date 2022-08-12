@@ -1,4 +1,4 @@
-//! Bit-packable enums representing biological alphabets
+//! Coding/Decoding trait for bit-packable enums representing biological alphabets
 
 #[macro_use]
 pub mod amino;
@@ -19,6 +19,15 @@ pub trait Codec: Copy + Clone + Into<u8> {
     fn try_from_bits(b: u8) -> Result<Self, Self::Error>;
     fn from_char(c: char) -> Result<Self, Self::Error>;
     fn to_char(self) -> char;
+}
+
+pub trait Complement {
+    fn comp(self) -> Self;
+}
+
+pub trait ReverseComplement {
+    /// Reverse complementable
+    fn revcomp(self) -> Self;
 }
 
 #[derive(Debug, Clone)]

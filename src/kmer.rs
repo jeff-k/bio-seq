@@ -12,10 +12,9 @@ use std::marker::PhantomData;
 
 /// ## kmers
 ///
-/// kmers are encoded sequences with a fixed size that can fit into a register. these are implemented with const generics.
+/// K-mers are encoded sequences of length K that fit into a register. these are implemented with const generics.
 ///
 /// `k * codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `SeqSlice`
-
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub bs: usize,
@@ -54,6 +53,8 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     }
 }
 
+/// The value of K is included in the hasher state so that
+/// `hash(kmer!("AAA")) != hash(kmer!("AAAA"))
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
@@ -64,38 +65,6 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     fn from(_uint: usize) -> Kmer<A, K> {
         unimplemented!();
-    }
-}
-
-pub struct KmerIter<A: Codec, const K: usize> {
-    bs: BitBox,
-    index: usize,
-    len: usize,
-    _p: PhantomData<A>,
-}
-
-impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
-    type Item = Kmer<A, K>;
-    fn next(&mut self) -> Option<Kmer<A, K>> {
-        let k = K * A::WIDTH as usize;
-        let i = self.index * A::WIDTH as usize;
-        if self.index >= self.len - (K - 1) {
-            return None;
-        }
-        self.index += 1;
-        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
-        //        Some(Kmer::<A, K>::new(&self.seq.bv[i..k + i]))
-    }
-}
-
-impl<A: Codec> Seq<A> {
-    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
-        KmerIter::<A, K> {
-            bs: BitBox::from_bitslice(&self.bv),
-            index: 0,
-            len: self.len(),
-            _p: PhantomData,
-        }
     }
 }
 

@@ -3,9 +3,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::codec::{Codec, ParseBioErr};
-use crate::kmer::Kmer;
-use crate::Complement;
+use crate::codec::{Codec, Complement, ParseBioErr};
+use crate::Kmer;
 
 use bitvec::prelude::Lsb0;
 use bitvec::view::BitView;
@@ -23,6 +22,17 @@ pub enum Dna {
 impl<const K: usize> Complement for Kmer<Dna, K> {
     fn comp(self: Kmer<Dna, K>) -> Kmer<Dna, K> {
         Kmer::new(&(self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize])
+    }
+}
+
+impl Complement for Dna {
+    fn comp(self: Dna) -> Dna {
+        match self {
+            Dna::A => Dna::T,
+            Dna::C => Dna::G,
+            Dna::G => Dna::C,
+            Dna::T => Dna::A,
+        }
     }
 }
 
@@ -75,11 +85,24 @@ macro_rules! dna {
     };
 }
 
+#[macro_export]
+macro_rules! kmer {
+    ($seq:expr) => {
+        match Seq::<Dna>::from_str($seq) {
+            Ok(s) => match Kmer::<Dna, { $seq.len() }>::try_from(s) {
+                Ok(s) => s,
+                Err(_) => panic!(),
+            },
+            Err(_) => panic!(),
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::*;
-    use crate::kmer::Kmer;
-    use crate::{codec::ParseBioErr, Complement, Seq};
+    use crate::codec::{Complement, ParseBioErr};
+    use crate::{Kmer, Seq};
     use std::convert::TryFrom;
     use std::str::FromStr;
 
@@ -93,6 +116,16 @@ mod tests {
             Kmer::<Dna, 7>::try_from(dna!("GTGACGA"))?,
             Kmer::<Dna, 7>::try_from(dna!("GTGAAGA"))?
         );
+        Ok(())
+    }
+
+    #[test]
+    fn dna_kmer_macro() -> Result<(), ParseBioErr> {
+        assert_eq!(
+            kmer!("TGCACATG"),
+            Kmer::<Dna, 8>::try_from(dna!("TGCACATG"))?
+        );
+        assert_ne!(kmer!("GTGACGA"), Kmer::<Dna, 7>::try_from(dna!("GTGAAGA"))?);
         Ok(())
     }
 

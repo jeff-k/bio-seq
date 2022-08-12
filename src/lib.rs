@@ -3,22 +3,28 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Bit-packed and well-typed biological sequences
+//!
+//! - [Seq] heap allocated sequences of variable length
+//! - [Kmer] fixed length sequences that fit in a register
+//! - [Codec] coder/decoder implementations
+//!
+//! This crate is designed to facilitate common bioinformatics tasks,
+//! incuding amino acid translation, k-mer minimisation and hashing, and
+//! nucleotide sequence manipulation.
+//!
+//! Custom encodings are supported with the help of the `bio-seq-derive`
+//! crate.
+
 #[macro_use]
 pub mod codec;
 pub mod kmer;
 pub mod seq;
 
-pub use seq::Seq;
+pub use crate::kmer::Kmer;
+pub use crate::seq::Seq;
+
 pub use std::str::FromStr;
-
-pub trait Complement {
-    fn comp(self) -> Self;
-}
-
-pub trait ReverseComplement {
-    /// Reverse complementable
-    fn revcomp(self) -> Self;
-}
 
 #[cfg(test)]
 mod tests {

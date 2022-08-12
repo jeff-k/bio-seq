@@ -3,15 +3,18 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-///Biological sequence types
-use crate::codec::Codec;
+use crate::codec::{Codec, Complement, ReverseComplement};
+use crate::Kmer;
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::{Index, Range};
 pub use std::str::FromStr;
 
-/// A sequence of bit packed characters
+/// A sequence of bit-packed characters of arbitrary length
+///
+/// Allocated to the heap
+#[derive(Debug, PartialEq, Eq)]
 pub struct Seq<A: Codec> {
     pub bv: BitVec,
     _p: PhantomData<A>,
@@ -28,6 +31,16 @@ impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
             bs: BitBox::from_bitslice(slice),
             _p: PhantomData,
         }
+    }
+}
+
+impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+    fn revcomp(self) -> Self {
+        let mut v = vec![];
+        for base in self.rev() {
+            v.push(base.comp());
+        }
+        Self::from_vec(v)
     }
 }
 
@@ -87,9 +100,21 @@ impl<A: Codec> Seq<A> {
             }
         }
     */
+
+    /// Iterate over the sequence in reverse order
     pub fn rev(self) -> RevIter<A> {
         let index = self.bv.len();
         RevIter::<A> { seq: self, index }
+    }
+
+    /// Iterate over sliding windows of size K
+    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
+        KmerIter::<A, K> {
+            bs: BitBox::from_bitslice(&self.bv),
+            index: 0,
+            len: self.len(),
+            _p: PhantomData,
+        }
     }
 
     pub fn raw(&self) -> &[usize] {
@@ -204,10 +229,53 @@ impl<A: Codec> Iterator for SeqIter<A> {
     }
 }
 
+pub struct KmerIter<A: Codec, const K: usize> {
+    bs: BitBox,
+    index: usize,
+    len: usize,
+    _p: PhantomData<A>,
+}
+
+impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
+    type Item = Kmer<A, K>;
+    fn next(&mut self) -> Option<Kmer<A, K>> {
+        let k = K * A::WIDTH as usize;
+        let i = self.index * A::WIDTH as usize;
+        if self.index >= self.len - (K - 1) {
+            return None;
+        }
+        self.index += 1;
+        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::*;
+    use crate::codec::ReverseComplement;
     use crate::seq::{FromStr, Seq, SeqSlice};
+
+    #[test]
+    fn test_revcomp() {
+        let s1 = dna!("ATGTGTGCGACTGA");
+        let s2 = dna!("TCAGTCGCACACAT");
+        assert_eq!(s1, s2.revcomp());
+    }
+
+    #[test]
+    fn test_revcomp_mismatched_sizes() {
+        let s1 = dna!("AAAA");
+        let s2 = dna!("TTTTT");
+        assert_ne!(s1, s2.revcomp());
+    }
+
+    #[test]
+    fn test_revcomp_idempotence() {
+        let s = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC");
+        let sc = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC");
+
+        assert_eq!(s.revcomp().revcomp(), sc);
+    }
 
     #[test]
     fn slice_indices() {
