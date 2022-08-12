@@ -1,11 +1,16 @@
 /// 2-bit DNA representation
 ///
 use std::fmt;
+use std::ops::BitXor;
 use std::str::FromStr;
 
 use crate::codec::{Codec, ParseBioErr};
 use crate::kmer::Kmer;
 use crate::Complement;
+
+use bitvec::field::BitField;
+use bitvec::prelude::{LocalBits, Lsb0, Msb0};
+use bitvec::view::BitView;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Codec)]
 #[width = 2]
@@ -19,7 +24,7 @@ pub enum Dna {
 
 impl<const K: usize> Complement for Kmer<Dna, K> {
     fn comp(self: Kmer<Dna, K>) -> Kmer<Dna, K> {
-        Kmer::from(self.bs ^ usize::MAX)
+        Kmer::new(&(self.bs ^ usize::MAX).view_bits::<LocalBits>()[..K * Dna::WIDTH as usize])
     }
 }
 
@@ -96,14 +101,23 @@ mod tests {
     #[test]
     fn dna_kmer_complement() -> Result<(), ParseBioErr> {
         assert_eq!(
+            format!(
+                "{:b}",
+                Kmer::<Dna, 8>::try_from(dna!("AAAAAAAA"))?.comp().bs
+            ),
+            format!("{:b}", Kmer::<Dna, 8>::try_from(dna!("TTTTTTTT"))?.bs)
+        );
+
+        assert_eq!(
+            Kmer::<Dna, 1>::try_from(dna!("C"))?.comp(),
+            Kmer::<Dna, 1>::try_from(dna!("G"))?
+        );
+
+        assert_eq!(
             Kmer::<Dna, 16>::try_from(dna!("AAAATGCACATGTTTT"))?.comp(),
             Kmer::<Dna, 16>::try_from(dna!("TTTTACGTGTACAAAA"))?
         );
 
-        assert_ne!(
-            Kmer::<Dna, 8>::try_from(dna!("TGCACATG"))?,
-            Kmer::<Dna, 8>::try_from(dna!("ACGTGTAC"))?
-        );
         Ok(())
     }
 }
