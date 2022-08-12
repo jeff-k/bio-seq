@@ -2,7 +2,7 @@
 
 # `bio-seq`
 
-### Bit packed and well-typed biological sequences
+### Bit-packed and well-typed biological sequences
 </div>
 
 ```rust
@@ -18,20 +18,13 @@ fn main() {
 }
 ```
 
-There are four built in alphabets:
+There are four built-in alphabets:
 
-* `codec::Dna`: DNA use the lexicographically ordered 2-bit representation
+### `codec::Dna`
+Using the lexicographically ordered 2-bit representation
 
-* `codec::Iupac`: IUPAC  nucleotide ambiguity codes are represented with 4 bits
-
-|   | A | C | G | T |
-| - | - | - | - | - |
-| S | 0 | 1 | 1 | 0 |
-| - | 0 | 0 | 0 | 0 |
-| C | 0 | 1 | 0 | 0 |
-| N | 1 | 1 | 1 | 1 |
-| B | 0 | 1 | 1 | 1 |
-|...                |
+### `codec::Iupac`
+IUPAC  nucleotide ambiguity codes are represented with 4 bits
 
 This supports membership resolution with bitwise operations. Logical `or` is the union:
 
@@ -55,11 +48,11 @@ TODO: Example demonstrating how to search for motifs
 
 The Iupac struct implements `From<Dna>`
 
-* `codec::Amino`: Amino acid sequences are represented with 6 bits.
+### `codec::Amino`
+Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
-   The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
-
-* TODO `codec::ascii::Dna` for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
+### TODO `codec::ascii::Dna`
+for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
 
 ## Kmers
 
@@ -67,14 +60,18 @@ kmers are sequences with a fixed size that can fit into a register. these are im
 
 `k * Codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: TODO
 
-### Sparse encodings
+### Dense encodings
 
-For dense encodings,
+For dense encodings, a lookup table can be populated and indexed in constant time with the `usize` representation:
 
 TODO: finish example
 ```rust
 let mut histogram = vec![0; 1 << C::WIDTH * K];
 ```
+
+### Hashing
+
+The `Hash` trait is implemented for Kmers
 
 ### Canonical Kmers
 
@@ -84,10 +81,6 @@ Depending on the application, it may be permissible to superimpose the forward a
 k = kmer!("ACGTGACGT");
 let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 ```
-
-### Hashing
-
-The `Hash` trait is implemented for Kmers
 
 ### Kmer minimisers
 
