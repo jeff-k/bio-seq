@@ -10,49 +10,52 @@ use bio_seq::{Seq, FromStr};
 use bio_seq::codec::{dna::Dna, ReverseComplement};
  
 fn main() {
+    // declare a sequence of 2-bit encoded DNA
     let seq = Seq::<Dna>::from_str("TACGATCGATCGATCGATC").unwrap();
 
+    // iterate over the 8-mers of the reverse complement of our sequence
     for kmer in seq.revcomp().kmers::<8>() {
         println!("{}", kmer);
     }
 }
 ```
 
-There are four built-in alphabets:
+* [Codec](#codecs): Encoding scheme for the 'characters' of a biological sequence
+* [Seq](#sequences): A sequence of encoded characters
+* [Kmer](#kmers): A fixed size sequence of length `k`
+
+* Derivable codecs: This crate offers utilities for defining your own bit-level encodings
+* Safe conversion between datatypes
+
+## Codecs
+
+The `Codec` trait desribes the coding/decoding process for the characters of a biological sequence. There are four built-in codecs:
 
 ### `codec::Dna`
 Using the lexicographically ordered 2-bit representation
 
 ### `codec::Iupac`
-IUPAC  nucleotide ambiguity codes are represented with 4 bits
-
-This supports membership resolution with bitwise operations. Logical `or` is the union:
+IUPAC  nucleotide ambiguity codes are represented with 4 bits. This supports membership resolution with bitwise operations. Logical `or` is the union:
 
 ```rust
-assert_eq!(
-    format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
-    "ANTGYWNA"
-);
+assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
 ```
 
 Logical `and` is the intersection of two iupac sequences:
 
+```rust
+assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 ```
-assert_eq!(
-    format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
-    "A----WKA"
-);
-```
-
-TODO: Example demonstrating how to search for motifs
-
-The Iupac struct implements `From<Dna>`
 
 ### `codec::Amino`
 Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
 ### TODO `codec::ascii::Dna`
 for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
+
+## Sequences
+
+Strings of encoded biological characters are packed into `Seq`s. This are allocated on the heap and may be mutable. Slicing, chunking, and windowing return instances of `SeqSlice`.
 
 ## Kmers
 
