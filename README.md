@@ -20,12 +20,13 @@ fn main() {
 }
 ```
 
+## Contents
+
 * [Codec](#codecs): Encoding scheme for the 'characters' of a biological sequence
 * [Seq](#sequences): A sequence of encoded characters
 * [Kmer](#kmers): A fixed size sequence of length `k`
-
-* Derivable codecs: This crate offers utilities for defining your own bit-level encodings
-* Safe conversion between datatypes
+* [Derivable codecs](#derivable-codecs): This crate offers utilities for defining your own bit-level encodings
+* [Safe conversion](#sequence-conversion) between sequences
 
 ## Codecs
 
@@ -133,7 +134,7 @@ The `width` attribute specifies how many bits the encoding requires per symbol. 
 
 Kmers are stored as `usize`s with the least significant bit first.
 
-## Conversion with `From` and `Into`
+## Sequence conversions
 
 `Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
 
