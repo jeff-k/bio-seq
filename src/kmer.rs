@@ -10,11 +10,12 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
-/// ## kmers
+/// ## Kmers
 ///
-/// K-mers are encoded sequences of length K that fit into a register. these are implemented with const generics.
+/// Encoded sequences of fixed length `k`, known at compile time.
 ///
-/// `k * codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `SeqSlice`
+/// For this implementation `k * codec::width` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
+/// `simd::Kmer`
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub bs: usize,

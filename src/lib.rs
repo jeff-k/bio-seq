@@ -6,7 +6,7 @@
 //! Bit-packed and well-typed biological sequences
 //!
 //! - [Seq] heap allocated sequences of variable length
-//! - [Kmer] fixed length sequences that fit in a register
+//! - [Kmer] short fixed length sequences
 //! - [Codec] coder/decoder implementations
 //!
 //! This crate is designed to facilitate common bioinformatics tasks,
@@ -36,8 +36,8 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    fn amino_alt_repr() {
-        assert_eq!(format!("{}", amino!("G")), "G");
+    fn alt_repr() {
+        assert_eq!(iupac!("-").nth(0), Iupac::X);
     }
 
     #[test]
@@ -143,14 +143,8 @@ mod tests {
 
     #[test]
     fn iupac_bitwise_ops() {
-        assert_eq!(
-            format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
-            "ANTGYWNA"
-        );
-        assert_eq!(
-            format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
-            "A----WKA"
-        );
+        assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+        assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
     }
 
     #[test]
