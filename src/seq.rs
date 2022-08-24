@@ -20,11 +20,13 @@ pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
 }
 
+/// A boxed slice of a Seq
 pub struct SeqSlice<A: Codec> {
     pub bs: BitBox,
     _p: PhantomData<A>,
 }
 
+// this should be private to the module
 impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
     fn from(slice: &BitSlice) -> SeqSlice<A> {
         SeqSlice {
@@ -87,20 +89,6 @@ impl<A: Codec> Seq<A> {
         self.len() == 0
     }
 
-    /*
-        /// Iterate over the k-mers of a sequence.
-        ///
-        /// K: The number of (characters)[Codec] in the biological sequence
-        pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
-            KmerIter::<A, K> {
-                bs: BitBox::from_bitslice(&self.bv),
-                index: 0,
-                len: self.len(),
-                _p: PhantomData,
-            }
-        }
-    */
-
     /// Iterate over the sequence in reverse order
     pub fn rev(self) -> RevIter<A> {
         let index = self.bv.len();
@@ -114,6 +102,30 @@ impl<A: Codec> Seq<A> {
             index: 0,
             len: self.len(),
             _p: PhantomData,
+        }
+    }
+
+    pub fn windows(self, width: usize) -> SeqChunks<A> {
+        SeqChunks {
+            seq: SeqSlice {
+                bs: BitBox::from_bitslice(&self.bv),
+                _p: self._p,
+            },
+            width,
+            skip: A::WIDTH as usize,
+            index: 0,
+        }
+    }
+
+    pub fn chunks(self, width: usize) -> SeqChunks<A> {
+        SeqChunks {
+            seq: SeqSlice {
+                bs: BitBox::from_bitslice(&self.bv),
+                _p: self._p,
+            },
+            width,
+            skip: A::WIDTH as usize * width,
+            index: 0,
         }
     }
 
@@ -176,6 +188,7 @@ impl<A: Codec> FromStr for Seq<A> {
         Ok(Seq::<A>::from_vec(v))
     }
 }
+
 pub struct RevIter<A: Codec> {
     seq: Seq<A>,
     index: usize,
@@ -193,6 +206,30 @@ impl<A: Codec> Iterator for RevIter<A> {
         let i = self.index;
         Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
         //Some(self.seq.bv[i..i+w].as_ref())
+    }
+}
+
+pub struct SeqChunks<A: Codec> {
+    seq: SeqSlice<A>,
+    width: usize,
+    skip: usize,
+    index: usize,
+}
+
+impl<A: Codec> Iterator for SeqChunks<A> {
+    type Item = SeqSlice<A>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let w = A::WIDTH as usize * self.width;
+
+        if self.index + w >= self.seq.bs.len() {
+            return None;
+        }
+        let i = self.index;
+        self.index += w + self.skip;
+        Some(SeqSlice {
+            bs: BitBox::from_bitslice(&self.seq.bs[i..i + w]),
+            _p: self.seq._p,
+        })
     }
 }
 
