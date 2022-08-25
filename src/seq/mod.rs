@@ -3,8 +3,10 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+mod iterators;
+
 use crate::codec::{Codec, Complement, ReverseComplement};
-use crate::Kmer;
+use crate::seq::iterators::{KmerIter, RevIter, SeqChunks};
 use bitvec::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
@@ -69,6 +71,7 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    // deprecated
     pub fn from_bitslice(slice: &BitSlice) -> Self {
         Seq {
             bv: BitVec::from_bitslice(slice),
@@ -186,103 +189,6 @@ impl<A: Codec> FromStr for Seq<A> {
             }
         }
         Ok(Seq::<A>::from_vec(v))
-    }
-}
-
-pub struct RevIter<A: Codec> {
-    seq: Seq<A>,
-    index: usize,
-}
-
-impl<A: Codec> Iterator for RevIter<A> {
-    type Item = A;
-    fn next(&mut self) -> Option<A> {
-        let w = A::WIDTH as usize;
-        if self.index == 0 {
-            return None;
-        }
-
-        self.index -= w;
-        let i = self.index;
-        Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
-        //Some(self.seq.bv[i..i+w].as_ref())
-    }
-}
-
-pub struct SeqChunks<A: Codec> {
-    seq: SeqSlice<A>,
-    width: usize,
-    skip: usize,
-    index: usize,
-}
-
-impl<A: Codec> Iterator for SeqChunks<A> {
-    type Item = SeqSlice<A>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let w = A::WIDTH as usize * self.width;
-
-        if self.index + w >= self.seq.bs.len() {
-            return None;
-        }
-        let i = self.index;
-        self.index += w + self.skip;
-        Some(SeqSlice {
-            bs: BitBox::from_bitslice(&self.seq.bs[i..i + w]),
-            _p: self.seq._p,
-        })
-    }
-}
-
-impl<A: Codec> IntoIterator for Seq<A> {
-    type Item = A;
-    type IntoIter = SeqIter<A>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        SeqIter::<A> {
-            seq: SeqSlice {
-                bs: BitBox::from_bitslice(&self.bv),
-                _p: self._p,
-            },
-            index: 0,
-        }
-    }
-}
-
-pub struct SeqIter<A: Codec> {
-    seq: SeqSlice<A>,
-    index: usize,
-}
-
-impl<A: Codec> Iterator for SeqIter<A> {
-    type Item = A;
-    fn next(&mut self) -> Option<A> {
-        let w = A::WIDTH as usize;
-        let i = self.index;
-        if self.index >= (self.seq.bs.len()) {
-            return None;
-        }
-        self.index += w;
-        Some(A::unsafe_from_bits(self.seq.bs[i..i + w].load()))
-    }
-}
-
-pub struct KmerIter<A: Codec, const K: usize> {
-    bs: BitBox,
-    index: usize,
-    len: usize,
-    _p: PhantomData<A>,
-}
-
-impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
-    type Item = Kmer<A, K>;
-    fn next(&mut self) -> Option<Kmer<A, K>> {
-        let k = K * A::WIDTH as usize;
-        let i = self.index * A::WIDTH as usize;
-        if self.index >= self.len - (K - 1) {
-            return None;
-        }
-        self.index += 1;
-        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
     }
 }
 
