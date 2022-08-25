@@ -17,16 +17,10 @@
 /// use bio_seq::codec::iupac::Iupac;
 ///
 /// // Set union:
-/// assert_eq!(
-///     format!("{}", iupac!("AS-GYTNA") | iupac!("ANTGCAT-")),
-///     "ANTGYWNA"
-/// );
+/// assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
 ///
 /// // Set intersection:
-/// assert_eq!(
-///     format!("{}", iupac!("ACGTSWKM") & iupac!("WKMSTNNA")),
-///     "A----WKA"
-/// );
+/// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 /// ```
 use crate::codec::{dna::Dna, Codec, ParseBioErr};
 use crate::seq::Seq;
