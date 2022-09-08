@@ -4,17 +4,61 @@
 // except according to those terms.
 
 use crate::codec::Codec;
-use crate::seq::{Seq, SeqSlice};
+use crate::seq::SeqSlice;
 use crate::Kmer;
-use bitvec::prelude::*;
 use std::marker::PhantomData;
 
-pub struct RevIter<A: Codec> {
-    pub seq: Seq<A>,
+pub struct SeqChunks<'a, A: Codec> {
+    slice: &'a SeqSlice<A>,
+    width: usize,
+    skip: usize,
+    index: usize,
+}
+
+impl<A: Codec> SeqSlice<A> {
+    /// Iterate over sliding windows of size K
+    pub fn kmers<'a, const K: usize>(&'a self) -> KmerIter<'a, A, K> {
+        KmerIter::<A, K> {
+            slice: self,
+            index: 0,
+            len: self.len(),
+            _p: PhantomData,
+        }
+    }
+
+    /*
+        /// Iterate over the sequence in reverse order
+        pub fn rev(self) -> RevIter<A> {
+            let index = self.bs.len();
+            RevIter::<A> { slice: self, index }
+        }
+    */
+    pub fn windows<'a>(&'a self, width: usize) -> SeqChunks<'a, A> {
+        SeqChunks {
+            slice: self,
+            width,
+            skip: 1,
+            index: 0,
+        }
+    }
+
+    pub fn chunks<'a>(&'a self, width: usize) -> SeqChunks<'a, A> {
+        SeqChunks {
+            slice: self,
+            width,
+            skip: width,
+            index: 0,
+        }
+    }
+}
+
+/*
+pub struct RevIter<'a, A: Codec> {
+    pub slice: &'a SeqSlice<A>,
     pub index: usize,
 }
 
-impl<A: Codec> Iterator for RevIter<A> {
+impl<'a, A: Codec> Iterator for RevIter<'a, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let w = A::WIDTH as usize;
@@ -24,52 +68,39 @@ impl<A: Codec> Iterator for RevIter<A> {
 
         self.index -= w;
         let i = self.index;
-        Some(A::unsafe_from_bits(self.seq.bv[i..i + w].load()))
-        //Some(self.seq.bv[i..i+w].as_ref())
+        Some(A::unsafe_from_bits(self.slice[i]))
     }
 }
+*/
 
-pub struct SeqChunks<A: Codec> {
-    pub seq: SeqSlice<A>,
-    pub width: usize,
-    pub skip: usize,
-    pub index: usize,
-}
+impl<'a, A: Codec> Iterator for SeqChunks<'a, A> {
+    type Item = &'a SeqSlice<A>;
 
-impl<A: Codec> Iterator for SeqChunks<A> {
-    type Item = SeqSlice<A>;
     fn next(&mut self) -> Option<Self::Item> {
-        let w = A::WIDTH as usize * self.width;
-
-        if self.index + w >= self.seq.bs.len() {
+        if self.index + self.width + self.skip >= self.slice.len() {
             return None;
         }
         let i = self.index;
-        self.index += w + self.skip;
-        Some(SeqSlice {
-            bs: BitBox::from_bitslice(&self.seq.bs[i..i + w]),
-            _p: self.seq._p,
-        })
+        self.index += self.width + self.skip;
+        Some(&self.slice[i..self.width])
     }
 }
 
-impl<A: Codec> IntoIterator for Seq<A> {
+/*
+impl<A: Codec> IntoIterator for SeqSlice<A> {
     type Item = A;
     type IntoIter = SeqIter<A>;
 
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(&self) -> Self::IntoIter {
         SeqIter::<A> {
-            seq: SeqSlice {
-                bs: BitBox::from_bitslice(&self.bv),
-                _p: self._p,
-            },
+            slice: Box::new(self),
             index: 0,
         }
     }
 }
 
 pub struct SeqIter<A: Codec> {
-    seq: SeqSlice<A>,
+    slice: Box<SeqSlice<A>>,
     index: usize,
 }
 
@@ -78,31 +109,31 @@ impl<A: Codec> Iterator for SeqIter<A> {
     fn next(&mut self) -> Option<A> {
         let w = A::WIDTH as usize;
         let i = self.index;
-        if self.index >= (self.seq.bs.len()) {
+        if self.index >= (self.slice.len()) {
             return None;
         }
         self.index += w;
-        Some(A::unsafe_from_bits(self.seq.bs[i..i + w].load()))
+        Some(A::unsafe_from_bits(self.slice[i]))
     }
 }
+*/
 
-pub struct KmerIter<A: Codec, const K: usize> {
-    pub bs: BitBox,
+pub struct KmerIter<'a, A: Codec, const K: usize> {
+    pub slice: &'a SeqSlice<A>,
     pub index: usize,
     pub len: usize,
     pub _p: PhantomData<A>,
 }
 
-impl<A: Codec, const K: usize> Iterator for KmerIter<A, K> {
+impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
-        let k = K * A::WIDTH as usize;
-        let i = self.index * A::WIDTH as usize;
+        let i = self.index;
         if self.index >= self.len - (K - 1) {
             return None;
         }
         self.index += 1;
-        Some(Kmer::<A, K>::new(&self.bs[i..k + i]))
+        Some(Kmer::<A, K>::from(&self.slice[i..K + i]))
     }
 }
 

@@ -4,7 +4,7 @@
 // except according to those terms.
 
 use crate::codec::{Codec, ParseBioErr};
-use crate::seq::Seq;
+use crate::Seq;
 use bitvec::prelude::*;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -32,6 +32,13 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     }
 }
 
+/*
+impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
+    fn from(slice: &SeqSlice<A>) -> usize {
+        kmer.bs
+    }
+}
+*/
 impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
     fn from(kmer: &Kmer<A, K>) -> usize {
         kmer.bs
@@ -76,7 +83,8 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
         if seq.len() != K {
             Err(ParseBioErr)
         } else {
-            Ok(Kmer::<A, K>::new(&seq.bv[0..(K * A::WIDTH as usize)]))
+            Ok(Kmer::<A, K>::from(&seq[0..K]))
+            //            Ok(Kmer::<A, K>::new(&seq.bv[0..(K * A::WIDTH as usize)]))
         }
     }
 }

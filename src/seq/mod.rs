@@ -5,12 +5,13 @@
 
 mod iterators;
 
-use crate::codec::{Codec, Complement, ReverseComplement};
-use crate::seq::iterators::{KmerIter, RevIter, SeqChunks};
+use crate::codec::Codec;
+use crate::kmer::Kmer;
 use bitvec::prelude::*;
+use core::borrow::Borrow;
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::{Index, Range};
+use std::ops::{Index, Range, RangeFull};
 pub use std::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
@@ -18,17 +19,28 @@ pub use std::str::FromStr;
 /// Allocated to the heap
 #[derive(Debug, PartialEq, Eq)]
 pub struct Seq<A: Codec> {
-    pub bv: BitVec,
     _p: PhantomData<A>,
+    bv: BitVec,
 }
 
-/// A boxed slice of a Seq
+/// A slice of a Seq
+#[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
-    pub bs: BitBox,
     _p: PhantomData<A>,
+    bs: BitSlice,
+}
+
+impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
+    fn from(slice: &SeqSlice<A>) -> Self {
+        Kmer {
+            bs: slice.bs.load::<usize>(),
+            _p: PhantomData,
+        }
+    }
 }
 
 // this should be private to the module
+/*
 impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
     fn from(slice: &BitSlice) -> SeqSlice<A> {
         SeqSlice {
@@ -37,16 +49,19 @@ impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
         }
     }
 }
+*/
 
-impl<A: Codec + Complement> ReverseComplement for Seq<A> {
-    fn revcomp(self) -> Self {
+/*
+impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
+    fn revcomp(&self) -> Seq<A> {
         let mut v = vec![];
         for base in self.rev() {
             v.push(base.comp());
         }
-        Self::from_vec(v)
+        Seq<A>::from_vec(v)
     }
 }
+*/
 
 #[derive(Debug, Clone)]
 pub struct ParseSeqErr;
@@ -66,16 +81,8 @@ impl<A: Codec> Seq<A> {
             bv.extend_from_bitslice(&(byte as u8).view_bits::<Lsb0>()[..A::WIDTH as usize]);
         }
         Seq {
+            _p: PhantomData,
             bv,
-            _p: PhantomData,
-        }
-    }
-
-    // deprecated
-    pub fn from_bitslice(slice: &BitSlice) -> Self {
-        Seq {
-            bv: BitVec::from_bitslice(slice),
-            _p: PhantomData,
         }
     }
 
@@ -92,68 +99,90 @@ impl<A: Codec> Seq<A> {
         self.len() == 0
     }
 
-    /// Iterate over the sequence in reverse order
-    pub fn rev(self) -> RevIter<A> {
-        let index = self.bv.len();
-        RevIter::<A> { seq: self, index }
-    }
-
-    /// Iterate over sliding windows of size K
-    pub fn kmers<const K: usize>(self) -> KmerIter<A, K> {
-        KmerIter::<A, K> {
-            bs: BitBox::from_bitslice(&self.bv),
-            index: 0,
-            len: self.len(),
+    pub fn bit_and(self, rhs: Seq<A>) -> Seq<A> {
+        Seq::<A> {
             _p: PhantomData,
+            bv: BitVec::from_bitslice(&(self.bv & rhs.bv)),
         }
     }
 
-    pub fn windows(self, width: usize) -> SeqChunks<A> {
-        SeqChunks {
-            seq: SeqSlice {
-                bs: BitBox::from_bitslice(&self.bv),
-                _p: self._p,
-            },
-            width,
-            skip: A::WIDTH as usize,
-            index: 0,
+    pub fn bit_or(self, rhs: Seq<A>) -> Seq<A> {
+        Seq::<A> {
+            _p: PhantomData,
+            bv: BitVec::from_bitslice(&(self.bv | rhs.bv)),
         }
     }
+}
 
-    pub fn chunks(self, width: usize) -> SeqChunks<A> {
-        SeqChunks {
-            seq: SeqSlice {
-                bs: BitBox::from_bitslice(&self.bv),
-                _p: self._p,
-            },
-            width,
-            skip: A::WIDTH as usize * width,
-            index: 0,
-        }
+impl<A: Codec> SeqSlice<A> {
+    pub fn nth(&self, i: usize) -> A {
+        let w = A::WIDTH as usize;
+        A::unsafe_from_bits(self.bs[i * w..(i * w) + w].load())
     }
 
-    pub fn raw(&self) -> &[usize] {
-        self.bv.as_raw_slice()
+    pub fn len(&self) -> usize {
+        self.bs.len() / A::WIDTH as usize
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
+    fn borrow(&self) -> &SeqSlice<A> {
+        &self[..]
     }
 }
 
 impl<A: Codec> Index<Range<usize>> for Seq<A> {
-    type Output = BitSlice;
+    type Output = SeqSlice<A>;
 
     fn index(&self, range: Range<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
         let e = range.end * A::WIDTH as usize;
-        &self.bv[s..e]
+        let bs = &self.bv[s..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
     }
 }
 
-impl<A: Codec> Index<usize> for Seq<A> {
-    type Output = BitSlice;
+impl<A: Codec> Index<RangeFull> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, _range: RangeFull) -> &Self::Output {
+        let bs =
+            &self.bv[0..self.bv.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: Range<usize>) -> &Self::Output {
+        let s = range.start * A::WIDTH as usize;
+        let e = range.end * A::WIDTH as usize;
+        let bs = &self.bs[s..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, _range: RangeFull) -> &Self::Output {
+        let bs =
+            &self.bs[0..self.bs.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<usize> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
 
     fn index(&self, i: usize) -> &Self::Output {
-        let s = i * A::WIDTH as usize;
-        let e = s + A::WIDTH as usize;
-        &self.bv[s..e]
+        //A::unsafe_from_bits(self.bs[s..e].load());
+        //&self.bs[s..e].load::<u8>()
+        &self[i..i + 1]
     }
 }
 
