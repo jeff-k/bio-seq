@@ -35,7 +35,7 @@ impl<A: Codec> SeqSlice<A> {
     pub fn rev(&self) -> RevIter<A> {
         RevIter {
             slice: self,
-            index: self.len(),
+            index: self.len() - 1,
         }
     }
 
@@ -127,11 +127,11 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
         let i = self.index;
-        if self.index >= self.len - (K - 1) {
+        if self.index + K >= self.len {
             return None;
         }
         self.index += 1;
-        Some(Kmer::<A, K>::from(&self.slice[i..K + i]))
+        Some(Kmer::<A, K>::from(&self.slice[i..i + K]))
     }
 }
 

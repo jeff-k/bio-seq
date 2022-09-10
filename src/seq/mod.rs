@@ -79,8 +79,7 @@ impl<A: Codec> Seq<A> {
     }
 
     pub fn nth(&self, i: usize) -> A {
-        let w = A::WIDTH as usize;
-        A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
+        A::unsafe_from_bits(self[i].into())
     }
 
     pub fn len(&self) -> usize {
@@ -108,8 +107,7 @@ impl<A: Codec> Seq<A> {
 
 impl<A: Codec> SeqSlice<A> {
     pub fn nth(&self, i: usize) -> A {
-        let w = A::WIDTH as usize;
-        A::unsafe_from_bits(self.bs[i * w..(i * w) + w].load())
+        A::unsafe_from_bits(self[i].into())
     }
 
     pub fn len(&self) -> usize {
