@@ -30,7 +30,7 @@ fn main() {
 
 ## Codecs
 
-The `Codec` trait desribes the coding/decoding process for the characters of a biological sequence. There are four built-in codecs:
+The `Codec` trait describes the coding/decoding process for the characters of a biological sequence. This trait can be derived procedurally. There are three built-in codecs:
 
 ### `codec::Dna`
 Using the lexicographically ordered 2-bit representation
@@ -51,12 +51,9 @@ assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 ### `codec::Amino`
 Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
-### TODO `codec::ascii::Dna`
-for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
-
 ## Sequences
 
-Strings of encoded biological characters are packed into `Seq`s. This are allocated on the heap and may be mutable. Slicing, chunking, and windowing return instances of `SeqSlice`.
+Strings of encoded biological characters are packed into `Seq`s. Slicing, chunking, and windowing return `SeqSlice`s. `Seq<A: Codec>`/`&SeqSlice<A: Codec>` are analogous to `String`/`&str`.
 
 ## Kmers
 
