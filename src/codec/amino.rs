@@ -4,8 +4,8 @@
 /// With the 6-bit representation a `Seq<Dna>` sequence can be read as an amino acid
 /// sequence in place.
 use crate::codec::{Codec, ParseBioErr};
-use std::fmt;
-//use std::str::FromStr;
+use core::fmt;
+//use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
 #[width = 6]

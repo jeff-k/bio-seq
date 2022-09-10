@@ -1,7 +1,7 @@
 /// 2-bit DNA representation
 ///
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
 
 use crate::codec::{Codec, Complement, ParseBioErr};
 use crate::Kmer;
@@ -103,8 +103,8 @@ mod tests {
     use crate::codec::dna::*;
     use crate::codec::{Complement, ParseBioErr};
     use crate::{Kmer, Seq};
-    use std::convert::TryFrom;
-    use std::str::FromStr;
+    use core::convert::TryFrom;
+    use core::str::FromStr;
 
     #[test]
     fn dna_kmer_equality() -> Result<(), ParseBioErr> {

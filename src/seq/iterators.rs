@@ -6,7 +6,7 @@
 use crate::codec::Codec;
 use crate::seq::SeqSlice;
 use crate::Kmer;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 pub struct SeqChunks<'a, A: Codec> {
     slice: &'a SeqSlice<A>,

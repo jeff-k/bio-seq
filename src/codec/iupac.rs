@@ -23,8 +23,8 @@
 /// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 /// ```
 use crate::codec::{dna::Dna, Codec, ParseBioErr};
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
 #[width = 4]

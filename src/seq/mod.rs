@@ -9,11 +9,11 @@ use crate::codec::Codec;
 use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use core::borrow::Borrow;
-use core::hash::Hash;
+use core::fmt;
+use core::hash::{Hash, Hasher};
+use core::marker::PhantomData;
 use core::ops::{Deref, Index, Range, RangeFull};
-use std::fmt;
-use std::marker::PhantomData;
-pub use std::str::FromStr;
+pub use core::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
 ///
@@ -135,8 +135,9 @@ impl<A: Codec> SeqSlice<A> {
 }
 
 impl<A: Codec> Hash for SeqSlice<A> {
-    fn hash<H>(&self, _hasher: &mut H) {
-        unimplemented!()
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bs.hash(state);
+        self.len().hash(state);
     }
 }
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {

@@ -7,7 +7,7 @@ pub mod dna;
 #[macro_use]
 pub mod iupac;
 
-use std::fmt;
+use core::fmt;
 
 use bio_seq_derive::Codec;
 

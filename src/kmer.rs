@@ -6,9 +6,9 @@
 use crate::codec::{Codec, ParseBioErr};
 use crate::Seq;
 use bitvec::prelude::*;
-use std::fmt;
-use std::hash::{Hash, Hasher};
-use std::marker::PhantomData;
+use core::fmt;
+use core::hash::{Hash, Hasher};
+use core::marker::PhantomData;
 
 /// ## Kmers
 ///
@@ -94,7 +94,7 @@ mod tests {
     use crate::codec::amino::Amino;
     use crate::codec::dna::Dna;
     use crate::Seq;
-    use std::str::FromStr;
+    use core::str::FromStr;
     #[test]
     fn kmer_to_usize() {
         for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {

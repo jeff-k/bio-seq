@@ -24,7 +24,7 @@ pub mod seq;
 pub use crate::kmer::Kmer;
 pub use crate::seq::Seq;
 
-pub use std::str::FromStr;
+pub use core::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -33,7 +33,7 @@ mod tests {
     use crate::codec::dna::Dna::{A, C, G, T};
     use crate::codec::iupac::Iupac;
     use crate::seq::Seq;
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     #[test]
     fn alt_repr() {
