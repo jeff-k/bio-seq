@@ -40,22 +40,29 @@ mod tests {
         assert_eq!(iupac!("-").nth(0), Iupac::X);
     }
 
-    /*
     #[test]
-    fn make_from_vector() {
-        assert_eq!(Seq::from_vec(vec![A, C, G, T]).into(), 0b11_10_01_00 as usize);
-        assert_eq!(Seq::from_vec(vec![C, G, C, G]).into(), 0b10_01_10_01);
-        assert_eq!(Seq::from_vec(vec![T, T]).into(), 0b11_11);
-        assert_eq!(Seq::from_vec(vec![T, C, A]).into(), 0b00_01_11);
-        assert_eq!(Seq::from_vec(vec![T, G, A]).into(), 0b00_10_11);
+    fn into_usize() {
+        let a: usize = dna!("ACGT").into();
+        assert_eq!(a, 0b11_10_01_00);
 
-        assert_eq!(
-            Seq::from_vec(vec![C, G, T, A, C, G, A, T]).into(),
-            0b11_00_10_01_00_11_10_01
-        );
-        assert_eq!(Seq::from_vec(vec![A,]).into(), 0b00);
+        let b: usize = dna!("CGCG").into();
+        assert_eq!(b, 0b10_01_10_01);
+
+        let c: usize = Seq::from_vec(vec![T, T]).into();
+        assert_eq!(c, 0b11_11);
+
+        let d: usize = Seq::<Dna>::from_str("TCA").unwrap().into();
+        assert_eq!(d, 0b00_01_11);
+
+        let e: usize = Seq::<Dna>::from_str("TGA").unwrap().into();
+        assert_eq!(e, 0b00_10_11);
+
+        let f: usize = Seq::from_vec(vec![C, G, T, A, C, G, A, T]).into();
+        assert_eq!(f, 0b11_00_10_01_00_11_10_01);
+
+        let g: usize = Seq::from_vec(vec![A]).into();
+        assert_eq!(g, 0b00);
     }
-    */
 
     #[test]
     fn test_display_dna() {
@@ -143,13 +150,11 @@ mod tests {
         }
     }
 
-    /*
     #[test]
     fn iupac_bitwise_ops() {
         assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
         assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
     }
-    */
 
     #[test]
     fn nth_chars() {

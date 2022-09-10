@@ -26,15 +26,23 @@ pub struct Seq<A: Codec> {
 }
 
 /// A slice of a Seq
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Eq)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
     bs: BitSlice,
 }
 
+impl<A: Codec> From<Seq<A>> for usize {
+    fn from(slice: Seq<A>) -> usize {
+        assert!(slice.bv.len() <= usize::BITS as usize);
+        slice.bv.load::<usize>()
+    }
+}
+
 impl<A: Codec> From<&SeqSlice<A>> for usize {
     fn from(slice: &SeqSlice<A>) -> usize {
+        assert!(slice.bs.len() <= usize::BITS as usize);
         slice.bs.load::<usize>()
     }
 }
@@ -123,6 +131,12 @@ impl<A: Codec> SeqSlice<A> {
 
     pub fn contains(&self, _other: &SeqSlice<A>) -> bool {
         unimplemented!()
+    }
+}
+
+impl<A: Codec> PartialEq for SeqSlice<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bs == other.bs
     }
 }
 

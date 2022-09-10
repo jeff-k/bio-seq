@@ -7,6 +7,8 @@ use core::str::FromStr;
 use crate::codec::{Codec, Complement, ParseBioErr};
 use crate::Kmer;
 
+use bitvec::prelude::*;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Codec)]
 #[width = 2]
 #[repr(u8)]
@@ -21,7 +23,8 @@ impl<const K: usize> Complement for Kmer<Dna, K> {
     fn comp(self: Kmer<Dna, K>) -> Self {
         Kmer {
             _p: PhantomData,
-            bs: self.bs ^ usize::MAX, // need to mask upper bits
+            bs: (self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize]
+                .load::<usize>(), // need to mask upper bits
         }
     }
 }

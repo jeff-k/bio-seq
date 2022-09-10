@@ -23,7 +23,10 @@
 /// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 /// ```
 use crate::codec::{dna::Dna, Codec, ParseBioErr};
+use crate::seq::Seq;
+
 use core::fmt;
+use core::ops::{BitAnd, BitOr};
 use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
@@ -85,12 +88,11 @@ impl From<Iupac> for u8 {
     }
 }
 
-/*
 impl BitAnd for Seq<Iupac> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-
+        self.bit_and(rhs)
     }
 }
 
@@ -98,14 +100,9 @@ impl BitOr for Seq<Iupac> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Seq::<Iupac> {
-            _p: PhantomData,
-            bv: BitVec::from_bitslice(&self.bit_or(rhs)),
-        }
+        self.bit_or(rhs)
     }
-
 }
-*/
 
 impl FromStr for Iupac {
     type Err = ParseBioErr;

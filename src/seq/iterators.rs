@@ -76,15 +76,15 @@ impl<'a, A: Codec> Iterator for RevIter<'a, A> {
     }
 }
 
-impl<'a, A: Codec> Iterator for SeqChunks<'a, A> {
+impl<'a, A: Codec + std::fmt::Debug> Iterator for SeqChunks<'a, A> {
     type Item = &'a SeqSlice<A>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index + self.width >= self.slice.len() {
+        if self.index + self.width > self.slice.len() {
             return None;
         }
         let i = self.index;
-        self.index += self.width + self.skip;
+        self.index += self.skip;
         Some(&self.slice[i..i + self.width])
     }
 }
@@ -142,17 +142,24 @@ mod tests {
     use crate::codec::dna::*;
     use crate::seq::{FromStr, Seq, SeqSlice};
 
-    /*
     #[test]
     fn chunks() {
-        let cs: Vec<&SeqSlice<Dna>> = dna!("ACTGATACGTA").chunks(5).collect();
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let cs: Vec<&SeqSlice<Dna>> = seq.chunks(5).collect();
         assert_eq!(format!("{}", cs[0]), "ACTGA");
+        assert_eq!(format!("{}", cs[1]), "TCGAT");
+        assert_eq!(cs.len(), 2);
     }
 
     #[test]
     fn windows() {
-        let cs: Vec<Seq<Dna>> = dna!("ACTGATACGTA").windows(5).collect();
+        let seq: Seq<Dna> = dna!("ACTGATACG");
+        let cs: Vec<&SeqSlice<Dna>> = seq.windows(5).collect();
         assert_eq!(format!("{}", cs[0]), "ACTGA");
+        assert_eq!(format!("{}", cs[1]), "CTGAT");
+        assert_eq!(format!("{}", cs[2]), "TGATA");
+        assert_eq!(format!("{}", cs[3]), "GATAC");
+        assert_eq!(format!("{}", cs[4]), "ATACG");
+        assert_eq!(cs.len(), 5);
     }
-    */
 }
