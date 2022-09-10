@@ -5,8 +5,10 @@
 
 mod iterators;
 
-use crate::codec::Codec;
+use crate::codec::{Codec, Complement, ReverseComplement};
+
 use bitvec::prelude::*;
+
 use core::borrow::Borrow;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -24,6 +26,7 @@ pub struct Seq<A: Codec> {
 }
 
 /// A slice of a Seq
+#[derive(Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
@@ -42,17 +45,15 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
     }
 }
 
-/*
-impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
-    fn revcomp(&self) -> Seq<A> {
+impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+    fn revcomp(self) -> Seq<A> {
         let mut v = vec![];
         for base in self.rev() {
             v.push(base.comp());
         }
-        Seq<A>::from_vec(v)
+        Seq::<A>::from_vec(v)
     }
 }
-*/
 
 #[derive(Debug, Clone)]
 pub struct ParseSeqErr;
@@ -154,6 +155,14 @@ impl<A: Codec> Index<RangeFull> for Seq<A> {
         let bs =
             &self.bv[0..self.bv.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<usize> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        &self[i..i + 1]
     }
 }
 
@@ -291,7 +300,7 @@ mod tests {
     #[test]
     fn from_slice() {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
-        let s: SeqSlice<Dna> = s1[15..21].into();
+        let s: &SeqSlice<Dna> = &s1[15..21];
         assert_eq!(format!("{}", s), "GATCAA");
     }
 }
