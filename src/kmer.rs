@@ -4,7 +4,7 @@
 // except according to those terms.
 
 use crate::codec::{Codec, ParseBioErr};
-use crate::Seq;
+use crate::{Seq, SeqSlice};
 use bitvec::prelude::*;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -18,27 +18,19 @@ use core::marker::PhantomData;
 /// `simd::Kmer`
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Kmer<C: Codec, const K: usize> {
-    pub bs: usize,
     pub _p: PhantomData<C>,
+    pub bs: usize,
 }
 
-impl<A: Codec, const K: usize> Kmer<A, K> {
-    pub fn new(s: &BitSlice) -> Kmer<A, K> {
-        assert_eq!(K, s.len() / A::WIDTH as usize);
+impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
+    fn from(i: usize) -> Kmer<A, K> {
         Kmer {
-            bs: s.load::<usize>(),
             _p: PhantomData,
+            bs: i,
         }
     }
 }
 
-/*
-impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
-    fn from(slice: &SeqSlice<A>) -> usize {
-        kmer.bs
-    }
-}
-*/
 impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
     fn from(kmer: &Kmer<A, K>) -> usize {
         kmer.bs
@@ -70,12 +62,6 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
-    fn from(_uint: usize) -> Kmer<A, K> {
-        unimplemented!();
-    }
-}
-
 impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
     type Error = ParseBioErr;
 
@@ -84,7 +70,16 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
             Err(ParseBioErr)
         } else {
             Ok(Kmer::<A, K>::from(&seq[0..K]))
-            //            Ok(Kmer::<A, K>::new(&seq.bv[0..(K * A::WIDTH as usize)]))
+        }
+    }
+}
+
+impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
+    fn from(slice: &SeqSlice<A>) -> Self {
+        assert_eq!(K, slice.len());
+        Kmer {
+            _p: PhantomData,
+            bs: slice.into(),
         }
     }
 }

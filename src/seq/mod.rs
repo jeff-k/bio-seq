@@ -6,7 +6,6 @@
 mod iterators;
 
 use crate::codec::Codec;
-use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use core::borrow::Borrow;
 use core::fmt;
@@ -31,15 +30,6 @@ pub struct SeqSlice<A: Codec> {
     bs: BitSlice,
 }
 
-impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
-    fn from(slice: &SeqSlice<A>) -> Self {
-        Kmer {
-            bs: slice.bs.load::<usize>(),
-            _p: PhantomData,
-        }
-    }
-}
-
 // this should be private to the module
 /*
 impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
@@ -51,6 +41,12 @@ impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
     }
 }
 */
+
+impl<A: Codec> From<&SeqSlice<A>> for usize {
+    fn from(slice: &SeqSlice<A>) -> usize {
+        slice.bs.load::<usize>()
+    }
+}
 
 /*
 impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {

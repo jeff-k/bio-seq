@@ -22,7 +22,7 @@ pub mod kmer;
 pub mod seq;
 
 pub use crate::kmer::Kmer;
-pub use crate::seq::Seq;
+pub use crate::seq::{Seq, SeqSlice};
 
 pub use core::str::FromStr;
 
