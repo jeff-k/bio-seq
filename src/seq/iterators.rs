@@ -98,7 +98,21 @@ impl<A: Codec> IntoIterator for SeqSlice<A> {
         }
     }
 }
+*/
 
+// TODO
+// IntoIter for Seq should box the contained slice
+// IntoIter for &'a Seq
+//
+// chunks + windows implemented for slice, available from
+// Deref<Target = SeqSlice>
+// AsRef<SeqSlice<A>>
+// From<SeqSlice>
+
+// seqslice:
+// contains
+// [iterators]
+/*
 pub struct SeqIter<A: Codec> {
     slice: Box<SeqSlice<A>>,
     index: usize,

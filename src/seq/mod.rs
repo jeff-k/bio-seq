@@ -254,11 +254,11 @@ mod tests {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
         let s2 = dna!("ACGTGTGTGCTAGCTAATCGATCAAAAAG");
 
-        assert_eq!(s1[0], s2[0]);
-        assert_ne!(s1[1], s2[1]);
-        assert_eq!(s1[2..4], s2[2..4]);
-        assert_eq!(s1[15..21], s2[19..25]);
-        assert_ne!(s1[2..20], s2[2..20]);
+        assert_eq!(&s1[0], &s2[0]);
+        assert_ne!(&s1[1], &s2[1]);
+        assert_eq!(&s1[2..4], &s2[2..4]);
+        assert_eq!(&s1[15..21], &s2[19..25]);
+        assert_ne!(&s1[2..20], &s2[2..20]);
     }
 
     #[test]
