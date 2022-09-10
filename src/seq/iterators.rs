@@ -15,6 +15,11 @@ pub struct SeqChunks<'a, A: Codec> {
     index: usize,
 }
 
+pub struct SeqIter<'a, A: Codec> {
+    slice: &'a SeqSlice<A>,
+    index: usize,
+}
+
 impl<A: Codec> SeqSlice<A> {
     /// Iterate over sliding windows of size K
     pub fn kmers<const K: usize>(&self) -> KmerIter<A, K> {
@@ -26,13 +31,14 @@ impl<A: Codec> SeqSlice<A> {
         }
     }
 
-    /*
-        /// Iterate over the sequence in reverse order
-        pub fn rev(self) -> RevIter<A> {
-            let index = self.bs.len();
-            RevIter::<A> { slice: self, index }
+    /// Iterate over the sequence in reverse order
+    pub fn rev(&self) -> RevIter<A> {
+        RevIter {
+            slice: self,
+            index: self.len(),
         }
-    */
+    }
+
     pub fn windows(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
             slice: self,
@@ -52,7 +58,6 @@ impl<A: Codec> SeqSlice<A> {
     }
 }
 
-/*
 pub struct RevIter<'a, A: Codec> {
     pub slice: &'a SeqSlice<A>,
     pub index: usize,
@@ -61,68 +66,55 @@ pub struct RevIter<'a, A: Codec> {
 impl<'a, A: Codec> Iterator for RevIter<'a, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
-        let w = A::WIDTH as usize;
+        let i = self.index;
         if self.index == 0 {
             return None;
         }
-
-        self.index -= w;
-        let i = self.index;
-        Some(A::unsafe_from_bits(self.slice[i]))
+        self.index -= 1;
+        Some(A::unsafe_from_bits(self.slice[i].into()))
     }
 }
-*/
 
 impl<'a, A: Codec> Iterator for SeqChunks<'a, A> {
     type Item = &'a SeqSlice<A>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index + self.width + self.skip >= self.slice.len() {
+        if self.index + self.width >= self.slice.len() {
             return None;
         }
         let i = self.index;
         self.index += self.width + self.skip;
-        Some(&self.slice[i..self.width])
+        Some(&self.slice[i..i + self.width])
     }
 }
 
-/*
-impl<A: Codec> IntoIterator for SeqSlice<A> {
+impl<'a, A: Codec> IntoIterator for &'a SeqSlice<A> {
     type Item = A;
-    type IntoIter = SeqIter<A>;
+    type IntoIter = SeqIter<'a, A>;
 
-    fn into_iter(&self) -> Self::IntoIter {
-        SeqIter::<A> {
-            slice: Box::new(self),
+    fn into_iter(self) -> Self::IntoIter {
+        SeqIter {
+            slice: self,
             index: 0,
         }
     }
 }
-*/
 
 // TODO
 // IntoIter for Seq should box the contained slice
 // IntoIter for &'a Seq
 
-/*
-pub struct SeqIter<A: Codec> {
-    slice: Box<SeqSlice<A>>,
-    index: usize,
-}
-
-impl<A: Codec> Iterator for SeqIter<A> {
+impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
-        let w = A::WIDTH as usize;
         let i = self.index;
         if self.index >= (self.slice.len()) {
             return None;
         }
-        self.index += w;
-        Some(A::unsafe_from_bits(self.slice[i]))
+        self.index += 1;
+        Some(A::unsafe_from_bits(self.slice[i].into()))
     }
 }
-*/
 
 pub struct KmerIter<'a, A: Codec, const K: usize> {
     pub slice: &'a SeqSlice<A>,

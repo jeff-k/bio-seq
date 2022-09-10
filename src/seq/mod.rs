@@ -30,21 +30,15 @@ pub struct SeqSlice<A: Codec> {
     bs: BitSlice,
 }
 
-// this should be private to the module
-/*
-impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
-    fn from(slice: &BitSlice) -> SeqSlice<A> {
-        SeqSlice {
-            bs: BitBox::from_bitslice(slice),
-            _p: PhantomData,
-        }
-    }
-}
-*/
-
 impl<A: Codec> From<&SeqSlice<A>> for usize {
     fn from(slice: &SeqSlice<A>) -> usize {
         slice.bs.load::<usize>()
+    }
+}
+
+impl<A: Codec> From<&SeqSlice<A>> for u8 {
+    fn from(slice: &SeqSlice<A>) -> u8 {
+        slice.bs.load::<u8>()
     }
 }
 
@@ -197,13 +191,13 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
 impl<A: Codec> Deref for Seq<A> {
     type Target = SeqSlice<A>;
     fn deref(&self) -> &Self::Target {
-        unimplemented!()
+        &self[..]
     }
 }
 
 impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
     fn as_ref(&self) -> &SeqSlice<A> {
-        unimplemented!()
+        &self[..]
     }
 }
 
