@@ -9,9 +9,10 @@ use crate::codec::Codec;
 use crate::kmer::Kmer;
 use bitvec::prelude::*;
 use core::borrow::Borrow;
+use core::hash::Hash;
+use core::ops::{Deref, Index, Range, RangeFull};
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::{Index, Range, RangeFull};
 pub use std::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
@@ -127,6 +128,16 @@ impl<A: Codec> SeqSlice<A> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    pub fn contains(&self, _other: &SeqSlice<A>) -> bool {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec> Hash for SeqSlice<A> {
+    fn hash<H>(&self, _hasher: &mut H) {
+        unimplemented!()
+    }
 }
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
     fn borrow(&self) -> &SeqSlice<A> {
@@ -183,6 +194,31 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
         //A::unsafe_from_bits(self.bs[s..e].load());
         //&self.bs[s..e].load::<u8>()
         &self[i..i + 1]
+    }
+}
+
+impl<A: Codec> Deref for Seq<A> {
+    type Target = SeqSlice<A>;
+    fn deref(&self) -> &Self::Target {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
+    fn as_ref(&self) -> &SeqSlice<A> {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec> AsRef<Seq<A>> for Seq<A> {
+    fn as_ref(&self) -> &Self {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
+    fn from(_slice: &SeqSlice<A>) -> Self {
+        unimplemented!()
     }
 }
 

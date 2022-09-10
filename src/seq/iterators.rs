@@ -17,7 +17,7 @@ pub struct SeqChunks<'a, A: Codec> {
 
 impl<A: Codec> SeqSlice<A> {
     /// Iterate over sliding windows of size K
-    pub fn kmers<'a, const K: usize>(&'a self) -> KmerIter<'a, A, K> {
+    pub fn kmers<const K: usize>(&self) -> KmerIter<A, K> {
         KmerIter::<A, K> {
             slice: self,
             index: 0,
@@ -33,7 +33,7 @@ impl<A: Codec> SeqSlice<A> {
             RevIter::<A> { slice: self, index }
         }
     */
-    pub fn windows<'a>(&'a self, width: usize) -> SeqChunks<'a, A> {
+    pub fn windows(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
             slice: self,
             width,
@@ -42,7 +42,7 @@ impl<A: Codec> SeqSlice<A> {
         }
     }
 
-    pub fn chunks<'a>(&'a self, width: usize) -> SeqChunks<'a, A> {
+    pub fn chunks(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
             slice: self,
             width,
@@ -103,15 +103,7 @@ impl<A: Codec> IntoIterator for SeqSlice<A> {
 // TODO
 // IntoIter for Seq should box the contained slice
 // IntoIter for &'a Seq
-//
-// chunks + windows implemented for slice, available from
-// Deref<Target = SeqSlice>
-// AsRef<SeqSlice<A>>
-// From<SeqSlice>
 
-// seqslice:
-// contains
-// [iterators]
 /*
 pub struct SeqIter<A: Codec> {
     slice: Box<SeqSlice<A>>,
