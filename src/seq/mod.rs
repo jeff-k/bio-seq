@@ -45,12 +45,15 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
     }
 }
 
-impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+impl<A: Codec + Complement + std::fmt::Debug> ReverseComplement for Seq<A> {
     fn revcomp(self) -> Seq<A> {
         let mut v = vec![];
+        println!("{}", self);
         for base in self.rev() {
+            println!("{:?}", base.to_char());
             v.push(base.comp());
         }
+        println!("out {:?}", v);
         Seq::<A>::from_vec(v)
     }
 }
@@ -150,8 +153,7 @@ impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs =
-            &self.bv[0..self.bv.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[0..self.bv.len() as usize] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -179,8 +181,7 @@ impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs =
-            &self.bs[0..self.bs.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[0..self.bs.len() as usize] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }

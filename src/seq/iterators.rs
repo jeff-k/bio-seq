@@ -35,7 +35,7 @@ impl<A: Codec> SeqSlice<A> {
     pub fn rev(&self) -> RevIter<A> {
         RevIter {
             slice: self,
-            index: self.len() - 1,
+            index: self.len(),
         }
     }
 
@@ -67,11 +67,12 @@ impl<'a, A: Codec> Iterator for RevIter<'a, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let i = self.index;
+
         if self.index == 0 {
             return None;
         }
         self.index -= 1;
-        Some(A::unsafe_from_bits(self.slice[i].into()))
+        Some(A::unsafe_from_bits(self.slice[i - 1].into()))
     }
 }
 
@@ -108,7 +109,8 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let i = self.index;
-        if self.index >= (self.slice.len()) {
+        if self.index >= self.slice.len() {
+            println!("slicing @ {}", self.index);
             return None;
         }
         self.index += 1;
