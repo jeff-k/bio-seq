@@ -37,6 +37,12 @@ impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
     }
 }
 
+impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
+    fn from(kmer: Kmer<A, K>) -> usize {
+        kmer.bs
+    }
+}
+
 impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();

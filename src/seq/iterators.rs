@@ -129,7 +129,7 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
         let i = self.index;
-        if self.index + K >= self.len {
+        if self.index + K > self.len {
             return None;
         }
         self.index += 1;
@@ -140,6 +140,7 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::*;
+    use crate::kmer::Kmer;
     use crate::seq::{FromStr, Seq, SeqSlice};
 
     #[test]
@@ -149,6 +150,16 @@ mod tests {
         assert_eq!(format!("{}", cs[0]), "ACTGA");
         assert_eq!(format!("{}", cs[1]), "TCGAT");
         assert_eq!(cs.len(), 2);
+    }
+
+    #[test]
+    fn kmer_iter() {
+        let seq: Seq<Dna> = dna!("ACTGA");
+        let cs: Vec<Kmer<Dna, 3>> = seq.kmers().collect();
+        assert_eq!(format!("{}", cs[0]), "ACT");
+        assert_eq!(format!("{}", cs[1]), "CTG");
+        assert_eq!(format!("{}", cs[2]), "TGA");
+        assert_eq!(cs.len(), 3);
     }
 
     #[test]

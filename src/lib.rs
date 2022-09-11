@@ -46,6 +46,7 @@
 pub mod codec;
 pub mod kmer;
 pub mod seq;
+pub mod translation;
 
 pub use crate::kmer::Kmer;
 pub use crate::seq::{Seq, SeqSlice};

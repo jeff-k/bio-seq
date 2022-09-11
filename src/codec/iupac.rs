@@ -48,7 +48,7 @@ pub enum Iupac {
     H = 0b1101,
     V = 0b1110,
     N = 0b1111,
-    #[alt = '-']
+    #[display = '-']
     X = 0b0000,
 }
 
