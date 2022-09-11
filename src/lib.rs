@@ -13,8 +13,34 @@
 //! incuding amino acid translation, k-mer minimisation and hashing, and
 //! nucleotide sequence manipulation.
 //!
+//! ```rust
+//! use bio_seq::{dna, Seq, FromStr};
+//! use bio_seq::codec::{dna::Dna, ReverseComplement};
+//!
+//! let seq = dna!("ATACGATCGATCGATCGATCCGT");
+//!
+//! // iterate over the 8-mers of the reverse complement
+//! for kmer in seq.revcomp().kmers::<8>() {
+//!     println!("{}", kmer);
+//! }
+//! ```
+//!
 //! Custom encodings are supported with the help of the `bio-seq-derive`
 //! crate.
+//!
+//! ```rust
+//! use bio_seq::{iupac, Seq, FromStr};
+//! use bio_seq::codec::{iupac::Iupac};
+//!
+//! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+//! let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
+//!
+//! for slice in seq.windows(pattern.len()) {
+//!     if pattern.contains(slice) {
+//!         println!("{} matches pattern", slice);
+//!     }
+//! }
+//! ```
 
 #[macro_use]
 pub mod codec;

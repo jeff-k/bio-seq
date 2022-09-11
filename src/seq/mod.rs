@@ -129,8 +129,30 @@ impl<A: Codec> SeqSlice<A> {
         self.len() == 0
     }
 
+    /*
     pub fn contains(&self, _other: &SeqSlice<A>) -> bool {
         unimplemented!()
+    }
+    */
+
+    pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
+        let mut bv: BitVec = BitVec::from_bitslice(&self.bs);
+        bv &= BitVec::from_bitslice(&rhs.bs);
+
+        Seq::<A> {
+            _p: PhantomData,
+            bv,
+        }
+    }
+
+    pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
+        let mut bv: BitVec = BitVec::from_bitslice(&self.bs);
+        bv |= BitVec::from_bitslice(&rhs.bs);
+
+        Seq::<A> {
+            _p: PhantomData,
+            bv,
+        }
     }
 }
 

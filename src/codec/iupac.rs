@@ -23,7 +23,7 @@
 /// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 /// ```
 use crate::codec::{dna::Dna, Codec, ParseBioErr};
-use crate::seq::Seq;
+use crate::seq::{Seq, SeqSlice};
 
 use core::fmt;
 use core::ops::{BitAnd, BitOr};
@@ -104,6 +104,22 @@ impl BitOr for Seq<Iupac> {
     }
 }
 
+impl BitAnd for &SeqSlice<Iupac> {
+    type Output = Seq<Iupac>;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        self.bit_and(rhs)
+    }
+}
+
+impl BitOr for &SeqSlice<Iupac> {
+    type Output = Seq<Iupac>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        self.bit_or(rhs)
+    }
+}
+
 impl FromStr for Iupac {
     type Err = ParseBioErr;
 
@@ -118,6 +134,14 @@ impl fmt::Display for Iupac {
             Iupac::X => write!(f, "-"),
             _ => write!(f, "{:?}", self),
         }
+    }
+}
+
+impl Seq<Iupac> {
+    pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
+        let slice: &SeqSlice<Iupac> = self;
+        let intersection: &SeqSlice<Iupac> = &(slice & rhs);
+        intersection == rhs
     }
 }
 
