@@ -6,18 +6,41 @@
 </div>
 
 ```rust
-use bio_seq::{Seq, FromStr};
+use bio_seq::{dna, Seq, FromStr};
 use bio_seq::codec::{dna::Dna, ReverseComplement};
- 
-fn main() {
-    // declare a sequence of 2-bit encoded DNA
-    let seq = Seq::<Dna>::from_str("TACGATCGATCGATCGATC").unwrap();
 
-    // iterate over the 8-mers of the reverse complement of our sequence
-    for kmer in seq.revcomp().kmers::<8>() {
-        println!("{}", kmer);
+let seq = dna!("ATACGATCGATCGATCGATCCGT");
+
+// iterate over the 8-mers of the reverse complement
+for kmer in seq.revcomp().kmers::<8>() {
+    println!("{}", kmer);
+}
+```
+
+The IUPAC nucleotide ambiguity codes naturally encode a set of bases for each position:
+
+```rust
+let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
+
+for slice in seq.windows(pattern.len()) {
+    if pattern.contains(slice) {
+        println!("{} matches pattern", slice);
     }
 }
+```
+
+The primary design goal of this crate is to make translating between biological sequence types safe and convenient:
+
+```rust
+// debruijn sequence of order 3
+let seq: Seq<Dna> =
+    dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+let aminos: Seq<Amino> = Seq::from_vec(seq.kmers().map(|kmer| kmer.into()).collect());
+assert_eq!(
+    aminos,
+    amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+);
 ```
 
 ## Contents
@@ -59,13 +82,10 @@ Strings of encoded biological characters are packed into `Seq`s. Slicing, chunki
 
 kmers are sequences with a fixed size that can fit into a register. these are implemented with const generics.
 
-`k * Codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: TODO
-
 ### Dense encodings
 
 For dense encodings, a lookup table can be populated and indexed in constant time with the `usize` representation:
 
-TODO: finish example
 ```rust
 let mut histogram = vec![0; 1 << C::WIDTH * K];
 ```
@@ -135,11 +155,9 @@ Kmers are stored as `usize`s with the least significant bit first.
 
 `Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
 
-`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>` (TODO)
+`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>`
   * Sequence length not a multiple of 3 is an error
 
 `Seq<Iupac>` from `Amino`; `Seq<Iupac>` from `Seq<Amino>` (TODO)
 
 `Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length. (TODO)
-
-TODO: deal with alternate (e.g. mamalian mitochondrial) translation codes
