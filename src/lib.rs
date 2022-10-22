@@ -13,18 +13,45 @@
 //! incuding amino acid translation, k-mer minimisation and hashing, and
 //! nucleotide sequence manipulation.
 //!
+//! ```rust
+//! use bio_seq::{dna, Seq, FromStr};
+//! use bio_seq::codec::{dna::Dna, ReverseComplement};
+//!
+//! let seq = dna!("ATACGATCGATCGATCGATCCGT");
+//!
+//! // iterate over the 8-mers of the reverse complement
+//! for kmer in seq.revcomp().kmers::<8>() {
+//!     println!("{}", kmer);
+//! }
+//! ```
+//!
 //! Custom encodings are supported with the help of the `bio-seq-derive`
 //! crate.
+//!
+//! ```rust
+//! use bio_seq::{iupac, Seq, FromStr};
+//! use bio_seq::codec::{iupac::Iupac};
+//!
+//! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+//! let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
+//!
+//! for slice in seq.windows(pattern.len()) {
+//!     if pattern.contains(slice) {
+//!         println!("{} matches pattern", slice);
+//!     }
+//! }
+//! ```
 
 #[macro_use]
 pub mod codec;
 pub mod kmer;
 pub mod seq;
+pub mod translation;
 
 pub use crate::kmer::Kmer;
-pub use crate::seq::Seq;
+pub use crate::seq::{Seq, SeqSlice};
 
-pub use std::str::FromStr;
+pub use core::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -33,7 +60,7 @@ mod tests {
     use crate::codec::dna::Dna::{A, C, G, T};
     use crate::codec::iupac::Iupac;
     use crate::seq::Seq;
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     #[test]
     fn alt_repr() {
@@ -41,18 +68,27 @@ mod tests {
     }
 
     #[test]
-    fn make_from_vector() {
-        assert_eq!(Seq::from_vec(vec![A, C, G, T]).raw(), &[0b11_10_01_00]);
-        assert_eq!(Seq::from_vec(vec![C, G, C, G]).raw(), &[0b10_01_10_01]);
-        assert_eq!(Seq::from_vec(vec![T, T]).raw(), &[0b11_11]);
-        assert_eq!(Seq::from_vec(vec![T, C, A]).raw(), &[0b00_01_11]);
-        assert_eq!(Seq::from_vec(vec![T, G, A]).raw(), &[0b00_10_11]);
+    fn into_usize() {
+        let a: usize = dna!("ACGT").into();
+        assert_eq!(a, 0b11_10_01_00);
 
-        assert_eq!(
-            Seq::from_vec(vec![C, G, T, A, C, G, A, T]).raw(),
-            &[0b11_00_10_01_00_11_10_01]
-        );
-        assert_eq!(Seq::from_vec(vec![A,]).raw(), &[0b00]);
+        let b: usize = dna!("CGCG").into();
+        assert_eq!(b, 0b10_01_10_01);
+
+        let c: usize = Seq::from_vec(vec![T, T]).into();
+        assert_eq!(c, 0b11_11);
+
+        let d: usize = Seq::<Dna>::from_str("TCA").unwrap().into();
+        assert_eq!(d, 0b00_01_11);
+
+        let e: usize = Seq::<Dna>::from_str("TGA").unwrap().into();
+        assert_eq!(e, 0b00_10_11);
+
+        let f: usize = Seq::from_vec(vec![C, G, T, A, C, G, A, T]).into();
+        assert_eq!(f, 0b11_00_10_01_00_11_10_01);
+
+        let g: usize = Seq::from_vec(vec![A]).into();
+        assert_eq!(g, 0b00);
     }
 
     #[test]

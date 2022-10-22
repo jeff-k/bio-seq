@@ -6,18 +6,41 @@
 </div>
 
 ```rust
-use bio_seq::{Seq, FromStr};
+use bio_seq::{dna, Seq, FromStr};
 use bio_seq::codec::{dna::Dna, ReverseComplement};
- 
-fn main() {
-    // declare a sequence of 2-bit encoded DNA
-    let seq = Seq::<Dna>::from_str("TACGATCGATCGATCGATC").unwrap();
 
-    // iterate over the 8-mers of the reverse complement of our sequence
-    for kmer in seq.revcomp().kmers::<8>() {
-        println!("{}", kmer);
+let seq = dna!("ATACGATCGATCGATCGATCCGT");
+
+// iterate over the 8-mers of the reverse complement
+for kmer in seq.revcomp().kmers::<8>() {
+    println!("{}", kmer);
+}
+```
+
+The IUPAC nucleotide ambiguity codes naturally encode a set of bases for each position:
+
+```rust
+let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
+
+for slice in seq.windows(pattern.len()) {
+    if pattern.contains(slice) {
+        println!("{} matches pattern", slice);
     }
 }
+```
+
+The primary design goal of this crate is to make translating between biological sequence types safe and convenient:
+
+```rust
+// debruijn sequence of order 3
+let seq: Seq<Dna> =
+    dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+let aminos: Seq<Amino> = Seq::from_vec(seq.kmers().map(|kmer| kmer.into()).collect());
+assert_eq!(
+    aminos,
+    amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+);
 ```
 
 ## Contents
@@ -30,7 +53,7 @@ fn main() {
 
 ## Codecs
 
-The `Codec` trait desribes the coding/decoding process for the characters of a biological sequence. There are four built-in codecs:
+The `Codec` trait describes the coding/decoding process for the characters of a biological sequence. This trait can be derived procedurally. There are three built-in codecs:
 
 ### `codec::Dna`
 Using the lexicographically ordered 2-bit representation
@@ -51,24 +74,18 @@ assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 ### `codec::Amino`
 Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
-### TODO `codec::ascii::Dna`
-for the 8-bit ascii representation of IUPAC ambiguity codes. This is intended to be compatible with existing bioinformatics packages such as `rust-bio`.
-
 ## Sequences
 
-Strings of encoded biological characters are packed into `Seq`s. This are allocated on the heap and may be mutable. Slicing, chunking, and windowing return instances of `SeqSlice`.
+Strings of encoded biological characters are packed into `Seq`s. Slicing, chunking, and windowing return `SeqSlice`s. `Seq<A: Codec>`/`&SeqSlice<A: Codec>` are analogous to `String`/`&str`.
 
 ## Kmers
 
 kmers are sequences with a fixed size that can fit into a register. these are implemented with const generics.
 
-`k * Codec::width` must fit in a `usize` (i.e. 64). for larger kmers use `bigk::kmer`: TODO
-
 ### Dense encodings
 
 For dense encodings, a lookup table can be populated and indexed in constant time with the `usize` representation:
 
-TODO: finish example
 ```rust
 let mut histogram = vec![0; 1 << C::WIDTH * K];
 ```
@@ -138,11 +155,9 @@ Kmers are stored as `usize`s with the least significant bit first.
 
 `Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
 
-`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>` (TODO)
+`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>`
   * Sequence length not a multiple of 3 is an error
 
 `Seq<Iupac>` from `Amino`; `Seq<Iupac>` from `Seq<Amino>` (TODO)
 
 `Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length. (TODO)
-
-TODO: deal with alternate (e.g. mamalian mitochondrial) translation codes

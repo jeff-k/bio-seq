@@ -1,13 +1,13 @@
 /// 2-bit DNA representation
 ///
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::marker::PhantomData;
+use core::str::FromStr;
 
 use crate::codec::{Codec, Complement, ParseBioErr};
 use crate::Kmer;
 
-use bitvec::prelude::Lsb0;
-use bitvec::view::BitView;
+use bitvec::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Codec)]
 #[width = 2]
@@ -20,8 +20,12 @@ pub enum Dna {
 }
 
 impl<const K: usize> Complement for Kmer<Dna, K> {
-    fn comp(self: Kmer<Dna, K>) -> Kmer<Dna, K> {
-        Kmer::new(&(self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize])
+    fn comp(self: Kmer<Dna, K>) -> Self {
+        Kmer {
+            _p: PhantomData,
+            bs: (self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize]
+                .load::<usize>(), // need to mask upper bits
+        }
     }
 }
 
@@ -103,8 +107,8 @@ mod tests {
     use crate::codec::dna::*;
     use crate::codec::{Complement, ParseBioErr};
     use crate::{Kmer, Seq};
-    use std::convert::TryFrom;
-    use std::str::FromStr;
+    use core::convert::TryFrom;
+    use core::str::FromStr;
 
     #[test]
     fn dna_kmer_equality() -> Result<(), ParseBioErr> {

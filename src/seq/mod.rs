@@ -5,14 +5,16 @@
 
 mod iterators;
 
-use crate::codec::Codec;
-use crate::kmer::Kmer;
+use crate::codec::{Codec, Complement, ReverseComplement};
+
 use bitvec::prelude::*;
+
 use core::borrow::Borrow;
-use std::fmt;
-use std::marker::PhantomData;
-use std::ops::{Index, Range, RangeFull};
-pub use std::str::FromStr;
+use core::fmt;
+use core::hash::{Hash, Hasher};
+use core::marker::PhantomData;
+use core::ops::{Deref, Index, Range, RangeFull};
+pub use core::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
 ///
@@ -24,44 +26,45 @@ pub struct Seq<A: Codec> {
 }
 
 /// A slice of a Seq
+#[derive(Debug, Eq)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
     bs: BitSlice,
 }
 
-impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
-    fn from(slice: &SeqSlice<A>) -> Self {
-        Kmer {
-            bs: slice.bs.load::<usize>(),
-            _p: PhantomData,
-        }
+impl<A: Codec> From<Seq<A>> for usize {
+    fn from(slice: Seq<A>) -> usize {
+        assert!(slice.bv.len() <= usize::BITS as usize);
+        slice.bv.load::<usize>()
     }
 }
 
-// this should be private to the module
-/*
-impl<A: Codec> From<&BitSlice> for SeqSlice<A> {
-    fn from(slice: &BitSlice) -> SeqSlice<A> {
-        SeqSlice {
-            bs: BitBox::from_bitslice(slice),
-            _p: PhantomData,
-        }
+impl<A: Codec> From<&SeqSlice<A>> for usize {
+    fn from(slice: &SeqSlice<A>) -> usize {
+        assert!(slice.bs.len() <= usize::BITS as usize);
+        slice.bs.load::<usize>()
     }
 }
-*/
 
-/*
-impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
-    fn revcomp(&self) -> Seq<A> {
+impl<A: Codec> From<&SeqSlice<A>> for u8 {
+    fn from(slice: &SeqSlice<A>) -> u8 {
+        slice.bs.load::<u8>()
+    }
+}
+
+impl<A: Codec + Complement + std::fmt::Debug> ReverseComplement for Seq<A> {
+    fn revcomp(self) -> Seq<A> {
         let mut v = vec![];
+        println!("{}", self);
         for base in self.rev() {
+            println!("{:?}", base.to_char());
             v.push(base.comp());
         }
-        Seq<A>::from_vec(v)
+        println!("out {:?}", v);
+        Seq::<A>::from_vec(v)
     }
 }
-*/
 
 #[derive(Debug, Clone)]
 pub struct ParseSeqErr;
@@ -87,8 +90,7 @@ impl<A: Codec> Seq<A> {
     }
 
     pub fn nth(&self, i: usize) -> A {
-        let w = A::WIDTH as usize;
-        A::unsafe_from_bits(self.bv[i * w..(i * w) + w].load())
+        A::unsafe_from_bits(self[i].into())
     }
 
     pub fn len(&self) -> usize {
@@ -116,8 +118,7 @@ impl<A: Codec> Seq<A> {
 
 impl<A: Codec> SeqSlice<A> {
     pub fn nth(&self, i: usize) -> A {
-        let w = A::WIDTH as usize;
-        A::unsafe_from_bits(self.bs[i * w..(i * w) + w].load())
+        A::unsafe_from_bits(self[i].into())
     }
 
     pub fn len(&self) -> usize {
@@ -126,6 +127,45 @@ impl<A: Codec> SeqSlice<A> {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /*
+    pub fn contains(&self, _other: &SeqSlice<A>) -> bool {
+        unimplemented!()
+    }
+    */
+
+    pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
+        let mut bv: BitVec = BitVec::from_bitslice(&self.bs);
+        bv &= BitVec::from_bitslice(&rhs.bs);
+
+        Seq::<A> {
+            _p: PhantomData,
+            bv,
+        }
+    }
+
+    pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
+        let mut bv: BitVec = BitVec::from_bitslice(&self.bs);
+        bv |= BitVec::from_bitslice(&rhs.bs);
+
+        Seq::<A> {
+            _p: PhantomData,
+            bv,
+        }
+    }
+}
+
+impl<A: Codec> PartialEq for SeqSlice<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bs == other.bs
+    }
+}
+
+impl<A: Codec> Hash for SeqSlice<A> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bs.hash(state);
+        self.len().hash(state);
     }
 }
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
@@ -149,9 +189,16 @@ impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs =
-            &self.bv[0..self.bv.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[0..self.bv.len() as usize] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<usize> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        &self[i..i + 1]
     }
 }
 
@@ -170,8 +217,7 @@ impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs =
-            &self.bs[0..self.bs.len() / A::WIDTH as usize] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[0..self.bs.len() as usize] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -183,6 +229,31 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
         //A::unsafe_from_bits(self.bs[s..e].load());
         //&self.bs[s..e].load::<u8>()
         &self[i..i + 1]
+    }
+}
+
+impl<A: Codec> Deref for Seq<A> {
+    type Target = SeqSlice<A>;
+    fn deref(&self) -> &Self::Target {
+        &self[..]
+    }
+}
+
+impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
+    fn as_ref(&self) -> &SeqSlice<A> {
+        &self[..]
+    }
+}
+
+impl<A: Codec> AsRef<Seq<A>> for Seq<A> {
+    fn as_ref(&self) -> &Self {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
+    fn from(_slice: &SeqSlice<A>) -> Self {
+        unimplemented!()
     }
 }
 
@@ -278,7 +349,7 @@ mod tests {
     #[test]
     fn from_slice() {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
-        let s: SeqSlice<Dna> = s1[15..21].into();
+        let s: &SeqSlice<Dna> = &s1[15..21];
         assert_eq!(format!("{}", s), "GATCAA");
     }
 }

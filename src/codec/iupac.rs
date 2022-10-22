@@ -23,8 +23,11 @@
 /// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 /// ```
 use crate::codec::{dna::Dna, Codec, ParseBioErr};
-use std::fmt;
-use std::str::FromStr;
+use crate::seq::{Seq, SeqSlice};
+
+use core::fmt;
+use core::ops::{BitAnd, BitOr};
+use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
 #[width = 4]
@@ -45,7 +48,7 @@ pub enum Iupac {
     H = 0b1101,
     V = 0b1110,
     N = 0b1111,
-    #[alt = '-']
+    #[display = '-']
     X = 0b0000,
 }
 
@@ -85,12 +88,11 @@ impl From<Iupac> for u8 {
     }
 }
 
-/*
 impl BitAnd for Seq<Iupac> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-
+        self.bit_and(rhs)
     }
 }
 
@@ -98,14 +100,25 @@ impl BitOr for Seq<Iupac> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Seq::<Iupac> {
-            _p: PhantomData,
-            bv: BitVec::from_bitslice(&self.bit_or(rhs)),
-        }
+        self.bit_or(rhs)
     }
-
 }
-*/
+
+impl BitAnd for &SeqSlice<Iupac> {
+    type Output = Seq<Iupac>;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        self.bit_and(rhs)
+    }
+}
+
+impl BitOr for &SeqSlice<Iupac> {
+    type Output = Seq<Iupac>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        self.bit_or(rhs)
+    }
+}
 
 impl FromStr for Iupac {
     type Err = ParseBioErr;
@@ -121,6 +134,14 @@ impl fmt::Display for Iupac {
             Iupac::X => write!(f, "-"),
             _ => write!(f, "{:?}", self),
         }
+    }
+}
+
+impl Seq<Iupac> {
+    pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
+        let slice: &SeqSlice<Iupac> = self;
+        let intersection: &SeqSlice<Iupac> = &(slice & rhs);
+        intersection == rhs
     }
 }
 
