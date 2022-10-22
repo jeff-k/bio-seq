@@ -221,6 +221,20 @@ impl<A: Codec> FromStr for Seq<A> {
     }
 }
 
+impl<A: Codec> From<Vec<u8>> for Seq<A> {
+    fn from(v: Vec<u8>) -> Self {
+        let mut bv: BitVec = BitVec::new();
+        for b in v.iter() {
+            let byte: u8 = (*b).into();
+            bv.extend_from_bitslice(&(byte as u8).view_bits::<Lsb0>()[..A::WIDTH as usize]);
+        }
+        Seq {
+            _p: PhantomData,
+            bv,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::*;
