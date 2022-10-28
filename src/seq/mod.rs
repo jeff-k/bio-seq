@@ -14,6 +14,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::{Deref, Index, Range, RangeFull};
+use core::str;
 pub use core::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
@@ -294,15 +295,14 @@ impl<A: Codec> FromStr for Seq<A> {
 
 impl<A: Codec> From<Vec<u8>> for Seq<A> {
     fn from(v: Vec<u8>) -> Self {
-        let mut bv: BitVec = BitVec::new();
-        for b in v.iter() {
-            let byte: u8 = (*b).into();
-            bv.extend_from_bitslice(&(byte as u8).view_bits::<Lsb0>()[..A::WIDTH as usize]);
-        }
-        Seq {
-            _p: PhantomData,
-            bv,
-        }
+        Seq::<A>::from_vec(
+            v.iter()
+                .map(|c| match A::from_char(*c as char) {
+                    Ok(base) => base,
+                    _ => panic!(),
+                })
+                .collect(),
+        )
     }
 }
 

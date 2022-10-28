@@ -92,6 +92,12 @@ mod tests {
     }
 
     #[test]
+    fn test_display_aminos() {
+        let a: Seq<Amino> = "DCMNLKG*HI".into();
+        assert_eq!(format!("{}", a), "DCMNLKG*HI");
+    }
+
+    #[test]
     fn test_display_dna() {
         let seq = Seq::from_vec(vec![A, C, G, T, T, A, T, C]);
         assert_eq!(format!("{}", seq), "ACGTTATC");
