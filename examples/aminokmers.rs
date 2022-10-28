@@ -10,12 +10,15 @@ use clap::Parser;
 use bio_streams::fasta::Fasta;
 
 use bio_seq::codec::amino::Amino;
+use bio_seq::codec::Codec;
 use bio_seq::{Kmer, Seq};
 
 #[derive(Parser)]
 struct Cli {
     faa: PathBuf,
 }
+
+const K: usize = 4;
 
 fn main() {
     let args = Cli::parse();
@@ -24,20 +27,29 @@ fn main() {
         Fasta::new(BufReader::new(File::open(&args.faa).unwrap()));
 
     let mut count: usize = 0;
-    const K: usize = 3;
-    let mut histo = [0; 1 << (K * 6)];
+    let mut total: usize = 0;
+    let mut histo = Box::new([0; 1 << (K * Amino::WIDTH as usize)]);
 
     for contig in faa {
         for kmer in contig.seq.kmers::<K>() {
             histo[usize::from(kmer)] += 1;
+            total += 1;
         }
         count += 1;
-        println!("read contig {}", count);
     }
 
+    let n = 100;
+    let mut empty_counts = 0;
     for i in 0..histo.len() {
-        if histo[i] > 0 {
+        if histo[i] > n {
             println!("{}\t{:?}", Kmer::<Amino, K>::from(i), histo[i]);
         }
+        if histo[i] == 0 {
+            empty_counts += 1;
+        }
     }
+    println!(
+        "Read {} contigs. Showing counts of {}-mers that occur more than {} times ({} total). {}/{} of possible {}-mers have a count of 0.",
+        count, K, n, total, empty_counts, 1 << (K * Amino::WIDTH as usize), K,
+    );
 }
