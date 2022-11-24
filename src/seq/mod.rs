@@ -56,12 +56,9 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 impl<A: Codec + Complement + std::fmt::Debug> ReverseComplement for Seq<A> {
     fn revcomp(self) -> Seq<A> {
         let mut v = vec![];
-        println!("{}", self);
         for base in self.rev() {
-            println!("{:?}", base.to_char());
             v.push(base.comp());
         }
-        println!("out {:?}", v);
         Seq::<A>::from_vec(v)
     }
 }

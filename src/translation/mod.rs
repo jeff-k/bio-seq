@@ -28,7 +28,6 @@ mod tests {
         let seq: Seq<Dna> = dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA");
         let codons: Vec<Kmer<Dna, 3>> = seq.chunks(3).map(|codon| codon.into()).collect();
         let aminos: Seq<Amino> = Seq::from_vec(codons.iter().map(|kmer| kmer.into()).collect());
-        println!("{:?}", aminos);
         assert_eq!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*"));
     }
 

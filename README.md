@@ -45,9 +45,9 @@ assert_eq!(
 
 ## Contents
 
-* [Codec](#codecs): Encoding scheme for the 'characters' of a biological sequence
+* [Codec](#codecs): Coding/Decoding schemes for the characters of a biological sequence
 * [Seq](#sequences): A sequence of encoded characters
-* [Kmer](#kmers): A fixed size sequence of length `k`
+* [Kmer](#kmers): A fixed size sequence of length `K`
 * [Derivable codecs](#derivable-codecs): This crate offers utilities for defining your own bit-level encodings
 * [Safe conversion](#sequence-conversion) between sequences
 
@@ -88,7 +88,13 @@ For dense encodings, a lookup table can be populated and indexed in constant tim
 
 ```rust
 let mut histogram = vec![0; 1 << C::WIDTH * K];
+
+for kmer in seq.kmers::<K>() {
+    histo[usize::from(kmer)] += 1;
+}
 ```
+
+This example builds a histogram of kmer occurences
 
 ### Hashing
 
@@ -105,7 +111,7 @@ let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 
 ### Kmer minimisers
 
-The 2-bit representation of DNA sequences is lexicographically ordered:
+The 2-bit representation of DNA sequences is reverse-lexicographically ordered:
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {

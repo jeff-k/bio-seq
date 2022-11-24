@@ -110,7 +110,6 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
     fn next(&mut self) -> Option<A> {
         let i = self.index;
         if self.index >= self.slice.len() {
-            println!("slicing @ {}", self.index);
             return None;
         }
         self.index += 1;
