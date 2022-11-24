@@ -87,10 +87,19 @@ kmers are sequences with a fixed size that can fit into a register. these are im
 For dense encodings, a lookup table can be populated and indexed in constant time with the `usize` representation:
 
 ```rust
-let mut histogram = vec![0; 1 << C::WIDTH * K];
+fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
+    // the WIDTH member of a type implementing Codec tells us
+    // how many bits encode each character.
+    //
+    // For dna::Dna this is 2, so our histogram will need (2^2)^4
+    // bins to count every possible 4-mer.
+    let mut histo = vec![0; 1 << (C::WIDTH * K as u8)];
 
-for kmer in seq.kmers::<K>() {
-    histo[usize::from(kmer)] += 1;
+    for kmer in seq.kmers::<K>() {
+        histo[usize::from(kmer)] += 1;
+    }
+
+    histo
 }
 ```
 
