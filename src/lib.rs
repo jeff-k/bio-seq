@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn test_display_aminos() {
-        let a: Seq<Amino> = "DCMNLKG*HI".into();
+        let a: Seq<Amino> = Seq::from_str("DCMNLKG*HI").unwrap();
         assert_eq!(format!("{}", a), "DCMNLKG*HI");
     }
 

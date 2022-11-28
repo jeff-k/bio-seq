@@ -88,10 +88,7 @@ For dense encodings, a lookup table can be populated and indexed in constant tim
 
 ```rust
 fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
-    // the WIDTH member of a type implementing Codec tells us
-    // how many bits encode each character.
-    //
-    // For dna::Dna this is 2, so our histogram will need (2^2)^4
+    // For dna::Dna our histogram will need 4^4
     // bins to count every possible 4-mer.
     let mut histo = vec![0; 1 << (C::WIDTH * K as u8)];
 
@@ -104,6 +101,8 @@ fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
 ```
 
 This example builds a histogram of kmer occurences
+
+## Sketching
 
 ### Hashing
 
@@ -120,7 +119,15 @@ let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 
 ### Kmer minimisers
 
-The 2-bit representation of DNA sequences is reverse-lexicographically ordered:
+The 2-bit representation of nucleotides is ordered `A < C < G < T`. The ordering of kmers reverses the order of bases:
+
+`AAAA < CAAA < ... < TTTT`
+
+but
+
+`CAAA < AAAC`
+
+With this ordering in mind, minimisers are automatically implemented:
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
