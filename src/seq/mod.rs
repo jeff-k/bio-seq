@@ -3,7 +3,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-mod iterators;
+pub mod iterators;
 
 use crate::codec::{Codec, Complement, ReverseComplement};
 
@@ -79,7 +79,7 @@ impl<A: Codec> Seq<A> {
         let mut bv: BitVec = BitVec::new();
         for b in vec.iter() {
             let byte: u8 = (*b).into();
-            bv.extend_from_bitslice(&(byte as u8).view_bits::<Lsb0>()[..A::WIDTH as usize]);
+            bv.extend_from_bitslice(&byte.view_bits::<Lsb0>()[..A::WIDTH as usize]);
         }
         Seq {
             _p: PhantomData,
@@ -187,7 +187,7 @@ impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bv[0..self.bv.len() as usize] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[0..self.bv.len()] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -215,7 +215,7 @@ impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bs[0..self.bs.len() as usize] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[0..self.bs.len()] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -261,7 +261,7 @@ impl<A: Codec> fmt::Display for Seq<A> {
         for c in self.bv.chunks_exact(A::WIDTH.into()) {
             s.push_str(&A::unsafe_from_bits(c.load()).to_char().to_string());
         }
-        write!(f, "{}", s,)
+        write!(f, "{s}")
     }
 }
 
@@ -271,7 +271,7 @@ impl<A: Codec> fmt::Display for SeqSlice<A> {
         for c in self.bs.chunks_exact(A::WIDTH.into()) {
             s.push_str(&A::unsafe_from_bits(c.load()).to_char().to_string());
         }
-        write!(f, "{}", s,)
+        write!(f, "{s}")
     }
 }
 

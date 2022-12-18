@@ -132,7 +132,7 @@ impl fmt::Display for Iupac {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Iupac::X => write!(f, "-"),
-            _ => write!(f, "{:?}", self),
+            _ => write!(f, "{self:?}"),
         }
     }
 }

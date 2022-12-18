@@ -55,7 +55,7 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
                     .to_string(),
             );
         }
-        write!(f, "{}", s,)
+        write!(f, "{s}")
     }
 }
 

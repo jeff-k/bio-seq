@@ -61,7 +61,7 @@ impl From<Amino> for u8 {
 
 impl fmt::Display for Amino {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
