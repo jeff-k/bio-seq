@@ -42,6 +42,8 @@
 //! }
 //! ```
 
+#![feature(generic_const_exprs)]
+
 #[macro_use]
 pub mod codec;
 pub mod kmer;
@@ -52,6 +54,11 @@ pub use crate::kmer::Kmer;
 pub use crate::seq::{Seq, SeqSlice};
 
 pub use core::str::FromStr;
+
+pub struct Bound<const B: bool>;
+
+pub trait True {}
+impl True for Bound<true> {}
 
 #[cfg(test)]
 mod tests {

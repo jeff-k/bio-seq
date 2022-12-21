@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use core::str::FromStr;
 
 use crate::codec::{Codec, Complement, ParseBioErr};
-use crate::Kmer;
+use crate::{Bound, Kmer, True};
 
 use bitvec::prelude::*;
 
@@ -19,7 +19,10 @@ pub enum Dna {
     T = 0b11,
 }
 
-impl<const K: usize> Complement for Kmer<Dna, K> {
+impl<const K: usize> Complement for Kmer<Dna, K>
+where
+    Bound<{ K <= (usize::BITS / Dna::WIDTH as u32) as usize }>: True,
+{
     fn comp(self: Kmer<Dna, K>) -> Self {
         Kmer {
             _p: PhantomData,

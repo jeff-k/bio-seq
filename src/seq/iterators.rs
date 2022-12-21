@@ -5,7 +5,7 @@
 
 use crate::codec::Codec;
 use crate::seq::SeqSlice;
-use crate::Kmer;
+use crate::{Bound, Kmer, True};
 use core::marker::PhantomData;
 
 pub struct SeqChunks<'a, A: Codec> {
@@ -124,7 +124,10 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
     pub _p: PhantomData<A>,
 }
 
-impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
+impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K>
+where
+    Bound<{ K <= (usize::BITS / A::WIDTH as u32) as usize }>: True,
+{
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
         let i = self.index;
