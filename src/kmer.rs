@@ -16,7 +16,7 @@ use core::marker::PhantomData;
 ///
 /// For this implementation `k * codec::width` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
 /// `simd::Kmer`
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub _p: PhantomData<C>,
     pub bs: usize,
