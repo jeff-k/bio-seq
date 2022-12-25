@@ -178,6 +178,24 @@ mod tests {
     }
 
     #[test]
+    fn big_kmer_shiftr() {
+        let mut kmer: Kmer<Dna, 32> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA");
+        for base in dna!("TACTATGAGGACGATCAGCACCATAAGAACAAA").into_iter() {
+            kmer = kmer.pushr(base);
+        }
+        assert_eq!(kmer!("ACTATGAGGACGATCAGCACCATAAGAACAAA"), kmer);
+    }
+
+    #[test]
+    fn big_kmer_shiftl() {
+        let mut kmer: Kmer<Dna, 32> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA");
+        for base in dna!("GTACTATGAGGACGATCAGCACCATAAGAACAAA").into_iter() {
+            kmer = kmer.pushl(base);
+        }
+        assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA"), kmer);
+    }
+
+    #[test]
     fn amino_kmer_iter() {
         for (kmer, target) in amino!("SSLMNHKKL")
             .kmers::<3>()
