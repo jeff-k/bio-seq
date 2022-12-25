@@ -22,6 +22,37 @@ pub struct Kmer<C: Codec, const K: usize> {
     pub bs: usize,
 }
 
+impl<A: Codec, const K: usize> Kmer<A, K> {
+    /// Push a base from the right, e.g.:
+    /// `AACGT`.pushr('`C`') -> `ACGTC`
+    pub fn pushr(self, base: A) -> Kmer<A, K> {
+        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
+        let ba = &BitArray::<usize, Lsb0>::from(self.bs);
+
+        let mut x: BitVec<usize, Lsb0> = BitVec::new();
+        x.extend_from_bitslice(&ba[A::WIDTH as usize..A::WIDTH as usize * K]);
+        x.extend_from_bitslice(bs);
+        Kmer {
+            _p: PhantomData,
+            bs: x.load::<usize>(),
+        }
+    }
+
+    /// Push a base from the left
+    pub fn pushl(self, base: A) -> Kmer<A, K> {
+        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
+        let ba = &BitArray::<usize, Lsb0>::from(self.bs);
+
+        let mut x: BitVec<usize, Lsb0> = BitVec::new();
+        x.extend_from_bitslice(bs);
+        x.extend_from_bitslice(&ba[..A::WIDTH as usize * K - A::WIDTH as usize]);
+        Kmer {
+            _p: PhantomData,
+            bs: x.load::<usize>(),
+        }
+    }
+}
+
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     fn from(i: usize) -> Kmer<A, K> {
         Kmer {
@@ -94,6 +125,7 @@ impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
 mod tests {
     use crate::codec::amino::Amino;
     use crate::codec::dna::Dna;
+    use crate::Kmer;
     use crate::Seq;
     use core::str::FromStr;
     #[test]
@@ -101,6 +133,38 @@ mod tests {
         for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {
             assert_eq!(index as usize, (&kmer).into());
         }
+    }
+
+    #[test]
+    fn pushl_test() {
+        let k = kmer!("ACGT");
+        let k1 = k.pushl(Dna::G);
+        let k2 = k1.pushl(Dna::A);
+        let k3 = k2.pushl(Dna::T);
+        let k4 = k3.pushl(Dna::C);
+        let k5 = k4.pushl(Dna::C);
+
+        assert_eq!(k1, kmer!("GACG"));
+        assert_eq!(k2, kmer!("AGAC"));
+        assert_eq!(k3, kmer!("TAGA"));
+        assert_eq!(k4, kmer!("CTAG"));
+        assert_eq!(k5, kmer!("CCTA"));
+    }
+
+    #[test]
+    fn pushr_test() {
+        let k = kmer!("ACGT");
+        let k1 = k.pushr(Dna::G);
+        let k2 = k1.pushr(Dna::A);
+        let k3 = k2.pushr(Dna::T);
+        let k4 = k3.pushr(Dna::C);
+        let k5 = k4.pushr(Dna::C);
+
+        assert_eq!(k1, kmer!("CGTG"));
+        assert_eq!(k2, kmer!("GTGA"));
+        assert_eq!(k3, kmer!("TGAT"));
+        assert_eq!(k4, kmer!("GATC"));
+        assert_eq!(k5, kmer!("ATCC"));
     }
 
     #[test]
