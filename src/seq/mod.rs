@@ -13,7 +13,7 @@ use core::borrow::Borrow;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::{Deref, Index, Range, RangeFull};
+use core::ops::{Deref, Index, Range, RangeFull, RangeTo};
 use core::str;
 pub use core::str::FromStr;
 
@@ -183,6 +183,16 @@ impl<A: Codec> Index<Range<usize>> for Seq<A> {
     }
 }
 
+impl<A: Codec> Index<RangeTo<usize>> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeTo<usize>) -> &Self::Output {
+        let e = range.end * A::WIDTH as usize;
+        let bs = &self.bv[..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
 impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
@@ -207,6 +217,16 @@ impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
         let s = range.start * A::WIDTH as usize;
         let e = range.end * A::WIDTH as usize;
         let bs = &self.bs[s..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeTo<usize>> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeTo<usize>) -> &Self::Output {
+        let e = range.end * A::WIDTH as usize;
+        let bs = &self.bs[..e] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -341,6 +361,29 @@ mod tests {
         assert_eq!(&s1[2..4], &s2[2..4]);
         assert_eq!(&s1[15..21], &s2[19..25]);
         assert_ne!(&s1[2..20], &s2[2..20]);
+    }
+
+    #[test]
+    fn slice_nth() {
+        let s = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
+
+        assert_eq!(s.nth(0), Dna::A);
+        assert_ne!(s.nth(0), Dna::G);
+
+        assert_eq!(s.nth(1), Dna::T);
+        assert_ne!(s.nth(1), Dna::C);
+
+        assert_eq!(s.nth(s.len() - 1), Dna::G);
+        assert_ne!(s.nth(s.len() - 1), Dna::C);
+    }
+
+    #[test]
+    fn slice_rangeto_and_full() {
+        let s1 = dna!("ATCGACTAGCATGCTACG");
+        let s2 = dna!("ATCGACTAG");
+
+        assert_eq!(&s1[..s2.len()], &s2[..]);
+        assert_ne!(&s2[..s2.len()], &s1[..]);
     }
 
     #[test]
