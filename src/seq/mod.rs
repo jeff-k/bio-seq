@@ -13,7 +13,9 @@ use core::borrow::Borrow;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::{Deref, Index, Range, RangeFull, RangeTo};
+use core::ops::{
+    Deref, Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+};
 use core::str;
 pub use core::str::FromStr;
 
@@ -193,6 +195,37 @@ impl<A: Codec> Index<RangeTo<usize>> for Seq<A> {
     }
 }
 
+impl<A: Codec> Index<RangeToInclusive<usize>> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
+        let e = (range.end + 1) * A::WIDTH as usize;
+        let bs = &self.bv[..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeInclusive<usize>> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
+        let s = range.start() * A::WIDTH as usize;
+        let e = (range.end() + 1) * A::WIDTH as usize;
+        let bs = &self.bv[s..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeFrom<usize>> for Seq<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
+        let s = range.start * A::WIDTH as usize;
+        let bs = &self.bv[s..] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
 impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
@@ -227,6 +260,37 @@ impl<A: Codec> Index<RangeTo<usize>> for SeqSlice<A> {
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
         let e = range.end * A::WIDTH as usize;
         let bs = &self.bs[..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeToInclusive<usize>> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
+        let e = (range.end + 1) * A::WIDTH as usize;
+        let bs = &self.bs[..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeInclusive<usize>> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
+        let s = range.start() * A::WIDTH as usize;
+        let e = (range.end() + 1) * A::WIDTH as usize;
+        let bs = &self.bs[s..e] as *const BitSlice as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec> Index<RangeFrom<usize>> for SeqSlice<A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
+        let s = range.start * A::WIDTH as usize;
+        let bs = &self.bs[s..] as *const BitSlice as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -352,7 +416,7 @@ mod tests {
     }
 
     #[test]
-    fn slice_indices() {
+    fn slice_index_comparisions() {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
         let s2 = dna!("ACGTGTGTGCTAGCTAATCGATCAAAAAG");
 
@@ -361,6 +425,41 @@ mod tests {
         assert_eq!(&s1[2..4], &s2[2..4]);
         assert_eq!(&s1[15..21], &s2[19..25]);
         assert_ne!(&s1[2..20], &s2[2..20]);
+    }
+
+    #[test]
+    fn slice_indexing() {
+        let seq = dna!("TGCATCGAT");
+
+        assert_ne!(&seq[..], &dna!("AGCATCGAA")[..]);
+        assert_ne!(&seq[3..=6], &dna!("ATC")[..]);
+        assert_ne!(&seq[..=6], &dna!("TGCATC")[..]);
+        assert_ne!(&seq[4..5], &dna!("TC")[..]);
+        assert_ne!(&seq[..6], &dna!("TGCAT")[..]);
+        assert_ne!(&seq[5..], &dna!("TCGAT")[..]);
+
+        assert_eq!(&seq[..], &dna!("TGCATCGAT")[..]);
+        assert_eq!(&seq[3..=6], &dna!("ATCG")[..]);
+        assert_eq!(&seq[..=6], &dna!("TGCATCG")[..]);
+        assert_eq!(&seq[4..5], &dna!("T")[..]);
+        assert_eq!(&seq[..6], &dna!("TGCATC")[..]);
+        assert_eq!(&seq[5..], &dna!("CGAT")[..]);
+    }
+
+    #[test]
+    fn slice_index_ranges() {
+        let s1 = dna!("ACGACTGATCGA");
+        let s2 = dna!("TCGAACGACTGA");
+
+        assert_eq!(&s1[..8], &s2[4..]);
+        assert_eq!(&s1[8..], &s2[..4]);
+        assert_ne!(&s1[8..], &s2[8..]);
+        assert_ne!(&s1[..], &s2[..4]);
+
+        assert_eq!(&s1[..=7], &s2[4..]);
+        assert_eq!(&s1[8..], &s2[..=3]);
+        assert_ne!(&s1[8..11], &s2[8..=11]);
+        assert_ne!(&s1[..], &s2[..=4]);
     }
 
     #[test]
