@@ -29,7 +29,7 @@ use core::fmt;
 use core::ops::{BitAnd, BitOr};
 use core::str::FromStr;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Codec)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[width = 4]
 #[repr(u8)]
 pub enum Iupac {

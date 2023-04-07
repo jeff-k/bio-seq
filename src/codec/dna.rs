@@ -9,7 +9,7 @@ use crate::Kmer;
 
 use bitvec::prelude::*;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Codec)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Codec)]
 #[width = 2]
 #[repr(u8)]
 pub enum Dna {
