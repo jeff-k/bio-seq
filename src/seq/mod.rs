@@ -10,6 +10,7 @@ use crate::codec::{Codec, Complement, ReverseComplement};
 use bitvec::prelude::*;
 
 use core::borrow::Borrow;
+use core::convert::TryFrom;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
@@ -17,7 +18,7 @@ use core::ops::{
     Deref, Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
 use core::str;
-pub use core::str::FromStr;
+use core::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
 ///

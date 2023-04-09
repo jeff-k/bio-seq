@@ -3,8 +3,9 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::codec::{Codec, ParseBioErr};
-use crate::{Seq, SeqSlice};
+use crate::codec::Codec;
+use crate::seq::{Seq, SeqSlice};
+use crate::ParseBioError;
 use bitvec::prelude::*;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -25,6 +26,7 @@ pub struct Kmer<C: Codec, const K: usize> {
 impl<A: Codec, const K: usize> Kmer<A, K> {
     /// Kmer uses a run-time test to ensure that K is inside bounds. Compile-time
     /// testing requires nightly.
+    #[inline]
     fn check_k() {
         assert!(
             K <= usize::BITS as usize / A::WIDTH as usize,
@@ -109,11 +111,11 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
 }
 
 impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
-    type Error = ParseBioErr;
+    type Error = ParseBioError;
 
     fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
         if seq.len() != K {
-            Err(ParseBioErr)
+            Err(ParseBioError {})
         } else {
             Ok(Kmer::<A, K>::from(&seq[0..K]))
         }
@@ -135,8 +137,8 @@ impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
 mod tests {
     use crate::codec::amino::Amino;
     use crate::codec::dna::Dna;
-    use crate::Kmer;
-    use crate::Seq;
+    use crate::kmer::Kmer;
+    use crate::seq::Seq;
     use core::str::FromStr;
     #[test]
     fn kmer_to_usize() {

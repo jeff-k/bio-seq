@@ -19,12 +19,10 @@ impl From<&Kmer<Dna, 3>> for Amino {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
+
     #[test]
     fn dna_to_amino() {
-        use crate::codec::{amino::Amino, dna::Dna};
-        use crate::{dna, Kmer, Seq};
-        use core::str::FromStr;
-
         let seq: Seq<Dna> = dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA");
         let codons: Vec<Kmer<Dna, 3>> = seq.chunks(3).map(|codon| codon.into()).collect();
         let aminos: Seq<Amino> = Seq::from_vec(codons.iter().map(|kmer| kmer.into()).collect());
@@ -33,10 +31,6 @@ mod tests {
 
     #[test]
     fn alternate_codons() {
-        use crate::codec::{amino::Amino, dna::Dna};
-        use crate::{dna, Kmer, Seq};
-        use core::str::FromStr;
-
         let seq: Seq<Dna> = dna!("AGCTCGTCATCCTCTAGTTGATAATAG");
         let codons: Vec<Kmer<Dna, 3>> = seq.chunks(3).map(|codon| codon.into()).collect();
         let aminos: Seq<Amino> = Seq::from_vec(codons.iter().map(|kmer| kmer.into()).collect());
@@ -45,10 +39,6 @@ mod tests {
 
     #[test]
     fn test_debruin_sequence() {
-        use crate::codec::{amino::Amino, dna::Dna};
-        use crate::{dna, Seq};
-        use core::str::FromStr;
-
         let seq: Seq<Dna> =
             dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
         let aminos: Seq<Amino> = Seq::from_vec(seq.kmers().map(|kmer| kmer.into()).collect());

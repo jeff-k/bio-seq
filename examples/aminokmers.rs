@@ -9,9 +9,7 @@ use clap::Parser;
 
 use bio_streams::fasta::Fasta;
 
-use bio_seq::codec::amino::Amino;
-use bio_seq::codec::Codec;
-use bio_seq::{Kmer, Seq};
+use bio_seq::prelude::*;
 
 #[derive(Parser)]
 struct Cli {

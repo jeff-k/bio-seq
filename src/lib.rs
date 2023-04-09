@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Jeff Knaggs
+// Copyright 2021, 2022, 2023 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -14,8 +14,7 @@
 //! nucleotide sequence manipulation.
 //!
 //! ```rust
-//! use bio_seq::{dna, Seq, FromStr};
-//! use bio_seq::codec::{dna::Dna, ReverseComplement};
+//! use bio_seq::prelude::*;
 //!
 //! let seq = dna!("ATACGATCGATCGATCGATCCGT");
 //!
@@ -29,8 +28,7 @@
 //! crate.
 //!
 //! ```rust
-//! use bio_seq::{iupac, Seq, FromStr};
-//! use bio_seq::codec::{iupac::Iupac};
+//! use bio_seq::prelude::*;
 //!
 //! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
 //! let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
@@ -44,14 +42,25 @@
 
 #[macro_use]
 pub mod codec;
+pub mod error;
 pub mod kmer;
 pub mod seq;
 pub mod translation;
 
-pub use crate::kmer::Kmer;
-pub use crate::seq::{Seq, SeqSlice};
+pub use error::ParseBioError;
 
-pub use core::str::FromStr;
+pub mod prelude {
+    pub use crate::codec::amino::Amino;
+    pub use crate::codec::dna::Dna;
+    pub use crate::codec::iupac::Iupac;
+    pub use crate::codec::{Codec, Complement, ReverseComplement};
+
+    pub use crate::kmer::Kmer;
+    pub use crate::seq::{Seq, SeqSlice};
+    pub use crate::{amino, dna, iupac, kmer};
+
+    pub use core::str::FromStr;
+}
 
 #[cfg(test)]
 mod tests {

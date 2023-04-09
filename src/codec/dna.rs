@@ -4,8 +4,8 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::str::FromStr;
 
-use crate::codec::{Codec, Complement, ParseBioErr};
-use crate::Kmer;
+use crate::codec::{Codec, Complement};
+use crate::{kmer::Kmer, ParseBioError};
 
 use bitvec::prelude::*;
 
@@ -47,7 +47,7 @@ impl From<Dna> for char {
 }
 
 impl TryFrom<char> for Dna {
-    type Error = ParseBioErr;
+    type Error = ParseBioError;
     fn try_from(c: char) -> Result<Self, Self::Error> {
         Dna::from_char(c)
     }
@@ -66,7 +66,7 @@ impl From<Dna> for u8 {
 }
 
 impl FromStr for Dna {
-    type Err = ParseBioErr;
+    type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Dna::try_from(s.as_bytes()[0] as char)
@@ -104,55 +104,58 @@ macro_rules! kmer {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::dna::*;
-    use crate::codec::{Complement, ParseBioErr};
-    use crate::{Kmer, Seq};
-    use core::convert::TryFrom;
-    use core::str::FromStr;
+    use crate::prelude::*;
 
     #[test]
-    fn dna_kmer_equality() -> Result<(), ParseBioErr> {
+    fn dna_kmer_equality() {
         assert_eq!(
-            Kmer::<Dna, 8>::try_from(dna!("TGCACATG"))?,
-            Kmer::<Dna, 8>::try_from(dna!("TGCACATG"))?
+            Kmer::<Dna, 8>::try_from(dna!("TGCACATG")).unwrap(),
+            Kmer::<Dna, 8>::try_from(dna!("TGCACATG")).unwrap()
         );
         assert_ne!(
-            Kmer::<Dna, 7>::try_from(dna!("GTGACGA"))?,
-            Kmer::<Dna, 7>::try_from(dna!("GTGAAGA"))?
+            Kmer::<Dna, 7>::try_from(dna!("GTGACGA")).unwrap(),
+            Kmer::<Dna, 7>::try_from(dna!("GTGAAGA")).unwrap()
         );
-        Ok(())
     }
 
     #[test]
-    fn dna_kmer_macro() -> Result<(), ParseBioErr> {
+    fn dna_kmer_macro() {
         assert_eq!(
             kmer!("TGCACATG"),
-            Kmer::<Dna, 8>::try_from(dna!("TGCACATG"))?
+            Kmer::<Dna, 8>::try_from(dna!("TGCACATG")).unwrap()
         );
-        assert_ne!(kmer!("GTGACGA"), Kmer::<Dna, 7>::try_from(dna!("GTGAAGA"))?);
-        Ok(())
+        assert_ne!(
+            kmer!("GTGACGA"),
+            Kmer::<Dna, 7>::try_from(dna!("GTGAAGA")).unwrap()
+        );
     }
 
     #[test]
-    fn dna_kmer_complement() -> Result<(), ParseBioErr> {
+    fn dna_kmer_complement() {
         assert_eq!(
             format!(
                 "{:b}",
-                Kmer::<Dna, 8>::try_from(dna!("AAAAAAAA"))?.comp().bs
+                Kmer::<Dna, 8>::try_from(dna!("AAAAAAAA"))
+                    .unwrap()
+                    .comp()
+                    .bs
             ),
-            format!("{:b}", Kmer::<Dna, 8>::try_from(dna!("TTTTTTTT"))?.bs)
+            format!(
+                "{:b}",
+                Kmer::<Dna, 8>::try_from(dna!("TTTTTTTT")).unwrap().bs
+            )
         );
 
         assert_eq!(
-            Kmer::<Dna, 1>::try_from(dna!("C"))?.comp(),
-            Kmer::<Dna, 1>::try_from(dna!("G"))?
+            Kmer::<Dna, 1>::try_from(dna!("C")).unwrap().comp(),
+            Kmer::<Dna, 1>::try_from(dna!("G")).unwrap()
         );
 
         assert_eq!(
-            Kmer::<Dna, 16>::try_from(dna!("AAAATGCACATGTTTT"))?.comp(),
-            Kmer::<Dna, 16>::try_from(dna!("TTTTACGTGTACAAAA"))?
+            Kmer::<Dna, 16>::try_from(dna!("AAAATGCACATGTTTT"))
+                .unwrap()
+                .comp(),
+            Kmer::<Dna, 16>::try_from(dna!("TTTTACGTGTACAAAA")).unwrap()
         );
-
-        Ok(())
     }
 }

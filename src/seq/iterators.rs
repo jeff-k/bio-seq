@@ -4,10 +4,11 @@
 // except according to those terms.
 
 use crate::codec::Codec;
-use crate::seq::SeqSlice;
-use crate::Kmer;
+use crate::kmer::Kmer;
+use crate::seq::{Seq, SeqSlice};
 use core::marker::PhantomData;
 
+/// An iterator over fixed-size non-overlapping chunks of a sequence
 pub struct SeqChunks<'a, A: Codec> {
     slice: &'a SeqSlice<A>,
     width: usize,
@@ -15,6 +16,7 @@ pub struct SeqChunks<'a, A: Codec> {
     index: usize,
 }
 
+/// An iterator over the elements of a sequence
 pub struct SeqIter<'a, A: Codec> {
     slice: &'a SeqSlice<A>,
     index: usize,
@@ -39,6 +41,19 @@ impl<A: Codec> SeqSlice<A> {
         }
     }
 
+    /// Iterate over the sequence in overlapping windows of a specified width
+    ///
+    /// This will panic if the length of the window is greater than the length of the sequence.
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// use bio_seq::prelude::*;
+    ///
+    /// let seq = "ACTGATCG";
+    /// let windows: Vec<Seq<Dna>> = seq.windows(3).collect();
+    /// assert_eq!(windows, vec!["ACT", "CTG", "TGA", "GAT", "ATC", "TCG"]);
+    /// ```
     pub fn windows(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
             slice: self,
@@ -48,6 +63,20 @@ impl<A: Codec> SeqSlice<A> {
         }
     }
 
+    /// Iterate over the sequence in non-overlapping chunks of a specified width
+    ///
+    /// The last chunk may be smaller if the sequence length is not divisible by the specified
+    /// width.
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// use bio_seq::prelude::*;
+    ///
+    /// let seq = "ACTGATCG";
+    /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
+    /// assert_eq!(chunks, vec!["ACT", "GAT", "CG"]);
+    /// ```
     pub fn chunks(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
             slice: self,
@@ -58,6 +87,7 @@ impl<A: Codec> SeqSlice<A> {
     }
 }
 
+/// An iterator over the elements of a sequence in reverse order
 pub struct RevIter<'a, A: Codec> {
     pub slice: &'a SeqSlice<A>,
     pub index: usize,
@@ -89,7 +119,7 @@ impl<'a, A: Codec + std::fmt::Debug> Iterator for SeqChunks<'a, A> {
     }
 }
 
-impl<'a, A: Codec> IntoIterator for &'a SeqSlice<A> {
+impl<'a, A: Codec> IntoIterator for &'a Seq<A> {
     type Item = A;
     type IntoIter = SeqIter<'a, A>;
 
@@ -101,9 +131,29 @@ impl<'a, A: Codec> IntoIterator for &'a SeqSlice<A> {
     }
 }
 
-// TODO
-// IntoIter for Seq should box the contained slice
-// IntoIter for &'a Seq
+impl<'a, A: Codec> IntoIterator for &'a &Seq<A> {
+    type Item = A;
+    type IntoIter = SeqIter<'a, A>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SeqIter {
+            slice: self,
+            index: 0,
+        }
+    }
+}
+
+impl<'a, A: Codec> IntoIterator for &'a SeqSlice<A> {
+    type Item = A;
+    type IntoIter = SeqIter<'a, A>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SeqIter {
+            slice: self,
+            index: 0,
+        }
+    }
+}
 
 impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
     type Item = A;
@@ -117,6 +167,7 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
     }
 }
 
+/// An iterator over all kmers of a sequence with a specified length
 pub struct KmerIter<'a, A: Codec, const K: usize> {
     pub slice: &'a SeqSlice<A>,
     pub index: usize,
@@ -138,9 +189,34 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::dna::*;
+    use crate::codec::dna::{Dna, Dna::*};
     use crate::kmer::Kmer;
     use crate::seq::{FromStr, Seq, SeqSlice};
+
+    #[test]
+    fn seq_iter() {
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let elements: Vec<Dna> = seq.into_iter().collect();
+        assert_eq!(elements, vec![A, C, T, G, A, T, C, G, A, T, A, C]);
+        assert_ne!(elements, vec![A, C, T, G, A, T, C, G, A, T, A, C, A]);
+        assert_ne!(elements, vec![C, A, T, A, G, C, T, A, G, T, C, A]);
+    }
+
+    #[test]
+    fn rev_iter() {
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let rev_elements: Vec<Dna> = seq.rev().collect();
+        assert_ne!(rev_elements, vec![A, C, T, G, A, T, C, G, A, T, A, C]);
+        assert_eq!(rev_elements, vec![C, A, T, A, G, C, T, A, G, T, C, A]);
+    }
+
+    #[test]
+    fn iterators() {
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let slice = &seq[2..9];
+        let elements: Vec<Dna> = slice.into_iter().collect();
+        assert_eq!(elements, vec![T, G, A, T, C, G, A]);
+    }
 
     #[test]
     fn chunks() {
