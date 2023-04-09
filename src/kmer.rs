@@ -15,7 +15,7 @@ use core::marker::PhantomData;
 /// Encoded sequences of fixed length `k`, known at compile time.
 ///
 /// For this implementation `k * codec::width` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
-/// `simd::Kmer`
+/// `simd::Kmer` (TODO)
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub _p: PhantomData<C>,
@@ -23,6 +23,14 @@ pub struct Kmer<C: Codec, const K: usize> {
 }
 
 impl<A: Codec, const K: usize> Kmer<A, K> {
+    /// Kmer uses a run-time test to ensure that K is inside bounds. Compile-time
+    /// testing requires nightly.
+    fn check_k() {
+        assert!(
+            K <= usize::BITS as usize / A::WIDTH as usize,
+            "K is too large: it should be <= usize::BITS / A::WIDTH"
+        );
+    }
     /// Push a base from the right, e.g.:
     /// `AACGT`.pushr('`C`') -> `ACGTC`
     pub fn pushr(self, base: A) -> Kmer<A, K> {
@@ -55,6 +63,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     fn from(i: usize) -> Kmer<A, K> {
+        Kmer::<A, K>::check_k();
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -114,6 +123,7 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
 impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
     fn from(slice: &SeqSlice<A>) -> Self {
         assert_eq!(K, slice.len());
+        Kmer::<A, K>::check_k();
         Kmer {
             _p: PhantomData,
             bs: slice.into(),
@@ -203,5 +213,29 @@ mod tests {
         {
             assert_eq!(format!("{}", kmer), target);
         }
+    }
+
+    #[test]
+    fn valid_k_check() {
+        Kmer::<Dna, 1>::check_k();
+        Kmer::<Amino, 1>::check_k();
+        Kmer::<Dna, 32>::check_k();
+        Kmer::<Amino, 10>::check_k();
+    }
+
+    #[test]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    fn invalid_k_check() {
+        Kmer::<Dna, 33>::check_k();
+    }
+    #[test]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    fn invalid_k_check_amino() {
+        Kmer::<Amino, 11>::check_k();
+    }
+    #[test]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    fn invalid_k_check_dna() {
+        Kmer::<Dna, 33>::check_k();
     }
 }

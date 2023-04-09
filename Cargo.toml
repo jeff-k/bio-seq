@@ -16,7 +16,7 @@ clap = { version="4", features=["derive"] }
 
 [dependencies]
 bitvec = "1"
-bio-seq-derive = "1.6.0"
+bio-seq-derive = "1.6"
 
 [[example]]
 name = "aminokmers"
