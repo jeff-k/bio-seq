@@ -16,7 +16,6 @@ use core::marker::PhantomData;
 /// Encoded sequences of fixed length `k`, known at compile time.
 ///
 /// For this implementation `k * codec::width` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
-/// `simd::Kmer` (TODO)
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub _p: PhantomData<C>,
@@ -33,6 +32,13 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
             "K is too large: it should be <= usize::BITS / A::WIDTH"
         );
     }
+
+    /*
+    fn iter(self) -> Iterator<Item = A> {
+        unimplemented!()
+    }
+    */
+
     /// Push a base from the right, e.g.:
     /// `AACGT`.pushr('`C`') -> `ACGTC`
     pub fn pushr(self, base: A) -> Kmer<A, K> {
@@ -101,6 +107,26 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     }
 }
 
+/// An iterator over all kmers of a sequence with a specified length
+pub struct KmerIter<'a, A: Codec, const K: usize> {
+    pub slice: &'a SeqSlice<A>,
+    pub index: usize,
+    pub len: usize,
+    pub _p: PhantomData<A>,
+}
+
+impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
+    type Item = Kmer<A, K>;
+    fn next(&mut self) -> Option<Kmer<A, K>> {
+        let i = self.index;
+        if self.index + K > self.len {
+            return None;
+        }
+        self.index += 1;
+        Some(Kmer::<A, K>::from(&self.slice[i..i + K]))
+    }
+}
+
 /// The value of K is included in the hasher state so that
 /// `hash(kmer!("AAA")) != hash(kmer!("AAAA"))
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
@@ -130,6 +156,25 @@ impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
             _p: PhantomData,
             bs: slice.into(),
         }
+    }
+}
+
+impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
+    fn from(kmer: Kmer<A, K>) -> Self {
+        unimplemented!()
+        //        kmer.iter().map(|base| base.to_char()).collect()
+    }
+}
+
+impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
+    fn eq(&self, seq: &Seq<A>) -> bool {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec, const K: usize> PartialEq<&str> for Kmer<A, K> {
+    fn eq(&self, seq: &&str) -> bool {
+        unimplemented!()
     }
 }
 
@@ -223,6 +268,16 @@ mod tests {
         Kmer::<Amino, 1>::check_k();
         Kmer::<Dna, 32>::check_k();
         Kmer::<Amino, 10>::check_k();
+    }
+
+    #[test]
+    fn kmer_iter() {
+        let seq: Seq<Dna> = dna!("ACTGA");
+        let cs: Vec<Kmer<Dna, 3>> = seq.kmers().collect();
+        assert_eq!(cs[0], "ACT");
+        assert_eq!(cs[1], "CTG");
+        assert_eq!(cs[2], "TGA");
+        assert_eq!(cs.len(), 3);
     }
 
     #[test]

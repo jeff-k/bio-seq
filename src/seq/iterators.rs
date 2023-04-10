@@ -4,7 +4,7 @@
 // except according to those terms.
 
 use crate::codec::Codec;
-use crate::kmer::Kmer;
+use crate::kmer::KmerIter;
 use crate::seq::{Seq, SeqSlice};
 use core::marker::PhantomData;
 
@@ -110,11 +110,14 @@ impl<'a, A: Codec + std::fmt::Debug> Iterator for SeqChunks<'a, A> {
     type Item = &'a SeqSlice<A>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index + self.width + self.skip > self.slice.len() {
+        if self.index + self.width > self.slice.len() {
             return None;
         }
         let i = self.index;
         self.index += self.skip;
+        if i + self.width > self.slice.len() {
+            return None;
+        }
         Some(&self.slice[i..i + self.width])
     }
 }
@@ -173,26 +176,6 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
     }
 }
 
-/// An iterator over all kmers of a sequence with a specified length
-pub struct KmerIter<'a, A: Codec, const K: usize> {
-    pub slice: &'a SeqSlice<A>,
-    pub index: usize,
-    pub len: usize,
-    pub _p: PhantomData<A>,
-}
-
-impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
-    type Item = Kmer<A, K>;
-    fn next(&mut self) -> Option<Kmer<A, K>> {
-        let i = self.index;
-        if self.index + K > self.len {
-            return None;
-        }
-        self.index += 1;
-        Some(Kmer::<A, K>::from(&self.slice[i..i + K]))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::{Dna, Dna::*};
@@ -227,31 +210,16 @@ mod tests {
     #[test]
     fn chunks() {
         let seq: Seq<Dna> = dna!("ACTGATCGATAC");
-        let cs: Vec<&SeqSlice<Dna>> = seq.chunks(5).collect();
-        assert_eq!(format!("{}", cs[0]), "ACTGA");
-        assert_eq!(format!("{}", cs[1]), "TCGAT");
+        let cs: Vec<Seq<Dna>> = seq.chunks(5).collect();
+        assert_eq!(cs[0], dna!("ACTGA"));
+        assert_eq!(cs[1], dna!("TCGAT"));
         assert_eq!(cs.len(), 2);
-    }
-
-    #[test]
-    fn kmer_iter() {
-        let seq: Seq<Dna> = dna!("ACTGA");
-        let cs: Vec<Kmer<Dna, 3>> = seq.kmers().collect();
-        assert_eq!(format!("{}", cs[0]), "ACT");
-        assert_eq!(format!("{}", cs[1]), "CTG");
-        assert_eq!(format!("{}", cs[2]), "TGA");
-        assert_eq!(cs.len(), 3);
     }
 
     #[test]
     fn windows() {
         let seq: Seq<Dna> = dna!("ACTGATACG");
-        let cs: Vec<&SeqSlice<Dna>> = seq.windows(5).collect();
-        assert_eq!(format!("{}", cs[0]), "ACTGA");
-        assert_eq!(format!("{}", cs[1]), "CTGAT");
-        assert_eq!(format!("{}", cs[2]), "TGATA");
-        assert_eq!(format!("{}", cs[3]), "GATAC");
-        assert_eq!(format!("{}", cs[4]), "ATACG");
-        assert_eq!(cs.len(), 5);
+        let windows: Vec<Seq<Dna>> = seq.windows(5).collect();
+        assert_eq!(windows, vec!["ACTGA", "CTGAT", "TGATA", "GATAC", "ATACG"]);
     }
 }

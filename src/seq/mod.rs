@@ -165,10 +165,10 @@ impl<A: Codec> PartialEq for SeqSlice<A> {
 }
 
 impl<A: Codec> From<Seq<A>> for String {
-    fn from(val: Seq<A>) -> Self {
-        // potential optimisation: pre-allocate the Strig upfront:
+    fn from(seq: Seq<A>) -> Self {
+        // potential optimisation: pre-allocate the String upfront:
         // let mut s = String::with_capacity(self.bs.len() / A::WIDTH.into());
-        val.into_iter().map(|base| base.to_char()).collect()
+        seq.into_iter().map(|base| base.to_char()).collect()
     }
 }
 
@@ -176,6 +176,12 @@ impl<A: Codec> PartialEq<&str> for Seq<A> {
     fn eq(&self, other: &&str) -> bool {
         let s: String = self.into_iter().map(|base| base.to_char()).collect();
         s == *other
+    }
+}
+
+impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self.bs == other.bv[..]
     }
 }
 
@@ -369,6 +375,7 @@ impl<A: Codec> TryFrom<&str> for Seq<A> {
     type Error = ParseBioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
+        // TODO: optimise
         let mut v = Vec::new();
         for i in s.chars() {
             match A::from_char(i) {
@@ -529,5 +536,45 @@ mod tests {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
         let s: &SeqSlice<Dna> = &s1[15..21];
         assert_eq!(format!("{}", s), "GATCAA");
+    }
+
+    #[test]
+    fn string_to_seq() {
+        let seq_str = "ACTGACTG";
+        let seq: Result<Seq<Dna>, _> = seq_str.try_into();
+        assert!(seq.is_ok());
+        assert_eq!(seq.unwrap().to_string(), seq_str);
+    }
+
+    #[test]
+    fn invalid_string_to_seq() {
+        let invalid_seq_str = "ACUGACTG";
+        let seq: Result<Seq<Dna>, _> = invalid_seq_str.try_into();
+        assert!(seq.is_err());
+    }
+
+    #[test]
+    fn seq_to_string() {
+        let seq_str = "ACTGACTG";
+        let seq: Seq<Dna> = seq_str.try_into().unwrap();
+        let result_str: String = seq.into();
+        assert_eq!(result_str, seq_str);
+    }
+
+    #[test]
+    fn seqslice_to_string() {
+        let seq_str = "ACTGACTG";
+        let seq: Seq<Dna> = seq_str.try_into().unwrap();
+        let slice = &seq[1..5];
+        let result_str: String = slice.to_owned().into();
+        assert_eq!(result_str, "CTGA");
+    }
+
+    #[test]
+    #[should_panic(expected = "range 2..18 out of bounds: 16")]
+    fn invalid_seqslice_to_string() {
+        let seq_str = "ACTGACTG";
+        let seq: Seq<Dna> = seq_str.try_into().unwrap();
+        let _ = &seq[1..9];
     }
 }
