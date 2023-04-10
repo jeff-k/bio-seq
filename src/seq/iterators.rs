@@ -73,9 +73,9 @@ impl<A: Codec> SeqSlice<A> {
     /// ```
     /// use bio_seq::prelude::*;
     ///
-    /// let seq: Seq<Dna> = "ACTGATCG".try_into().unwrap();
+    /// let seq: Seq<Dna> = "ACTGATCGA".try_into().unwrap();
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
-    /// assert_eq!(chunks, vec!["ACT", "GAT", "CG"]);
+    /// assert_eq!(chunks, vec!["ACT", "GAT", "CGA"]);
     /// ```
     pub fn chunks(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
@@ -152,6 +152,12 @@ impl<'a, A: Codec> IntoIterator for &'a SeqSlice<A> {
             slice: self,
             index: 0,
         }
+    }
+}
+
+impl<'a, A: Codec> FromIterator<&'a SeqSlice<A>> for Vec<Seq<A>> {
+    fn from_iter<T: IntoIterator<Item = &'a SeqSlice<A>>>(iter: T) -> Self {
+        iter.into_iter().map(|slice| slice.to_owned()).collect()
     }
 }
 

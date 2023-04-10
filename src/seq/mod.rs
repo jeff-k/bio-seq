@@ -345,12 +345,6 @@ impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
     }
 }
 
-impl<A: Codec> AsRef<Seq<A>> for Seq<A> {
-    fn as_ref(&self) -> &Self {
-        unimplemented!()
-    }
-}
-
 impl<A: Codec> ToOwned for SeqSlice<A> {
     type Owned = Seq<A>;
 
