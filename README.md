@@ -1,13 +1,12 @@
 <div class="title-block" style="text-align: center;" align="center">
 
-# `bio-seq`
+# bio-seq
 
 ### Bit-packed and well-typed biological sequences
 </div>
 
 ```rust
-use bio_seq::{dna, Seq, FromStr};
-use bio_seq::codec::{dna::Dna, ReverseComplement};
+use bio_seq::prelude::*;
 
 let seq = dna!("ATACGATCGATCGATCGATCCGT");
 
@@ -20,6 +19,8 @@ for kmer in seq.revcomp().kmers::<8>() {
 The IUPAC nucleotide ambiguity codes naturally encode a set of bases for each position:
 
 ```rust
+use bio_seq::prelude::*;
+
 let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
 let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
 
@@ -33,7 +34,7 @@ for slice in seq.windows(pattern.len()) {
 The primary design goal of this crate is to make translating between biological sequence types safe and convenient:
 
 ```rust
-// debruijn sequence of order 3
+// debruijn sequence of all 3-mers:
 let seq: Seq<Dna> =
     dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
 let aminos: Seq<Amino> = Seq::from_vec(seq.kmers().map(|kmer| kmer.into()).collect());
@@ -150,7 +151,7 @@ Sequence coding/decoding is derived from the variant names and discriminants of 
 
 ```rust
 use bio_seq_derive::Codec;
-use bio_seq::codec::{Codec, ParseBioErr};
+use bio_seq::codec::Codec;
 
 #[derive(Clone, Copy, Debug, PartialEq, Codec)]
 #[width = 2]

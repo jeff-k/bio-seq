@@ -161,20 +161,22 @@ impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
 
 impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
     fn from(kmer: Kmer<A, K>) -> Self {
-        unimplemented!()
-        //        kmer.iter().map(|base| base.to_char()).collect()
+        kmer.to_string()
     }
 }
 
 impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     fn eq(&self, seq: &Seq<A>) -> bool {
-        unimplemented!()
+        if seq.len() != K {
+            return false;
+        }
+        &Kmer::<A, K>::from(&seq[..]) == self
     }
 }
 
 impl<A: Codec, const K: usize> PartialEq<&str> for Kmer<A, K> {
     fn eq(&self, seq: &&str) -> bool {
-        unimplemented!()
+        &self.to_string() == seq
     }
 }
 

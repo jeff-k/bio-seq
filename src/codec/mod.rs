@@ -9,7 +9,7 @@ pub mod iupac;
 
 use bio_seq_derive::Codec;
 
-pub trait Codec: Copy + Clone + Into<u8> {
+pub trait Codec: Copy + Clone + Into<u8> + PartialEq {
     type Error: std::error::Error + core::fmt::Display;
     const WIDTH: u8;
 

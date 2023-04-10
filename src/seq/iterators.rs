@@ -179,8 +179,7 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::{Dna, Dna::*};
-    use crate::kmer::Kmer;
-    use crate::seq::{FromStr, Seq, SeqSlice};
+    use crate::seq::{FromStr, Seq};
 
     #[test]
     fn seq_iter() {
