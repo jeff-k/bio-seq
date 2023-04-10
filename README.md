@@ -37,7 +37,7 @@ The primary design goal of this crate is to make translating between biological 
 // debruijn sequence of all 3-mers:
 let seq: Seq<Dna> =
     dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-let aminos: Seq<Amino> = Seq::from_vec(seq.kmers().map(|kmer| kmer.into()).collect());
+let aminos: Seq<Amino> = Seq::from_iter(seq.kmers().map(|kmer| kmer.into()));
 assert_eq!(
     aminos,
     amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")

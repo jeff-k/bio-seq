@@ -68,15 +68,6 @@ impl<A: Codec + Complement + std::fmt::Debug> ReverseComplement for Seq<A> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ParseSeqErr;
-
-impl fmt::Display for ParseSeqErr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "could not parse sequence")
-    }
-}
-
 impl<A: Codec> Seq<A> {
     /// Pack binary representations into a bitvector
     pub fn from_vec(vec: Vec<A>) -> Self {
@@ -406,14 +397,14 @@ impl<A: Codec> fmt::Display for SeqSlice<A> {
 }
 
 impl<A: Codec> FromStr for Seq<A> {
-    type Err = ParseSeqErr;
+    type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut v = Vec::new();
         for i in s.chars() {
             match A::from_char(i) {
                 Ok(b) => v.push(b),
-                Err(_) => return Err(ParseSeqErr),
+                Err(_) => return Err(ParseBioError {}),
             }
         }
         Ok(Seq::<A>::from_vec(v))

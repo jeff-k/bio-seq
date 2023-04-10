@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Jeff Knaggs
+// Copyright 2021, 2022, 2023 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -10,12 +10,24 @@ use bitvec::prelude::*;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
+use core::str::FromStr;
 
 /// ## Kmers
 ///
-/// Encoded sequences of fixed length `k`, known at compile time.
+/// Encoded sequences length `k`, fixed at compile time.
 ///
-/// For this implementation `k * codec::width` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
+/// For this implementation `k * codec::WIDTH` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
+///
+/// ```
+/// use bio_seq::prelude::*;
+///
+/// for (amino_kmer, amino_string) in amino!("SSLMNHKKL")
+///         .kmers::<3>()
+///         .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
+///     {
+///         assert_eq!(amino_kmer, amino_string);
+///     }
+/// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub _p: PhantomData<C>,
@@ -33,14 +45,15 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
         );
     }
 
-    /*
-    fn iter(self) -> Iterator<Item = A> {
-        unimplemented!()
-    }
-    */
-
-    /// Push a base from the right, e.g.:
-    /// `AACGT`.pushr('`C`') -> `ACGTC`
+    /// Push a base from the right:
+    ///
+    /// ```
+    /// use bio_seq::prelude::*;
+    /// use bio_seq::codec::dna::Dna;
+    ///
+    /// let k = kmer!("ACGAT");
+    /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
+    /// ```
     pub fn pushr(self, base: A) -> Kmer<A, K> {
         let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
         let ba = &BitArray::<usize, Lsb0>::from(self.bs);
@@ -180,13 +193,22 @@ impl<A: Codec, const K: usize> PartialEq<&str> for Kmer<A, K> {
     }
 }
 
+impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
+    type Err = ParseBioError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != K {
+            return Err(ParseBioError {});
+        }
+        let seq: Seq<A> = Seq::from_str(s)?;
+        Kmer::<A, K>::try_from(seq)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::codec::amino::Amino;
-    use crate::codec::dna::Dna;
-    use crate::kmer::Kmer;
-    use crate::seq::Seq;
-    use core::str::FromStr;
+    use crate::prelude::*;
+
     #[test]
     fn kmer_to_usize() {
         for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {
@@ -260,7 +282,7 @@ mod tests {
             .kmers::<3>()
             .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
         {
-            assert_eq!(format!("{}", kmer), target);
+            assert_eq!(kmer, target);
         }
     }
 
@@ -270,6 +292,15 @@ mod tests {
         Kmer::<Amino, 1>::check_k();
         Kmer::<Dna, 32>::check_k();
         Kmer::<Amino, 10>::check_k();
+    }
+
+    #[test]
+    fn eq_functions() {
+        assert_eq!(kmer!("ACGT"), dna!("ACGT"));
+        assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
+        let kmer: Kmer<Iupac, 4> = Kmer::from_str("ACGT").unwrap();
+        assert_eq!(kmer, iupac!("ACGT"));
+        assert_ne!(kmer, iupac!("NCGT"));
     }
 
     #[test]
