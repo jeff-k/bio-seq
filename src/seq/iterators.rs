@@ -65,7 +65,7 @@ impl<A: Codec> SeqSlice<A> {
 
     /// Iterate over the sequence in non-overlapping chunks of a specified width
     ///
-    /// The last chunk may be smaller if the sequence length is not divisible by the specified
+    /// The last incomplete chunk will be excluded if the sequence length is not divisible by the specified
     /// width.
     ///
     /// Example:
@@ -73,9 +73,9 @@ impl<A: Codec> SeqSlice<A> {
     /// ```
     /// use bio_seq::prelude::*;
     ///
-    /// let seq: Seq<Dna> = "ACTGATCGA".try_into().unwrap();
+    /// let seq: Seq<Dna> = "ACTGATCG".try_into().unwrap();
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
-    /// assert_eq!(chunks, vec!["ACT", "GAT", "CGA"]);
+    /// assert_eq!(chunks, vec!["ACT", "GAT"]);
     /// ```
     pub fn chunks(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
@@ -110,7 +110,7 @@ impl<'a, A: Codec + std::fmt::Debug> Iterator for SeqChunks<'a, A> {
     type Item = &'a SeqSlice<A>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index + self.width > self.slice.len() {
+        if self.index + self.width + self.skip > self.slice.len() {
             return None;
         }
         let i = self.index;
