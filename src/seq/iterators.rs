@@ -50,7 +50,7 @@ impl<A: Codec> SeqSlice<A> {
     /// ```
     /// use bio_seq::prelude::*;
     ///
-    /// let seq = "ACTGATCG";
+    /// let seq: Seq<Dna> = "ACTGATCG".try_into().unwrap();
     /// let windows: Vec<Seq<Dna>> = seq.windows(3).collect();
     /// assert_eq!(windows, vec!["ACT", "CTG", "TGA", "GAT", "ATC", "TCG"]);
     /// ```
@@ -73,7 +73,7 @@ impl<A: Codec> SeqSlice<A> {
     /// ```
     /// use bio_seq::prelude::*;
     ///
-    /// let seq = "ACTGATCG";
+    /// let seq: Seq<Dna> = "ACTGATCG".try_into().unwrap();
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
     /// assert_eq!(chunks, vec!["ACT", "GAT", "CG"]);
     /// ```

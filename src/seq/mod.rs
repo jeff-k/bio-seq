@@ -6,6 +6,7 @@
 pub mod iterators;
 
 use crate::codec::{Codec, Complement, ReverseComplement};
+use crate::ParseBioError;
 
 use bitvec::prelude::*;
 
@@ -163,9 +164,25 @@ impl<A: Codec> PartialEq for SeqSlice<A> {
     }
 }
 
+impl<A: Codec> From<Seq<A>> for String {
+    fn from(val: Seq<A>) -> Self {
+        // potential optimisation: pre-allocate the Strig upfront:
+        // let mut s = String::with_capacity(self.bs.len() / A::WIDTH.into());
+        val.into_iter().map(|base| base.to_char()).collect()
+    }
+}
+
+impl<A: Codec> PartialEq<&str> for Seq<A> {
+    fn eq(&self, other: &&str) -> bool {
+        let s: String = self.into_iter().map(|base| base.to_char()).collect();
+        s == *other
+    }
+}
+
 impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
+        // theory: this is prevent Hash(ACGT) from equaling Hash(AACGT)
         self.len().hash(state);
     }
 }
@@ -334,29 +351,56 @@ impl<A: Codec> AsRef<Seq<A>> for Seq<A> {
     }
 }
 
+impl<A: Codec> ToOwned for SeqSlice<A> {
+    type Owned = Seq<A>;
+
+    fn to_owned(&self) -> Self::Owned {
+        Seq {
+            _p: PhantomData,
+            bv: self.bs.into(),
+        }
+    }
+}
+
 impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
-    fn from(_slice: &SeqSlice<A>) -> Self {
-        unimplemented!()
+    fn from(slice: &SeqSlice<A>) -> Self {
+        Seq {
+            _p: PhantomData,
+            bv: slice.bs.into(),
+        }
+    }
+}
+
+impl<A: Codec> TryFrom<&str> for Seq<A> {
+    type Error = ParseBioError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let mut v = Vec::new();
+        for i in s.chars() {
+            match A::from_char(i) {
+                Ok(b) => v.push(b),
+                Err(_) => return Err(ParseBioError {}),
+            }
+        }
+        Ok(Seq::<A>::from_vec(v))
     }
 }
 
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = String::new();
-        for c in self.bv.chunks_exact(A::WIDTH.into()) {
-            s.push_str(&A::unsafe_from_bits(c.load()).to_char().to_string());
+        for base in self {
+            write!(f, "{}", base.to_char())?;
         }
-        write!(f, "{s}")
+        Ok(())
     }
 }
 
 impl<A: Codec> fmt::Display for SeqSlice<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = String::new();
-        for c in self.bs.chunks_exact(A::WIDTH.into()) {
-            s.push_str(&A::unsafe_from_bits(c.load()).to_char().to_string());
+        for base in self {
+            write!(f, "{}", base.to_char())?;
         }
-        write!(f, "{s}")
+        Ok(())
     }
 }
 
