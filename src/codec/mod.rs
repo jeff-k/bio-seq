@@ -8,10 +8,11 @@ pub mod dna;
 pub mod iupac;
 
 use core::fmt;
+use core::hash::Hash;
 
 use bio_seq_derive::Codec;
 
-pub trait Codec: Copy + Clone + Into<u8> {
+pub trait Codec: Copy + Clone + Into<u8> + Hash {
     type Error;
     const WIDTH: u8;
 
@@ -23,11 +24,6 @@ pub trait Codec: Copy + Clone + Into<u8> {
 
 pub trait Complement {
     fn comp(self) -> Self;
-}
-
-pub trait ReverseComplement {
-    /// Reverse complementable
-    fn revcomp(self) -> Self;
 }
 
 #[derive(Debug, Clone)]

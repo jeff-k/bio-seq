@@ -14,8 +14,7 @@
 //! nucleotide sequence manipulation.
 //!
 //! ```rust
-//! use bio_seq::{dna, Seq, FromStr};
-//! use bio_seq::codec::{dna::Dna, ReverseComplement};
+//! use bio_seq::prelude::*;
 //!
 //! let seq = dna!("ATACGATCGATCGATCGATCCGT");
 //!
@@ -29,8 +28,7 @@
 //! crate.
 //!
 //! ```rust
-//! use bio_seq::{iupac, Seq, FromStr};
-//! use bio_seq::codec::{iupac::Iupac};
+//! use bio_seq::prelude::*;
 //!
 //! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
 //! let pattern = Seq::<Iupac>::from_str("AYG").unwrap();

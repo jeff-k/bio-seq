@@ -5,7 +5,7 @@
 
 pub mod iterators;
 
-use crate::codec::{Codec, Complement, ReverseComplement};
+use crate::codec::{Codec, Complement};
 
 use bitvec::prelude::*;
 
@@ -52,12 +52,34 @@ impl<A: Codec> From<&SeqSlice<A>> for usize {
 
 impl<A: Codec> From<&SeqSlice<A>> for u8 {
     fn from(slice: &SeqSlice<A>) -> u8 {
+        assert!(slice.bs.len() <= u8::BITS as usize);
         slice.bs.load::<u8>()
     }
 }
 
-impl<A: Codec + Complement + std::fmt::Debug> ReverseComplement for Seq<A> {
-    fn revcomp(self) -> Seq<A> {
+pub trait ReverseComplement {
+    type A: Codec + Complement;
+
+    /// Reverse complement of a sequence
+    fn revcomp(&self) -> Seq<Self::A>;
+}
+
+impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+    type A = A;
+
+    fn revcomp(&self) -> Seq<A> {
+        let mut v = vec![];
+        for base in self.rev() {
+            v.push(base.comp());
+        }
+        Seq::<A>::from_vec(v)
+    }
+}
+
+impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
+    type A = A;
+
+    fn revcomp(&self) -> Seq<A> {
         let mut v = vec![];
         for base in self.rev() {
             v.push(base.comp());
@@ -390,8 +412,7 @@ impl<A: Codec> From<Vec<u8>> for Seq<A> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::*;
-    use crate::codec::ReverseComplement;
-    use crate::seq::{FromStr, Seq, SeqSlice};
+    use crate::seq::{FromStr, ReverseComplement, Seq, SeqSlice};
 
     #[test]
     fn test_revcomp() {

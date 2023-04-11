@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.8.6"
+version = "0.8.8"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 description = "Bit packed and well-typed biological sequences"
@@ -16,7 +16,8 @@ clap = { version="4", features=["derive"] }
 
 [dependencies]
 bitvec = "1"
-bio-seq-derive = "1.5.0"
+bio-seq-derive = { path="../bio-seq-derive" }
+# bio-seq-derive = "1.6.0"
 
 [[example]]
 name = "aminokmers"
