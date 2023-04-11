@@ -70,12 +70,9 @@ impl<A: Codec + Complement> ReverseComplement for Seq<A> {
     type A = A;
 
     fn revcomp(&self) -> Seq<A> {
-        // TODO: use extend for this
-        let mut v = vec![];
-        for base in self.rev() {
-            v.push(base.comp());
-        }
-        Seq::<A>::from_vec(v)
+        let mut seq = Seq::<A>::with_capacity(self.len());
+        seq.extend(self.rev().map(|base| base.comp()));
+        seq
     }
 }
 
@@ -83,11 +80,9 @@ impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
     type A = A;
 
     fn revcomp(&self) -> Seq<A> {
-        let mut v = vec![];
-        for base in self.rev() {
-            v.push(base.comp());
-        }
-        Seq::<A>::from_vec(v)
+        let mut seq = Seq::<A>::with_capacity(self.len());
+        seq.extend(self.rev().map(|base| base.comp()));
+        seq
     }
 }
 
@@ -115,6 +110,13 @@ impl<A: Codec> Seq<A> {
         Seq {
             _p: PhantomData,
             bv: BitVec::new(),
+        }
+    }
+
+    pub fn with_capacity(len: usize) -> Self {
+        Seq {
+            _p: PhantomData,
+            bv: BitVec::with_capacity(len * A::WIDTH as usize),
         }
     }
 
@@ -439,15 +441,14 @@ impl<A: Codec> TryFrom<&str> for Seq<A> {
     type Error = ParseBioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        // TODO: optimise
-        let mut v = Vec::new();
-        for i in s.chars() {
-            match A::from_char(i) {
-                Ok(b) => v.push(b),
-                Err(_) => return Err(ParseBioError {}),
-            }
-        }
-        Ok(Seq::<A>::from_vec(v))
+        let mut seq = Seq::<A>::with_capacity(s.len());
+        seq.extend(
+            s.chars()
+                .map(A::from_char)
+                .collect::<Result<Vec<A>, _>>()
+                .map_err(|_| ParseBioError {})?,
+        );
+        Ok(seq)
     }
 }
 
