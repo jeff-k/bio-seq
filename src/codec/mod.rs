@@ -7,13 +7,10 @@ pub mod dna;
 #[macro_use]
 pub mod iupac;
 
-use core::fmt;
-use core::hash::Hash;
-
 use bio_seq_derive::Codec;
 
-pub trait Codec: Copy + Clone + Into<u8> + Hash {
-    type Error;
+pub trait Codec: Copy + Clone + Into<u8> + PartialEq {
+    type Error: std::error::Error + core::fmt::Display;
     const WIDTH: u8;
 
     fn unsafe_from_bits(b: u8) -> Self;
@@ -25,21 +22,6 @@ pub trait Codec: Copy + Clone + Into<u8> + Hash {
 pub trait Complement {
     fn comp(self) -> Self;
 }
-
-#[derive(Debug, Clone)]
-pub struct ParseBioErr;
-
-impl fmt::Display for ParseBioErr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Could not encode")
-    }
-}
-
-/*impl<A: Codec> dyn From<&SeqSlice<A>> {
-    fn from(slice: &SeqSlice<A>) {
-        A::unsafe_from_bits(slice.load())
-    }
-}*/
 
 #[cfg(test)]
 mod tests {

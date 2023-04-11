@@ -1,21 +1,33 @@
-// Copyright 2021, 2022 Jeff Knaggs
+// Copyright 2021, 2022, 2023 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::codec::{Codec, ParseBioErr};
-use crate::{Seq, SeqSlice};
+use crate::codec::Codec;
+use crate::seq::{Seq, SeqSlice};
+use crate::ParseBioError;
 use bitvec::prelude::*;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
+use core::str::FromStr;
 
 /// ## Kmers
 ///
-/// Encoded sequences of fixed length `k`, known at compile time.
+/// Encoded sequences length `k`, fixed at compile time.
 ///
-/// For this implementation `k * codec::width` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
-/// `simd::Kmer`
+/// For this implementation `k * codec::WIDTH` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
+///
+/// ```
+/// use bio_seq::prelude::*;
+///
+/// for (amino_kmer, amino_string) in amino!("SSLMNHKKL")
+///         .kmers::<3>()
+///         .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
+///     {
+///         assert_eq!(amino_kmer, amino_string);
+///     }
+/// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub _p: PhantomData<C>,
@@ -23,8 +35,25 @@ pub struct Kmer<C: Codec, const K: usize> {
 }
 
 impl<A: Codec, const K: usize> Kmer<A, K> {
-    /// Push a base from the right, e.g.:
-    /// `AACGT`.pushr('`C`') -> `ACGTC`
+    /// Kmer uses a run-time test to ensure that K is inside bounds. Compile-time
+    /// testing requires nightly.
+    #[inline]
+    fn check_k() {
+        assert!(
+            K <= usize::BITS as usize / A::WIDTH as usize,
+            "K is too large: it should be <= usize::BITS / A::WIDTH"
+        );
+    }
+
+    /// Push a base from the right:
+    ///
+    /// ```
+    /// use bio_seq::prelude::*;
+    /// use bio_seq::codec::dna::Dna;
+    ///
+    /// let k = kmer!("ACGAT");
+    /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
+    /// ```
     pub fn pushr(self, base: A) -> Kmer<A, K> {
         let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
         let ba = &BitArray::<usize, Lsb0>::from(self.bs);
@@ -55,6 +84,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     fn from(i: usize) -> Kmer<A, K> {
+        Kmer::<A, K>::check_k();
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -90,6 +120,26 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     }
 }
 
+/// An iterator over all kmers of a sequence with a specified length
+pub struct KmerIter<'a, A: Codec, const K: usize> {
+    pub slice: &'a SeqSlice<A>,
+    pub index: usize,
+    pub len: usize,
+    pub _p: PhantomData<A>,
+}
+
+impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
+    type Item = Kmer<A, K>;
+    fn next(&mut self) -> Option<Kmer<A, K>> {
+        let i = self.index;
+        if self.index + K > self.len {
+            return None;
+        }
+        self.index += 1;
+        Some(Kmer::<A, K>::from(&self.slice[i..i + K]))
+    }
+}
+
 /// The value of K is included in the hasher state so that
 /// `hash(kmer!("AAA")) != hash(kmer!("AAAA"))
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
@@ -100,11 +150,11 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
 }
 
 impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
-    type Error = ParseBioErr;
+    type Error = ParseBioError;
 
     fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
         if seq.len() != K {
-            Err(ParseBioErr)
+            Err(ParseBioError {})
         } else {
             Ok(Kmer::<A, K>::from(&seq[0..K]))
         }
@@ -114,6 +164,7 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
 impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
     fn from(slice: &SeqSlice<A>) -> Self {
         assert_eq!(K, slice.len());
+        Kmer::<A, K>::check_k();
         Kmer {
             _p: PhantomData,
             bs: slice.into(),
@@ -121,13 +172,43 @@ impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
     }
 }
 
+impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
+    fn from(kmer: Kmer<A, K>) -> Self {
+        kmer.to_string()
+    }
+}
+
+impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
+    fn eq(&self, seq: &Seq<A>) -> bool {
+        if seq.len() != K {
+            return false;
+        }
+        &Kmer::<A, K>::from(&seq[..]) == self
+    }
+}
+
+impl<A: Codec, const K: usize> PartialEq<&str> for Kmer<A, K> {
+    fn eq(&self, seq: &&str) -> bool {
+        &self.to_string() == seq
+    }
+}
+
+impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
+    type Err = ParseBioError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != K {
+            return Err(ParseBioError {});
+        }
+        let seq: Seq<A> = Seq::from_str(s)?;
+        Kmer::<A, K>::try_from(seq)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::codec::amino::Amino;
-    use crate::codec::dna::Dna;
-    use crate::Kmer;
-    use crate::Seq;
-    use core::str::FromStr;
+    use crate::prelude::*;
+
     #[test]
     fn kmer_to_usize() {
         for (kmer, index) in dna!("AACTT").kmers::<2>().zip([0, 4, 13, 15]) {
@@ -201,7 +282,50 @@ mod tests {
             .kmers::<3>()
             .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
         {
-            assert_eq!(format!("{}", kmer), target);
+            assert_eq!(kmer, target);
         }
+    }
+
+    #[test]
+    fn valid_k_check() {
+        Kmer::<Dna, 1>::check_k();
+        Kmer::<Amino, 1>::check_k();
+        Kmer::<Dna, 32>::check_k();
+        Kmer::<Amino, 10>::check_k();
+    }
+
+    #[test]
+    fn eq_functions() {
+        assert_eq!(kmer!("ACGT"), dna!("ACGT"));
+        assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
+        let kmer: Kmer<Iupac, 4> = Kmer::from_str("ACGT").unwrap();
+        assert_eq!(kmer, iupac!("ACGT"));
+        assert_ne!(kmer, iupac!("NCGT"));
+    }
+
+    #[test]
+    fn kmer_iter() {
+        let seq: Seq<Dna> = dna!("ACTGA");
+        let cs: Vec<Kmer<Dna, 3>> = seq.kmers().collect();
+        assert_eq!(cs[0], "ACT");
+        assert_eq!(cs[1], "CTG");
+        assert_eq!(cs[2], "TGA");
+        assert_eq!(cs.len(), 3);
+    }
+
+    #[test]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    fn invalid_k_check() {
+        Kmer::<Dna, 33>::check_k();
+    }
+    #[test]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    fn invalid_k_check_amino() {
+        Kmer::<Amino, 11>::check_k();
+    }
+    #[test]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    fn invalid_k_check_dna() {
+        Kmer::<Dna, 33>::check_k();
     }
 }

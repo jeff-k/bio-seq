@@ -13,8 +13,7 @@
 /// This supports membership resolution with bitwise operations:
 ///
 /// ```rust
-/// use bio_seq::*;
-/// use bio_seq::codec::iupac::Iupac;
+/// use bio_seq::prelude::*;
 ///
 /// // Set union:
 /// assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
@@ -22,8 +21,9 @@
 /// // Set intersection:
 /// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 /// ```
-use crate::codec::{dna::Dna, Codec, ParseBioErr};
+use crate::codec::{dna::Dna, Codec};
 use crate::seq::{Seq, SeqSlice};
+use crate::ParseBioError;
 
 use core::fmt;
 use core::ops::{BitAnd, BitOr};
@@ -53,7 +53,7 @@ pub enum Iupac {
 }
 
 impl TryFrom<char> for Iupac {
-    type Error = ParseBioErr;
+    type Error = ParseBioError;
     fn try_from(c: char) -> Result<Self, Self::Error> {
         Iupac::from_char(c)
     }
@@ -121,7 +121,7 @@ impl BitOr for &SeqSlice<Iupac> {
 }
 
 impl FromStr for Iupac {
-    type Err = ParseBioErr;
+    type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Iupac::try_from(s.as_bytes()[0] as char)
