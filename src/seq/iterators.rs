@@ -6,6 +6,7 @@
 use crate::codec::Codec;
 use crate::kmer::KmerIter;
 use crate::seq::{Seq, SeqSlice};
+use core::iter::Chain;
 use core::marker::PhantomData;
 
 /// An iterator over fixed-size non-overlapping chunks of a sequence
@@ -20,6 +21,15 @@ pub struct SeqChunks<'a, A: Codec> {
 pub struct SeqIter<'a, A: Codec> {
     slice: &'a SeqSlice<A>,
     index: usize,
+}
+
+impl<'a, A: Codec> SeqSlice<A> {
+    pub fn chain(
+        self: &'a SeqSlice<A>,
+        second: &'a SeqSlice<A>,
+    ) -> Chain<SeqIter<'a, A>, SeqIter<'a, A>> {
+        self.into_iter().chain(second.into_iter())
+    }
 }
 
 impl<A: Codec> SeqSlice<A> {
@@ -213,6 +223,23 @@ mod tests {
         assert_eq!(cs[0], dna!("ACTGA"));
         assert_eq!(cs[1], dna!("TCGAT"));
         assert_eq!(cs.len(), 2);
+    }
+
+    #[test]
+    fn test_chain() {
+        let seq1 = Seq::<Dna>::try_from("ATG").unwrap();
+        let seq2 = Seq::<Dna>::try_from("TAC").unwrap();
+
+        let chained = &seq1.chain(&seq2);
+
+        let expected_seq = Seq::<Dna>::try_from("ATGTAC").unwrap();
+        for (a, b) in chained.into_iter().zip(expected_seq.into_iter()) {
+            assert_eq!(a, b);
+        }
+
+        for (a, b) in expected_seq.into_iter().map(|b| b.comp()).zip(chained) {
+            assert_ne!(a, b);
+        }
     }
 
     #[test]
