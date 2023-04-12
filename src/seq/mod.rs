@@ -160,15 +160,15 @@ impl<A: Codec> Seq<A> {
         unimplemented!()
     }
 
-    pub fn truncate(&mut self, len: usize) {
+    pub fn truncate(&mut self, _len: usize) {
         unimplemented!()
     }
 
-    pub fn remove(&mut self, index: usize) -> A {
+    pub fn remove(&mut self, _index: usize) -> A {
         unimplemented!()
     }
 
-    pub fn insert(&mut self, index: usize, element: A) {
+    pub fn insert(&mut self, _index: usize, _element: A) {
         unimplemented!()
     }
 
@@ -503,7 +503,7 @@ impl<A: Codec> From<Vec<u8>> for Seq<A> {
 }
 
 impl<A: Codec> IndexMut<usize> for Seq<A> {
-    fn index_mut(&mut self, index: usize) -> &mut SeqSlice<A> {
+    fn index_mut(&mut self, _index: usize) -> &mut SeqSlice<A> {
         unimplemented!()
     }
 }
