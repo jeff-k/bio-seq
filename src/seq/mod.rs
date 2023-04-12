@@ -521,7 +521,6 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
 mod tests {
     use crate::codec::amino::*;
     use crate::codec::dna::*;
-    use crate::codec::Complement;
     use crate::seq::{FromStr, ReverseComplement, Seq, SeqSlice};
 
     #[test]

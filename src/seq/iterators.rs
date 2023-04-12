@@ -189,6 +189,7 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::{Dna, Dna::*};
+    use crate::codec::Complement;
     use crate::seq::{FromStr, Seq};
 
     #[test]
@@ -230,14 +231,15 @@ mod tests {
         let seq1 = Seq::<Dna>::try_from("ATG").unwrap();
         let seq2 = Seq::<Dna>::try_from("TAC").unwrap();
 
-        let chained = &seq1.chain(&seq2);
+        let chained = seq1.chain(&seq2);
 
         let expected_seq = Seq::<Dna>::try_from("ATGTAC").unwrap();
-        for (a, b) in chained.into_iter().zip(expected_seq.into_iter()) {
+        for (a, b) in chained.zip(expected_seq.into_iter()) {
             assert_eq!(a, b);
         }
 
-        for (a, b) in expected_seq.into_iter().map(|b| b.comp()).zip(chained) {
+        let chained = seq1.chain(&seq2);
+        for (a, b) in chained.map(|b| b.comp()).zip(expected_seq.into_iter()) {
             assert_ne!(a, b);
         }
     }
