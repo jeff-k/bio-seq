@@ -152,6 +152,10 @@ impl<A: Codec> Seq<A> {
             .extend_from_bitslice(&byte.view_bits::<Lsb0>()[..A::WIDTH as usize]);
     }
 
+    pub fn clear(&mut self) {
+        self.bv.clear();
+    }
+
     pub fn pop(&mut self) -> Option<A> {
         unimplemented!()
     }
@@ -245,7 +249,7 @@ impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
 impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
-        // theory: this is prevent Hash(ACGT) from equaling Hash(AACGT)
+        // theory: this is prevent Hash(AAAA) from equaling Hash(AAAAA)
         self.len().hash(state);
     }
 }
