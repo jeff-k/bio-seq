@@ -14,6 +14,7 @@ use core::borrow::Borrow;
 use core::convert::TryFrom;
 use core::fmt;
 use core::hash::{Hash, Hasher};
+use core::iter::Chain;
 use core::marker::PhantomData;
 use core::ops::{
     Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
@@ -154,15 +155,15 @@ impl<A: Codec> Seq<A> {
         unimplemented!()
     }
 
-    pub fn truncate(&mut self, len: usize) {
+    pub fn truncate(&mut self, _len: usize) {
         unimplemented!()
     }
 
-    pub fn remove(&mut self, index: usize) -> A {
+    pub fn remove(&mut self, _index: usize) -> A {
         unimplemented!()
     }
 
-    pub fn insert(&mut self, index: usize, element: A) {
+    pub fn insert(&mut self, _index: usize, _element: A) {
         unimplemented!()
     }
 
@@ -209,6 +210,44 @@ impl<A: Codec> SeqSlice<A> {
         Seq::<A> {
             _p: PhantomData,
             bv,
+        }
+    }
+
+    fn chain<'a>(self: &'a SeqSlice<A>, second: &'a SeqSlice<A>) -> ChainedSeqSlice<'a, A> {
+        ChainedSeqSlice {
+            first: self,
+            second,
+            len: self.len() + second.len(),
+        }
+    }
+}
+
+pub struct ChainedSeqSlice<'a, A: Codec> {
+    first: &'a SeqSlice<A>,
+    second: &'a SeqSlice<A>,
+    len: usize,
+}
+
+impl<'a, A: Codec> ChainedSeqSlice<'a, A> {
+    pub fn len(&self) -> usize {
+        self.len
+    }
+}
+
+impl<'a, A: Codec> Index<usize> for ChainedSeqSlice<'a, A> {
+    type Output = SeqSlice<A>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        if index < self.first.len() {
+            &self.first[index]
+        } else if index < self.len() {
+            &self.second[index - self.first.len()]
+        } else {
+            panic!(
+                "index out of bounds: the len is {} but the index is {}",
+                self.len(),
+                index
+            );
         }
     }
 }
@@ -498,7 +537,7 @@ impl<A: Codec> From<Vec<u8>> for Seq<A> {
 }
 
 impl<A: Codec> IndexMut<usize> for Seq<A> {
-    fn index_mut(&mut self, index: usize) -> &mut SeqSlice<A> {
+    fn index_mut(&mut self, _index: usize) -> &mut SeqSlice<A> {
         unimplemented!()
     }
 }
@@ -521,6 +560,7 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
 mod tests {
     use crate::codec::amino::*;
     use crate::codec::dna::*;
+    use crate::codec::Complement;
     use crate::seq::{FromStr, ReverseComplement, Seq, SeqSlice};
 
     #[test]
@@ -696,6 +736,24 @@ mod tests {
 
         assert_eq!(seq.len(), 4);
         assert_eq!(seq, "ACGT");
+    }
+
+    #[test]
+    fn test_chain() {
+        let seq1 = Seq::<Dna>::try_from("ATG").unwrap();
+        let seq2 = Seq::<Dna>::try_from("TAC").unwrap();
+
+        let chained = &seq1.chain(&seq2);
+        assert_eq!(chained.len(), 6);
+
+        let expected_seq = Seq::<Dna>::try_from("ATGTAC").unwrap();
+        for (a, b) in expected_seq.into_iter().zip(chained) {
+            assert_eq!(a, b);
+        }
+
+        for (a, b) in expected_seq.into_iter().map(|b| b.comp()).zip(chained) {
+            assert_eq!(a, b);
+        }
     }
 
     #[test]
