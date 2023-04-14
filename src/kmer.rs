@@ -55,10 +55,10 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
     /// ```
     pub fn pushr(self, base: A) -> Kmer<A, K> {
-        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
-        let ba = &BitArray::<usize, Lsb0>::from(self.bs);
+        let bs = &BitArray::<usize, Msb0>::from(base.into() as usize)[..A::WIDTH as usize];
+        let ba = &BitArray::<usize, Msb0>::from(self.bs);
 
-        let mut x: BitVec<usize, Lsb0> = BitVec::new();
+        let mut x: BitVec<usize, Msb0> = BitVec::new();
         x.extend_from_bitslice(&ba[A::WIDTH as usize..A::WIDTH as usize * K]);
         x.extend_from_bitslice(bs);
         Kmer {
@@ -69,10 +69,10 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
     /// Push a base from the left
     pub fn pushl(self, base: A) -> Kmer<A, K> {
-        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
-        let ba = &BitArray::<usize, Lsb0>::from(self.bs);
+        let bs = &BitArray::<usize, Msb0>::from(base.into() as usize)[..A::WIDTH as usize];
+        let ba = &BitArray::<usize, Msb0>::from(self.bs);
 
-        let mut x: BitVec<usize, Lsb0> = BitVec::new();
+        let mut x: BitVec<usize, Msb0> = BitVec::new();
         x.extend_from_bitslice(bs);
         x.extend_from_bitslice(&ba[..A::WIDTH as usize * K - A::WIDTH as usize]);
         Kmer {
@@ -107,7 +107,7 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
 impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        for chunk in BitArray::<usize, Lsb0>::from(self.bs)[..K * A::WIDTH as usize]
+        for chunk in BitArray::<usize, Msb0>::from(self.bs)[..K * A::WIDTH as usize]
             .chunks(A::WIDTH as usize)
         {
             s.push_str(

@@ -8,10 +8,11 @@ pub mod dna;
 pub mod iupac;
 
 use bio_seq_derive::Codec;
+use bitvec::prelude::*;
 
 pub trait Codec: Copy + Clone + Into<u8> + PartialEq {
-    type Error: std::error::Error + core::fmt::Display;
     const WIDTH: u8;
+    type Error: std::error::Error + core::fmt::Display;
 
     fn unsafe_from_bits(b: u8) -> Self;
     fn try_from_bits(b: u8) -> Result<Self, Self::Error>;

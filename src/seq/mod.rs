@@ -93,19 +93,6 @@ impl<A: Codec> Default for Seq<A> {
 }
 
 impl<A: Codec> Seq<A> {
-    /// Pack binary representations into a bitvector
-    pub fn from_vec(vec: Vec<A>) -> Self {
-        let mut bv: BitVec = BitVec::new();
-        for b in vec.iter() {
-            let byte: u8 = (*b).into();
-            bv.extend_from_bitslice(&byte.view_bits::<Lsb0>()[..A::WIDTH as usize]);
-        }
-        Seq {
-            _p: PhantomData,
-            bv,
-        }
-    }
-
     pub fn new() -> Self {
         Seq {
             _p: PhantomData,
@@ -243,6 +230,12 @@ impl<A: Codec> PartialEq<&str> for Seq<A> {
 impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
     fn eq(&self, other: &Seq<A>) -> bool {
         self.bs == other.bv[..]
+    }
+}
+
+impl<A: Codec> PartialEq<&SeqSlice<A>> for Seq<A> {
+    fn eq(&self, other: &&SeqSlice<A>) -> bool {
+        self.bv[..] == other.bs
     }
 }
 
@@ -432,6 +425,14 @@ impl<A: Codec> Clone for Seq<A> {
     }
 }
 
+impl<A: Codec> From<&Vec<A>> for Seq<A> {
+    fn from(vec: &Vec<A>) -> Self {
+        let mut seq = Seq::<A>::with_capacity(vec.len());
+        vec.into_iter().map(|c| seq.push(*c));
+        seq
+    }
+}
+
 impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
     fn from(slice: &SeqSlice<A>) -> Self {
         Seq {
@@ -478,27 +479,14 @@ impl<A: Codec> FromStr for Seq<A> {
     type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut v = Vec::new();
+        let mut seq = Seq::with_capacity(s.len());
         for i in s.chars() {
             match A::from_char(i) {
-                Ok(b) => v.push(b),
+                Ok(b) => seq.push(b),
                 Err(_) => return Err(ParseBioError {}),
             }
         }
-        Ok(Seq::<A>::from_vec(v))
-    }
-}
-
-impl<A: Codec> From<Vec<u8>> for Seq<A> {
-    fn from(v: Vec<u8>) -> Self {
-        Seq::<A>::from_vec(
-            v.iter()
-                .map(|c| match A::from_char(*c as char) {
-                    Ok(base) => base,
-                    _ => panic!(),
-                })
-                .collect(),
-        )
+        Ok(seq)
     }
 }
 
@@ -701,6 +689,18 @@ mod tests {
 
         assert_eq!(seq.len(), 4);
         assert_eq!(seq, "ACGT");
+    }
+
+    #[test]
+    fn test_eqs() {
+        let seq: Seq<Dna> = "ACTAGCATCGA".try_into().unwrap();
+        let seq2: Seq<Dna> = "ACTAGCATCGA".try_into().unwrap();
+        let slice: &SeqSlice<Dna> = &seq;
+        let slice2: &SeqSlice<Dna> = &seq2[..];
+        assert_eq!(seq, slice);
+        assert_eq!(seq2, slice);
+        assert_eq!(slice, slice2);
+        assert_eq!(seq, seq2);
     }
 
     #[test]
