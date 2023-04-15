@@ -29,7 +29,7 @@ fn main() {
     let mut histo = Box::new([0; 1 << (K * Amino::WIDTH as usize)]);
 
     for contig in faa {
-        for kmer in contig.seq.kmers::<K>() {
+        for kmer in contig.unwrap().seq.kmers::<K>() {
             histo[usize::from(kmer)] += 1;
             total += 1;
         }

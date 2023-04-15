@@ -8,7 +8,6 @@ pub mod dna;
 pub mod iupac;
 
 use bio_seq_derive::Codec;
-use bitvec::prelude::*;
 
 pub trait Codec: Copy + Clone + Into<u8> + PartialEq {
     const WIDTH: u8;

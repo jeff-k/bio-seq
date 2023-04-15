@@ -2,7 +2,7 @@
 
 use crate::codec::{amino::Amino, dna::Dna, Codec};
 use crate::kmer::Kmer;
-use crate::seq::{Seq, SeqSlice};
+use crate::seq::SeqSlice;
 
 impl From<Kmer<Dna, 3>> for Amino {
     fn from(k: Kmer<Dna, 3>) -> Amino {
@@ -32,11 +32,10 @@ mod tests {
     #[test]
     fn dna_to_amino() {
         let seq: Seq<Dna> = dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA");
-        let aminos: Seq<Amino> = Seq::from(
-            seq.chunks(3)
-                .map(|codon| -> Amino { codon.into() })
-                .collect(),
-        );
+        let aminos: Seq<Amino> = seq
+            .chunks(3)
+            .map(|codon| codon.into())
+            .collect::<Seq<Amino>>();
         assert_eq!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*"));
     }
 
@@ -44,7 +43,10 @@ mod tests {
     fn alternate_codons() {
         let seq: Seq<Dna> = dna!("AGCTCGTCATCCTCTAGTTGATAATAG");
         let codons: Vec<Kmer<Dna, 3>> = seq.chunks(3).map(|codon| codon.into()).collect();
-        let aminos: Seq<Amino> = Seq::from(codons.iter().map(|kmer| kmer.into()).collect());
+        let aminos: Seq<Amino> = codons
+            .iter()
+            .map(|kmer| kmer.into())
+            .collect::<Seq<Amino>>();
         assert_eq!(aminos, amino!("SSSSSS***"));
     }
 
@@ -52,7 +54,7 @@ mod tests {
     fn test_debruin_sequence() {
         let seq: Seq<Dna> =
             dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-        let aminos: Seq<Amino> = Seq::from(seq.kmers().map(|kmer| kmer.into()).collect());
+        let aminos: Seq<Amino> = seq.kmers().map(|kmer| kmer.into()).collect::<Seq<Amino>>();
         assert_eq!(aminos.len(), 64);
         assert_eq!(
             aminos,

@@ -428,10 +428,22 @@ impl<A: Codec> Clone for Seq<A> {
 impl<A: Codec> From<&Vec<A>> for Seq<A> {
     fn from(vec: &Vec<A>) -> Self {
         let mut seq = Seq::<A>::with_capacity(vec.len());
-        vec.into_iter().map(|c| seq.push(*c));
+        for c in vec.iter() {
+            seq.push(*c);
+        }
         seq
     }
 }
+
+/*
+impl<A: Codec> From<&Vec<u8>> for Seq<A> {
+    fn from(vec: &Vec<u8>) -> Self {
+        let mut seq = Seq::<A>::with_capacity(vec.len());
+        vec.into_iter().map(|c| seq.push(A::unsafe_from_bits(*c)));
+        seq
+    }
+}
+*/
 
 impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
     fn from(slice: &SeqSlice<A>) -> Self {
