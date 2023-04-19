@@ -77,7 +77,34 @@ Amino acid sequences are represented with 6 bits. The representation of amino ac
 
 ## Sequences
 
-Strings of encoded biological characters are packed into `Seq`s. Slicing, chunking, and windowing return `SeqSlice`s. `Seq<A: Codec>`/`&SeqSlice<A: Codec>` are analogous to `String`/`&str`.
+Strings of encoded characters are packed into `Seq`s. Slicing, chunking, and windowing return `SeqSlice`s. `Seq<A: Codec>`/`&SeqSlice<A: Codec>` are analogous to `String`/`&str`.
+
+All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
+
+```rust
+for i in 0..=15 {
+    println!("{}: {}", i, Kmer::<Dna, 5>::from(i));
+}
+```
+
+```
+0: AAAAA
+1: CAAAA
+2: GAAAA
+3: TAAAA
+4: ACAAA
+5: CCAAA
+6: GCAAA
+7: TCAAA
+8: AGAAA
+9: CGAAA
+10: GGAAA
+11: TGAAA
+12: ATAAA
+13: CTAAA
+14: GTAAA
+15: TTAAA
+```
 
 ## Kmers
 
@@ -120,15 +147,8 @@ let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 
 ### Kmer minimisers
 
-The 2-bit representation of nucleotides is ordered `A < C < G < T`. The ordering of kmers reverses the order of bases:
+The 2-bit representation of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored in little-endian and are ordered "colexicographically". This means that `AAAA < CAAA < GAAA < ... < AAAC < ... < TTTT`
 
-`AAAA < CAAA < ... < TTTT`
-
-but
-
-`CAAA < AAAC`
-
-With this ordering in mind, minimisers are automatically implemented:
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
@@ -170,9 +190,7 @@ impl From<Dna> for u8 {
 }
 ```
 
-The `width` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8.
-
-Kmers are stored as `usize`s with the least significant bit first.
+The `width` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
 
 ## Sequence conversions
 

@@ -207,13 +207,13 @@ mod tests {
     }
 
     #[test]
-    fn lexical_order() {
+    fn colexicographic_order() {
         for (i, e) in ["AA", "CA", "GA", "TA", "AC", "CC", "GC", "TC"]
             .iter()
             .enumerate()
         {
             assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), format!("{}", e));
-            //assert_eq!(, e);
+            assert_eq!(Kmer::<Dna, 2>::from(i), *e);
         }
     }
 }
