@@ -27,7 +27,7 @@ use core::str::FromStr;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
-    bv: BitVec,
+    bv: BitVec<usize, Lsb0>,
 }
 
 /// A slice of a Seq
@@ -35,27 +35,30 @@ pub struct Seq<A: Codec> {
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
-    bs: BitSlice,
+    bs: BitSlice<usize, Lsb0>,
 }
 
 impl<A: Codec> From<Seq<A>> for usize {
     fn from(slice: Seq<A>) -> usize {
         assert!(slice.bv.len() <= usize::BITS as usize);
-        slice.bv.load::<usize>()
+        //let shift = usize::BITS - slice.bv.len() as u32;
+        slice.bv.load_le::<usize>() //.wrapping_shr(shift)
     }
 }
 
 impl<A: Codec> From<&SeqSlice<A>> for usize {
     fn from(slice: &SeqSlice<A>) -> usize {
         assert!(slice.bs.len() <= usize::BITS as usize);
-        slice.bs.load::<usize>()
+        //let shift = usize::BITS - slice.bs.len() as u32;
+        slice.bs.load_le::<usize>() //.wrapping_shr(shift)
     }
 }
 
 impl<A: Codec> From<&SeqSlice<A>> for u8 {
     fn from(slice: &SeqSlice<A>) -> u8 {
         assert!(slice.bs.len() <= u8::BITS as usize);
-        slice.bs.load::<u8>()
+        //let shift = u8::BITS - slice.bs.len() as u32;
+        slice.bs.load_le::<u8>() //.wrapping_shr(shift)
     }
 }
 
@@ -103,7 +106,7 @@ impl<A: Codec> Seq<A> {
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
-            bv: BitVec::with_capacity(len * A::WIDTH as usize),
+            bv: BitVec::<usize, Lsb0>::with_capacity(len * A::WIDTH as usize),
         }
     }
 
@@ -129,7 +132,7 @@ impl<A: Codec> Seq<A> {
     pub fn bit_or(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
-            bv: BitVec::from_bitslice(&(self.bv | rhs.bv)),
+            bv: BitVec::<usize, Lsb0>::from_bitslice(&(self.bv | rhs.bv)),
         }
     }
 
@@ -186,7 +189,7 @@ impl<A: Codec> SeqSlice<A> {
     */
 
     pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: BitVec = BitVec::from_bitslice(&self.bs);
+        let mut bv: BitVec<usize, Lsb0> = BitVec::from_bitslice(&self.bs);
         bv &= BitVec::from_bitslice(&rhs.bs);
 
         Seq::<A> {
@@ -196,7 +199,7 @@ impl<A: Codec> SeqSlice<A> {
     }
 
     pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: BitVec = BitVec::from_bitslice(&self.bs);
+        let mut bv: BitVec<usize, Lsb0> = BitVec::from_bitslice(&self.bs);
         bv |= BitVec::from_bitslice(&rhs.bs);
 
         Seq::<A> {
@@ -258,7 +261,7 @@ impl<A: Codec> Index<Range<usize>> for Seq<A> {
     fn index(&self, range: Range<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bv[s..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -268,7 +271,7 @@ impl<A: Codec> Index<RangeTo<usize>> for Seq<A> {
 
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bv[..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -278,7 +281,7 @@ impl<A: Codec> Index<RangeToInclusive<usize>> for Seq<A> {
 
     fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
         let e = (range.end + 1) * A::WIDTH as usize;
-        let bs = &self.bv[..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -289,7 +292,7 @@ impl<A: Codec> Index<RangeInclusive<usize>> for Seq<A> {
     fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
         let s = range.start() * A::WIDTH as usize;
         let e = (range.end() + 1) * A::WIDTH as usize;
-        let bs = &self.bv[s..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -299,7 +302,7 @@ impl<A: Codec> Index<RangeFrom<usize>> for Seq<A> {
 
     fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
-        let bs = &self.bv[s..] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[s..] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -308,7 +311,7 @@ impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bv[0..self.bv.len()] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bv[0..self.bv.len()] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -327,7 +330,7 @@ impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
     fn index(&self, range: Range<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bs[s..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -337,7 +340,7 @@ impl<A: Codec> Index<RangeTo<usize>> for SeqSlice<A> {
 
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bs[..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -347,7 +350,7 @@ impl<A: Codec> Index<RangeToInclusive<usize>> for SeqSlice<A> {
 
     fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
         let e = (range.end + 1) * A::WIDTH as usize;
-        let bs = &self.bs[..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -358,7 +361,7 @@ impl<A: Codec> Index<RangeInclusive<usize>> for SeqSlice<A> {
     fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
         let s = range.start() * A::WIDTH as usize;
         let e = (range.end() + 1) * A::WIDTH as usize;
-        let bs = &self.bs[s..e] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -368,7 +371,7 @@ impl<A: Codec> Index<RangeFrom<usize>> for SeqSlice<A> {
 
     fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
-        let bs = &self.bs[s..] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[s..] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -377,7 +380,7 @@ impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bs[0..self.bs.len()] as *const BitSlice as *const SeqSlice<A>;
+        let bs = &self.bs[0..self.bs.len()] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -524,9 +527,9 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::amino::*;
-    use crate::codec::dna::*;
-    use crate::seq::{FromStr, ReverseComplement, Seq, SeqSlice};
+    use crate::prelude::*;
+    use bitvec::prelude::*;
+    use core::marker::PhantomData;
 
     #[test]
     fn test_revcomp() {
@@ -722,5 +725,19 @@ mod tests {
 
         assert_eq!(seq.len(), 4);
         assert_eq!(seq, "ACGT");
+    }
+
+    #[test]
+    fn test_bit_order() {
+        let raw: usize = 0b10_11_01_11_10_01_00_01;
+        let mut bv: BitVec<usize, Lsb0> = Default::default();
+        bv.extend(&raw.view_bits::<Lsb0>()[..(Dna::WIDTH as usize * 8)]);
+        let s = Seq::<Dna> {
+            bv,
+            _p: PhantomData,
+        };
+        assert_eq!(dna!("CACGTCTG"), "CACGTCTG");
+        assert_eq!(s, "CACGTCTG");
+        assert_eq!(raw, Kmer::<Dna, 8>::from(&s[..8]).bs);
     }
 }

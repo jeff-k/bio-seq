@@ -24,7 +24,7 @@ impl<const K: usize> Complement for Kmer<Dna, K> {
         Kmer {
             _p: PhantomData,
             bs: (self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize]
-                .load::<usize>(), // need to mask upper bits
+                .load_le::<usize>(),
         }
     }
 }

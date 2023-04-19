@@ -64,12 +64,8 @@ pub mod prelude {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::amino::Amino;
-    use crate::codec::dna::Dna;
     use crate::codec::dna::Dna::{A, C, G, T};
-    use crate::codec::iupac::Iupac;
-    use crate::seq::Seq;
-    use core::str::FromStr;
+    use crate::prelude::*;
 
     #[test]
     fn alt_repr() {
@@ -79,22 +75,22 @@ mod tests {
     #[test]
     fn into_usize() {
         let a: usize = dna!("ACGT").into();
-        assert_eq!(a, 0b00_01_10_11);
+        assert_eq!(a, 0b11_10_01_00);
 
         let b: usize = dna!("CGCG").into();
-        assert_eq!(b, 0b01_10_01_10);
+        assert_eq!(b, 0b10_01_10_01);
 
         let c: usize = Seq::from(&vec![T, T]).into();
         assert_eq!(c, 0b11_11);
 
         let d: usize = Seq::<Dna>::from_str("TCA").unwrap().into();
-        assert_eq!(d, 0b11_01_00);
+        assert_eq!(d, 0b00_01_11);
 
         let e: usize = Seq::<Dna>::from_str("TGA").unwrap().into();
-        assert_eq!(e, 0b11_10_00);
+        assert_eq!(e, 0b00_10_11);
 
         let f: usize = Seq::from(&vec![C, G, T, A, C, G, A, T]).into();
-        assert_eq!(f, 0b01_10_11_00_01_10_00_11);
+        assert_eq!(f, 0b11_00_10_01_00_11_10_01);
 
         let g: usize = Seq::from(&vec![A]).into();
         assert_eq!(g, 0b00);
@@ -208,5 +204,16 @@ mod tests {
 
         assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
         assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
+    }
+
+    #[test]
+    fn lexical_order() {
+        for (i, e) in ["AA", "CA", "GA", "TA", "AC", "CC", "GC", "TC"]
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), format!("{}", e));
+            //assert_eq!(, e);
+        }
     }
 }
