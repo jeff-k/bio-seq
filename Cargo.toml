@@ -10,13 +10,13 @@ readme = "README.md"
 license = "MIT"
 keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
 
-[dev-dependencies]
-bio-streams = { git="https://github.com/jeff-k/bio-streams.git" }
-clap = { version="4", features=["derive"] }
+#[dev-dependencies]
+#bio-streams = { git="https://github.com/jeff-k/bio-streams.git" }
+#clap = { version="4", features=["derive"] }
 
 [dependencies]
 bitvec = "1"
 bio-seq-derive = "1.6.4"
 
-[[example]]
-name = "aminokmers"
+#[[example]]
+#name = "aminokmers"
