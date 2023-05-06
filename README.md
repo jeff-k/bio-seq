@@ -14,27 +14,37 @@ let seq = dna!("ATACGATCGATCGATCGATCCGT");
 for kmer in seq.revcomp().kmers::<8>() {
     println!("{}", kmer);
 }
+
+// ACGGATCG
+// CGGATCGA
+// GGATCGAT
+// GATCGATC
+// ATCGATCG
+// ...
 ```
 
-The IUPAC nucleotide ambiguity codes naturally encode a set of bases for each position:
+The 4-bit encoding of IUPAC nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
 
 ```rust
 use bio_seq::prelude::*;
 
 let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
-let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
+let pattern = iupac!("AYG");
 
 for slice in seq.windows(pattern.len()) {
     if pattern.contains(slice) {
         println!("{} matches pattern", slice);
     }
 }
+
+// ACG matches pattern
+// ATG matches pattern
 ```
 
-The primary design goal of this crate is to make translating between biological sequence types safe and convenient:
+The goal of this crate is to make translating between biological sequence types safe and convenient:
 
 ```rust
-// debruijn sequence of all 3-mers:
+// This is a debruijn sequence of all possible 3-mers:
 let seq: Seq<Dna> =
     dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
 let aminos: Seq<Amino> = Seq::from_iter(seq.kmers().map(|kmer| kmer.into()));
@@ -77,7 +87,7 @@ Amino acid sequences are represented with 6 bits. The representation of amino ac
 
 ## Sequences
 
-Strings of encoded characters are packed into `Seq`s. Slicing, chunking, and windowing return `SeqSlice`s. `Seq<A: Codec>`/`&SeqSlice<A: Codec>` are analogous to `String`/`&str`.
+Strings of encoded characters are packed into `Seq`. Slicing, chunking, and windowing return `SeqSlice`. `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`.
 
 All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
 
@@ -108,11 +118,11 @@ for i in 0..=15 {
 
 ## Kmers
 
-kmers are sequences with a fixed size that can fit into a register. these are implemented with const generics.
+kmers are short sequences of length `k` that can fit into a `usize`. these are implemented with const generics and `k` is fixed at compile time.
 
 ### Dense encodings
 
-For dense encodings, a lookup table can be populated and indexed in constant time with the `usize` representation:
+For dense encodings, a lookup table can be populated and indexed in constant time by treating kmers directly as `usize`:
 
 ```rust
 fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
@@ -128,7 +138,7 @@ fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
 }
 ```
 
-This example builds a histogram of kmer occurences
+This example builds a histogram of kmer occurences.
 
 ## Sketching
 
@@ -147,8 +157,7 @@ let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 
 ### Kmer minimisers
 
-The 2-bit representation of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored in little-endian and are ordered "colexicographically". This means that `AAAA < CAAA < GAAA < ... < AAAC < ... < TTTT`
-
+The 2-bit representation of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored in little-endian and are ordered colexicographically. This means that `AAAA < CAAA < GAAA < ... < AAAC < ... < TTTT`
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
@@ -174,8 +183,6 @@ use bio_seq_derive::Codec;
 use bio_seq::codec::Codec;
 
 #[derive(Clone, Copy, Debug, PartialEq, Codec)]
-#[width = 2]
-#[repr(u8)]
 pub enum Dna {
     A = 0b00,
     C = 0b01,
@@ -190,7 +197,15 @@ impl From<Dna> for u8 {
 }
 ```
 
-The `width` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
+A `#[width = n]` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
+
+`#[alt(...,)]` and `#[display = 'x']` attributes can be used to define alternative representations or display the item with a special character. Here is the definition for the stop codon in `codec::Amino`:
+
+```rust
+    #[display = '*'] // print the stop codon as a '*'
+    #[alt(0b001011, 0b100011)] // TGA, TAG
+    X = 0b000011, // TAA (stop)
+```
 
 ## Sequence conversions
 
