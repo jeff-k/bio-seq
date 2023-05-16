@@ -472,6 +472,21 @@ impl<A: Codec> TryFrom<&str> for Seq<A> {
     }
 }
 
+impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
+    type Error = ParseBioError;
+
+    fn try_from(s: &[u8]) -> Result<Self, Self::Error> {
+        let mut seq = Seq::<A>::with_capacity(s.len());
+        seq.extend(
+            s.iter()
+                .map(|&b| A::from_char(b as char))
+                .collect::<Result<Vec<A>, _>>()
+                .map_err(|_| ParseBioError {})?,
+        );
+        Ok(seq)
+    }
+}
+
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for base in self {

@@ -7,6 +7,8 @@ pub mod dna;
 #[macro_use]
 pub mod iupac;
 
+pub mod text;
+
 use bio_seq_derive::Codec;
 
 pub trait Codec: Copy + Clone + Into<u8> + PartialEq {
