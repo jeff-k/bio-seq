@@ -5,7 +5,7 @@
 
 pub mod iterators;
 
-use crate::codec::{Codec, Complement};
+use crate::codec::{text, Codec, Complement};
 use crate::error::ParseBioError;
 
 use bitvec::prelude::*;
@@ -24,18 +24,27 @@ use core::str::FromStr;
 /// A sequence of bit-packed characters of arbitrary length
 ///
 /// Allocated to the heap
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
-    bv: BitVec<usize, Lsb0>,
+    bv: BitVec<u8, Lsb0>,
 }
 
 /// A slice of a Seq
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
-    bs: BitSlice<usize, Lsb0>,
+    bs: BitSlice<u8, Lsb0>,
+}
+
+impl From<Vec<u8>> for Seq<text::Dna> {
+    fn from(vec: Vec<u8>) -> Self {
+        Seq {
+            _p: PhantomData,
+            bv: BitVec::from_vec(vec),
+        }
+    }
 }
 
 impl<A: Codec> From<Seq<A>> for usize {
@@ -106,7 +115,7 @@ impl<A: Codec> Seq<A> {
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
-            bv: BitVec::<usize, Lsb0>::with_capacity(len * A::WIDTH as usize),
+            bv: BitVec::<u8, Lsb0>::with_capacity(len * A::WIDTH as usize),
         }
     }
 
@@ -132,7 +141,7 @@ impl<A: Codec> Seq<A> {
     pub fn bit_or(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
-            bv: BitVec::<usize, Lsb0>::from_bitslice(&(self.bv | rhs.bv)),
+            bv: BitVec::<u8, Lsb0>::from_bitslice(&(self.bv | rhs.bv)),
         }
     }
 
@@ -189,7 +198,7 @@ impl<A: Codec> SeqSlice<A> {
     */
 
     pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: BitVec<usize, Lsb0> = BitVec::from_bitslice(&self.bs);
+        let mut bv: BitVec<u8, Lsb0> = BitVec::from_bitslice(&self.bs);
         bv &= BitVec::from_bitslice(&rhs.bs);
 
         Seq::<A> {
@@ -199,7 +208,7 @@ impl<A: Codec> SeqSlice<A> {
     }
 
     pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: BitVec<usize, Lsb0> = BitVec::from_bitslice(&self.bs);
+        let mut bv: BitVec<u8, Lsb0> = BitVec::from_bitslice(&self.bs);
         bv |= BitVec::from_bitslice(&rhs.bs);
 
         Seq::<A> {
@@ -261,7 +270,7 @@ impl<A: Codec> Index<Range<usize>> for Seq<A> {
     fn index(&self, range: Range<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bv[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bv[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -271,7 +280,7 @@ impl<A: Codec> Index<RangeTo<usize>> for Seq<A> {
 
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bv[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bv[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -281,7 +290,7 @@ impl<A: Codec> Index<RangeToInclusive<usize>> for Seq<A> {
 
     fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
         let e = (range.end + 1) * A::WIDTH as usize;
-        let bs = &self.bv[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bv[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -292,7 +301,7 @@ impl<A: Codec> Index<RangeInclusive<usize>> for Seq<A> {
     fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
         let s = range.start() * A::WIDTH as usize;
         let e = (range.end() + 1) * A::WIDTH as usize;
-        let bs = &self.bv[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bv[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -302,7 +311,7 @@ impl<A: Codec> Index<RangeFrom<usize>> for Seq<A> {
 
     fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
-        let bs = &self.bv[s..] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bv[s..] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -311,7 +320,7 @@ impl<A: Codec> Index<RangeFull> for Seq<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bv[0..self.bv.len()] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bv[0..self.bv.len()] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -330,7 +339,7 @@ impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
     fn index(&self, range: Range<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bs[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bs[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -340,7 +349,7 @@ impl<A: Codec> Index<RangeTo<usize>> for SeqSlice<A> {
 
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
         let e = range.end * A::WIDTH as usize;
-        let bs = &self.bs[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bs[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -350,7 +359,7 @@ impl<A: Codec> Index<RangeToInclusive<usize>> for SeqSlice<A> {
 
     fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
         let e = (range.end + 1) * A::WIDTH as usize;
-        let bs = &self.bs[..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bs[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -361,7 +370,7 @@ impl<A: Codec> Index<RangeInclusive<usize>> for SeqSlice<A> {
     fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
         let s = range.start() * A::WIDTH as usize;
         let e = (range.end() + 1) * A::WIDTH as usize;
-        let bs = &self.bs[s..e] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bs[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -371,7 +380,7 @@ impl<A: Codec> Index<RangeFrom<usize>> for SeqSlice<A> {
 
     fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
         let s = range.start * A::WIDTH as usize;
-        let bs = &self.bs[s..] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bs[s..] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -380,7 +389,7 @@ impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bs[0..self.bs.len()] as *const BitSlice<usize, Lsb0> as *const SeqSlice<A>;
+        let bs = &self.bs[0..self.bs.len()] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
         unsafe { &*bs }
     }
 }
@@ -745,7 +754,7 @@ mod tests {
     #[test]
     fn test_bit_order() {
         let raw: usize = 0b10_11_01_11_10_01_00_01;
-        let mut bv: BitVec<usize, Lsb0> = Default::default();
+        let mut bv: BitVec<u8, Lsb0> = Default::default();
         bv.extend(&raw.view_bits::<Lsb0>()[..(Dna::WIDTH as usize * 8)]);
         let s = Seq::<Dna> {
             bv,
