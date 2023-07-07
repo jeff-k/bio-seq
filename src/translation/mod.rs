@@ -8,52 +8,52 @@ struct Custom {
 }
 
 impl Custom {
-    fn from_vec(table: Vec<Amino>) -> Self {
+    pub fn from_vec(table: Vec<Amino>) -> Self {
         Custom { table }
     }
 }
 
-impl TranslationTable for Custom {
-    fn to_amino(self, _codon: Kmer<Dna, 3>) -> Amino {
-        unimplemented!()
+impl<A: Codec> TranslationTable<A> for Custom {
+    fn to_amino(self, codon: Kmer<A, 3>) -> Amino {
+        self.table[Into::<usize>::into(codon)]
     }
 
-    fn from_amino(self, _amino: Amino) -> Option<Kmer<Dna, 3>> {
+    fn to_codon(self, _amino: Amino) -> Option<Kmer<A, 3>> {
         unimplemented!()
     }
 }
 
-trait TranslationTable {
-    fn to_amino(self, codon: Kmer<Dna, 3>) -> Amino;
-    fn from_amino(self, amino: Amino) -> Option<Kmer<Dna, 3>>;
+trait TranslationTable<A: Codec> {
+    fn to_amino(self, codon: Kmer<A, 3>) -> Amino;
+    fn to_codon(self, amino: Amino) -> Option<Kmer<A, 3>>;
 }
 
 struct Standard;
 
-impl TranslationTable for Standard {
+impl TranslationTable<Dna> for Standard {
     fn to_amino(self, codon: Kmer<Dna, 3>) -> Amino {
         Amino::unsafe_from_bits(Into::<usize>::into(codon) as u8)
     }
 
-    fn from_amino(self, _amino: Amino) -> Option<Kmer<Dna, 3>> {
+    fn to_codon(self, _amino: Amino) -> Option<Kmer<Dna, 3>> {
         None
     }
 }
 
-const standard: Standard = Standard;
+const STANDARD: Standard = Standard;
 
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::translation::standard;
     use crate::translation::TranslationTable;
+    use crate::translation::STANDARD;
 
     #[test]
     fn dna_to_amino() {
         let seq: Seq<Dna> = dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA");
         let aminos: Seq<Amino> = seq
             .chunks(3)
-            .map(|codon| standard.to_amino(codon.into()))
+            .map(|codon| STANDARD.to_amino(codon.into()))
             .collect::<Seq<Amino>>();
         assert_eq!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*"));
         assert_ne!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*A"));
@@ -66,7 +66,7 @@ mod tests {
         let codons: Vec<Kmer<Dna, 3>> = seq.chunks(3).map(|codon| codon.into()).collect();
         let aminos: Seq<Amino> = codons
             .iter()
-            .map(|kmer| standard.to_amino(*kmer))
+            .map(|kmer| STANDARD.to_amino(*kmer))
             .collect::<Seq<Amino>>();
         assert_eq!(aminos, amino!("SSSSSS***"));
     }
@@ -77,7 +77,7 @@ mod tests {
             dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
         let aminos: Seq<Amino> = seq
             .kmers()
-            .map(|kmer| standard.to_amino(kmer))
+            .map(|kmer| STANDARD.to_amino(kmer))
             .collect::<Seq<Amino>>();
         assert_eq!(aminos.len(), 64);
         assert_eq!(
