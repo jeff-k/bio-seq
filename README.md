@@ -41,13 +41,13 @@ for slice in seq.windows(pattern.len()) {
 // ATG matches pattern
 ```
 
-The goal of this crate is to make translating between biological sequence types safe and convenient:
+The goal of this crate is to make handling biological sequence data safe and convenient. The `TranslationTable` trait implements genetic coding:
 
 ```rust
 // This is a debruijn sequence of all possible 3-mers:
 let seq: Seq<Dna> =
     dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-let aminos: Seq<Amino> = Seq::from_iter(seq.kmers().map(|kmer| kmer.into()));
+let aminos: Seq<Amino> = Seq::from_iter(seq.kmers().map(|kmer| translation::STANDARD.to_amino(kmer)));
 assert_eq!(
     aminos,
     amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
@@ -81,6 +81,9 @@ Logical `and` is the intersection of two iupac sequences:
 ```rust
 assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 ```
+
+### `codec::Text`
+utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
 
 ### `codec::Amino`
 Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
@@ -209,11 +212,4 @@ A `#[width = n]` attribute specifies how many bits the encoding requires per sym
 
 ## Sequence conversions
 
-`Iupac` from `Dna`; `Seq<Iupac>` from `Seq<Dna>`
-
-`Amino` from `Kmer<3>`; `Seq<Amino>` from `Seq<Dna>`
-  * Sequence length not a multiple of 3 is an error
-
-`Seq<Iupac>` from `Amino`; `Seq<Iupac>` from `Seq<Amino>` (TODO)
-
-`Vec<Seq<Dna>>` from `Seq<Iupac>`: A sequence of IUPAC codes can generate a list of DNA sequences of the same length. (TODO)
+### The `TranslationTable` trait
