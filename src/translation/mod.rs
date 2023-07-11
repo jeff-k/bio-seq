@@ -3,7 +3,7 @@
 use crate::codec::{amino::Amino, dna::Dna, Codec};
 use crate::kmer::Kmer;
 
-struct Custom {
+pub struct Custom {
     table: Vec<Amino>,
 }
 
@@ -40,6 +40,7 @@ impl TranslationTable<Dna> for Standard {
     }
 }
 
+#[allow(dead_code)]
 const STANDARD: Standard = Standard;
 
 #[cfg(test)]

@@ -59,6 +59,7 @@ pub mod prelude {
     pub use crate::seq::{ReverseComplement, Seq, SeqSlice};
     pub use crate::{amino, dna, iupac, kmer};
 
+    pub use crate::translation;
     pub use core::str::FromStr;
 }
 
