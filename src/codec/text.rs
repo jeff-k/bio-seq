@@ -1,7 +1,7 @@
 use crate::codec::{dna, Codec, Complement};
 use crate::ParseBioError;
 
-#[derive(Copy, Clone, PartialEq, Debug, Ord, Eq, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, Debug, Ord, Eq, PartialOrd, Hash)]
 pub struct Dna(u8);
 
 impl Codec for Dna {

@@ -1,89 +1,84 @@
 //! Translation tables for coding sequences
+use std::collections::HashMap;
+use std::iter::FromIterator;
 
-use crate::codec::{amino::Amino, dna::Dna, Codec};
-use crate::kmer::Kmer;
+use crate::codec::Codec;
+use crate::prelude::{Seq, SeqSlice};
 
-pub struct Custom {
-    table: Vec<Amino>,
+pub mod standard;
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+enum TranslationError {
+    AmbiguousCodon,
+    InvalidCodon,
 }
 
-impl Custom {
-    pub fn from_vec(table: Vec<Amino>) -> Self {
-        Custom { table }
+trait TranslationTable<A: Codec, B: Codec> {
+    fn to_amino(self, codon: &SeqSlice<A>) -> B;
+    fn to_codon(self, amino: B) -> Result<Seq<A>, TranslationError>;
+}
+
+trait PartialTranslationTable<A: Codec, B: Codec> {
+    fn try_to_amino(self, codon: &SeqSlice<A>) -> Result<B, TranslationError>;
+    fn try_to_codon(self, amino: B) -> Result<Seq<A>, TranslationError>;
+}
+
+pub struct CodonTable<A: Codec, B: Codec> {
+    table: HashMap<Seq<A>, B>,
+    inverse_table: HashMap<B, Seq<A>>,
+}
+
+impl<A: Codec, B: Codec> CodonTable<A, B> {
+    pub fn from_map(table: HashMap<Seq<A>, B>) -> Self {
+        let mut inverse_table = HashMap::new();
+        for (codon, amino) in &table {
+            inverse_table.insert(*amino, codon.clone());
+        }
+        CodonTable {
+            table,
+            inverse_table,
+        }
     }
 }
 
-impl<A: Codec> TranslationTable<A> for Custom {
-    fn to_amino(self, codon: Kmer<A, 3>) -> Amino {
-        self.table[Into::<usize>::into(codon)]
-    }
+impl<A: Codec, B: Codec> FromIterator<(Seq<A>, B)> for CodonTable<A, B> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = (Seq<A>, B)>,
+    {
+        let mut table: HashMap<Seq<A>, B> = HashMap::new();
+        let mut inverse_table: HashMap<B, Seq<A>> = HashMap::new();
 
-    fn to_codon(self, _amino: Amino) -> Option<Kmer<A, 3>> {
-        unimplemented!()
-    }
-}
+        for (codon, amino) in iter {
+            table.insert(codon.clone(), amino);
+            inverse_table.insert(amino, codon.clone());
+        }
 
-trait TranslationTable<A: Codec> {
-    fn to_amino(self, codon: Kmer<A, 3>) -> Amino;
-    fn to_codon(self, amino: Amino) -> Option<Kmer<A, 3>>;
-}
-
-struct Standard;
-
-impl TranslationTable<Dna> for Standard {
-    fn to_amino(self, codon: Kmer<Dna, 3>) -> Amino {
-        Amino::unsafe_from_bits(Into::<usize>::into(codon) as u8)
-    }
-
-    fn to_codon(self, _amino: Amino) -> Option<Kmer<Dna, 3>> {
-        None
+        CodonTable {
+            table,
+            inverse_table,
+        }
     }
 }
 
-#[allow(dead_code)]
-const STANDARD: Standard = Standard;
+impl<A: Codec, B: Codec> PartialTranslationTable<A, B> for CodonTable<A, B> {
+    fn try_to_amino(self, codon: &SeqSlice<A>) -> Result<B, TranslationError> {
+        match self.table.get(codon) {
+            Some(amino) => Ok(*amino),
+            None => Err(TranslationError::InvalidCodon),
+        }
+    }
 
+    fn try_to_codon(self, amino: B) -> Result<Seq<A>, TranslationError> {
+        match self.inverse_table.get(&amino) {
+            Some(codon) => Ok(codon.clone()),
+            None => Err(TranslationError::AmbiguousCodon),
+        }
+    }
+}
+
+/*
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-    use crate::translation::TranslationTable;
-    use crate::translation::STANDARD;
-
-    #[test]
-    fn dna_to_amino() {
-        let seq: Seq<Dna> = dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA");
-        let aminos: Seq<Amino> = seq
-            .chunks(3)
-            .map(|codon| STANDARD.to_amino(codon.into()))
-            .collect::<Seq<Amino>>();
-        assert_eq!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*"));
-        assert_ne!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*A"));
-        assert_ne!(aminos, amino!("CDEFGHIKLMNPQRSTVWY*A"));
-    }
-
-    #[test]
-    fn alternate_codons() {
-        let seq: Seq<Dna> = dna!("AGCTCGTCATCCTCTAGTTGATAATAG");
-        let codons: Vec<Kmer<Dna, 3>> = seq.chunks(3).map(|codon| codon.into()).collect();
-        let aminos: Seq<Amino> = codons
-            .iter()
-            .map(|kmer| STANDARD.to_amino(*kmer))
-            .collect::<Seq<Amino>>();
-        assert_eq!(aminos, amino!("SSSSSS***"));
-    }
-
-    #[test]
-    fn test_debruin_sequence() {
-        let seq: Seq<Dna> =
-            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-        let aminos: Seq<Amino> = seq
-            .kmers()
-            .map(|kmer| STANDARD.to_amino(kmer))
-            .collect::<Seq<Amino>>();
-        assert_eq!(aminos.len(), 64);
-        assert_eq!(
-            aminos,
-            amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
-        );
-    }
 }
+*/

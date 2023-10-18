@@ -1,4 +1,5 @@
 //! Coding/Decoding trait for bit-packable enums representing biological alphabets
+use core::hash::Hash;
 
 #[macro_use]
 pub mod amino;
@@ -11,7 +12,7 @@ pub mod text;
 
 use bio_seq_derive::Codec;
 
-pub trait Codec: Copy + Clone + Into<u8> + PartialEq {
+pub trait Codec: Copy + Clone + Into<u8> + PartialEq + Hash + Eq {
     const WIDTH: u8;
     type Error: std::error::Error + core::fmt::Display;
 

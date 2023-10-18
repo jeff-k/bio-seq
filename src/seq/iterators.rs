@@ -28,7 +28,7 @@ impl<'a, A: Codec> SeqSlice<A> {
         self: &'a SeqSlice<A>,
         second: &'a SeqSlice<A>,
     ) -> Chain<SeqIter<'a, A>, SeqIter<'a, A>> {
-        self.into_iter().chain(second.into_iter())
+        self.into_iter().chain(second)
     }
 }
 

@@ -24,7 +24,7 @@ use core::str::FromStr;
 /// A sequence of bit-packed characters of arbitrary length
 ///
 /// Allocated to the heap
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
     bv: BitVec<u8, Lsb0>,

@@ -80,6 +80,18 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
             bs: x.load_le::<usize>(),
         }
     }
+
+    /*
+    /// tail
+    pub fn tail(self, base: A) -> Seq<A> {
+        let bv: BitVec::<usize, Lsb0>::from(self.bs);
+
+        Seq {
+            _p: PhantomData,
+            bv: bv[A::WIDTH as usize..],
+        }
+    }
+    */
 }
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
