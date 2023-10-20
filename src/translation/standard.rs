@@ -1,3 +1,6 @@
+//use std::lazy::OnceCell;
+use once_cell::sync::OnceCell;
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::codec::Codec;
@@ -6,6 +9,57 @@ use crate::prelude::{Seq, SeqSlice};
 use crate::translation::{PartialTranslationTable, TranslationError, TranslationTable};
 
 struct Standard;
+
+static AMINO_TO_IUPAC: OnceCell<HashMap<Amino, Option<Seq<Iupac>>>> = OnceCell::new();
+
+static IUPAC_TO_AMINO: OnceCell<[(Seq<Iupac>, Amino); 29]> = OnceCell::new();
+
+fn initialise_iupac_to_amino() -> [(Seq<Iupac>, Amino); 29] {
+    [
+        (iupac!("GCN"), Amino::A),
+        (iupac!("TGY"), Amino::C),
+        (iupac!("GAY"), Amino::D),
+        (iupac!("GAR"), Amino::E),
+        (iupac!("TTY"), Amino::F),
+        (iupac!("GGN"), Amino::G),
+        (iupac!("CAY"), Amino::H),
+        (iupac!("ATH"), Amino::I),
+        (iupac!("AAR"), Amino::K),
+        (iupac!("CTN"), Amino::L),
+        (iupac!("TTR"), Amino::L),
+        (iupac!("CTY"), Amino::L),
+        (iupac!("YTR"), Amino::L),
+        (iupac!("ATG"), Amino::M),
+        (iupac!("AAY"), Amino::N),
+        (iupac!("CCN"), Amino::P),
+        (iupac!("CAR"), Amino::Q),
+        (iupac!("CGN"), Amino::R),
+        (iupac!("AGR"), Amino::R),
+        (iupac!("CGY"), Amino::R),
+        (iupac!("MGR"), Amino::R),
+        (iupac!("TCN"), Amino::S),
+        (iupac!("AGY"), Amino::S),
+        (iupac!("ACN"), Amino::T),
+        (iupac!("GTN"), Amino::V),
+        (iupac!("TGG"), Amino::W),
+        (iupac!("TAY"), Amino::Y),
+        (iupac!("TAR"), Amino::X),
+        (iupac!("TRA"), Amino::X),
+    ]
+}
+
+fn initialise_amino_to_iupac() -> HashMap<Amino, Option<Seq<Iupac>>> {
+    let mut amino_to_iupac = HashMap::new();
+    for (iupac_set, amino) in IUPAC_TO_AMINO.get_or_init(initialise_iupac_to_amino) {
+        if amino_to_iupac.contains_key(amino) {
+            amino_to_iupac.insert(*amino, None);
+        } else {
+            amino_to_iupac.insert(*amino, Some(iupac_set.clone()));
+        }
+    }
+
+    amino_to_iupac
+}
 
 impl TranslationTable<Dna, Amino> for Standard {
     fn to_amino(self, codon: &SeqSlice<Dna>) -> Amino {
@@ -19,34 +73,23 @@ impl TranslationTable<Dna, Amino> for Standard {
 }
 
 impl PartialTranslationTable<Iupac, Amino> for Standard {
-    fn try_to_amino(self, _codon: &SeqSlice<Iupac>) -> Result<Amino, TranslationError> {
-        unimplemented!();
-        //        Err(TranslationError::InvalidCodon)
+    fn try_to_amino(self, codon: &SeqSlice<Iupac>) -> Result<Amino, TranslationError> {
+        for (iupac_set, amino) in IUPAC_TO_AMINO.get_or_init(initialise_iupac_to_amino) {
+            if iupac_set.contains(codon) {
+                return Ok(*amino);
+            }
+        }
+
+        Err(TranslationError::AmbiguousCodon)
     }
 
     fn try_to_codon(self, amino: Amino) -> Result<Seq<Iupac>, TranslationError> {
-        match amino {
-            Amino::A => Ok(iupac!("GCN")),
-            Amino::C => Ok(iupac!("UGY")),
-            Amino::D => Ok(iupac!("GAY")),
-            Amino::E => Ok(iupac!("GAR")),
-            Amino::F => Ok(iupac!("UUY")),
-            Amino::G => Ok(iupac!("GGN")),
-            Amino::H => Ok(iupac!("CAY")),
-            Amino::I => Ok(iupac!("AUH")),
-            Amino::K => Ok(iupac!("AAR")),
-            Amino::L => Err(TranslationError::AmbiguousCodon),
-            Amino::M => Ok(iupac!("AUG")),
-            Amino::N => Ok(iupac!("AAY")),
-            Amino::P => Ok(iupac!("CCN")),
-            Amino::Q => Ok(iupac!("CAR")),
-            Amino::R => Err(TranslationError::AmbiguousCodon),
-            Amino::S => Err(TranslationError::AmbiguousCodon),
-            Amino::T => Ok(iupac!("ACN")),
-            Amino::V => Ok(iupac!("GUN")),
-            Amino::W => Ok(iupac!("UGG")),
-            Amino::Y => Ok(iupac!("UAY")),
-            Amino::X => Err(TranslationError::AmbiguousCodon),
+        let amino_to_iupac = AMINO_TO_IUPAC.get_or_init(initialise_amino_to_iupac);
+
+        match amino_to_iupac.get(&amino) {
+            Some(None) => Err(TranslationError::AmbiguousCodon),
+            Some(Some(codon)) => Ok(codon.clone()),
+            None => Err(TranslationError::AmbiguousCodon),
         }
     }
 }
@@ -58,7 +101,7 @@ const STANDARD: Standard = Standard;
 mod tests {
     use crate::prelude::*;
     use crate::translation::standard::STANDARD;
-    use crate::translation::TranslationTable;
+    use crate::translation::{PartialTranslationTable, TranslationTable};
 
     #[test]
     fn dna_to_amino() {
@@ -95,5 +138,16 @@ mod tests {
             aminos,
             amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
         );
+    }
+
+    #[test]
+    fn test_iupac_codons() {
+        let seq: Seq<Iupac> = iupac!("GCTTGYGCAGCN");
+        let aminos: Seq<Amino> = seq
+            .chunks(3)
+            .map(|codon| STANDARD.try_to_amino(&codon).unwrap())
+            .collect::<Seq<Amino>>();
+        println!("{}", aminos);
+        assert_eq!(aminos, amino!("ACAA"));
     }
 }

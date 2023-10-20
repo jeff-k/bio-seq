@@ -17,6 +17,7 @@ keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
 [dependencies]
 bitvec = "1"
 bio-seq-derive = "1.6.4"
+once_cell = "1.8.0"
 
 #[[example]]
 #name = "aminokmers"
