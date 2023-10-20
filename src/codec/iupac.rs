@@ -139,6 +139,9 @@ impl fmt::Display for Iupac {
 
 impl Seq<Iupac> {
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
+        if rhs.len() != self.len() {
+            panic!("Cannot compare IUPAC sequences of different length");
+        }
         let slice: &SeqSlice<Iupac> = self;
         let intersection: &SeqSlice<Iupac> = &(slice & rhs);
         intersection == rhs
