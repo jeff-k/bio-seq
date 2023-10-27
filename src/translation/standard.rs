@@ -1,3 +1,5 @@
+//! Standard amino acid translation table
+
 //use std::lazy::OnceCell;
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
@@ -62,21 +64,21 @@ fn initialise_amino_to_iupac() -> HashMap<Amino, Option<Seq<Iupac>>> {
 }
 
 impl TranslationTable<Dna, Amino> for Standard {
-    fn to_amino(self, codon: &SeqSlice<Dna>) -> Amino {
+    fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
         if codon.len() != 3 {
             panic!("Invalid codon of length {}", codon.len());
         }
         Amino::unsafe_from_bits(Into::<u8>::into(codon))
     }
 
-    /// There are no unambiguous translations from amino acid to DNA codon
-    fn to_codon(self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
+    /// There are no unambiguous translations from amino acid to DNA codon except M and W
+    fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
         Err(TranslationError::AmbiguousCodon)
     }
 }
 
 impl PartialTranslationTable<Iupac, Amino> for Standard {
-    fn try_to_amino(self, codon: &SeqSlice<Iupac>) -> Result<Amino, TranslationError> {
+    fn try_to_amino(&self, codon: &SeqSlice<Iupac>) -> Result<Amino, TranslationError> {
         if codon.len() != 3 {
             return Err(TranslationError::InvalidCodon);
         }
@@ -89,7 +91,7 @@ impl PartialTranslationTable<Iupac, Amino> for Standard {
         Err(TranslationError::AmbiguousCodon)
     }
 
-    fn try_to_codon(self, amino: Amino) -> Result<Seq<Iupac>, TranslationError> {
+    fn try_to_codon(&self, amino: Amino) -> Result<Seq<Iupac>, TranslationError> {
         let amino_to_iupac = AMINO_TO_IUPAC.get_or_init(initialise_amino_to_iupac);
 
         match amino_to_iupac.get(&amino) {

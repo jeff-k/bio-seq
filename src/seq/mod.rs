@@ -251,16 +251,58 @@ impl<A: Codec> PartialEq<&SeqSlice<A>> for Seq<A> {
     }
 }
 
+impl<A: Codec> PartialEq<Seq<A>> for &SeqSlice<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self.bs == other.bv[..]
+    }
+}
+
+impl<A: Codec> PartialEq<&Seq<A>> for SeqSlice<A> {
+    fn eq(&self, other: &&Seq<A>) -> bool {
+        self.bs == other.bv[..]
+    }
+}
+
+impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
+    fn eq(&self, other: &SeqSlice<A>) -> bool {
+        self.bv[..] == other.bs
+    }
+}
+
+impl<A: Codec> PartialEq<SeqSlice<A>> for &SeqSlice<A> {
+    fn eq(&self, other: &SeqSlice<A>) -> bool {
+        self.bs == other.bs
+    }
+}
+
+impl<A: Codec> PartialEq<&SeqSlice<A>> for SeqSlice<A> {
+    fn eq(&self, other: &&SeqSlice<A>) -> bool {
+        self.bs == other.bs
+    }
+}
+
 impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
         // theory: this is prevent Hash(AAAA) from equaling Hash(AAAAA)
-        self.len().hash(state);
+        //self.len().hash(state);
     }
 }
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
     fn borrow(&self) -> &SeqSlice<A> {
         &self[..]
+    }
+}
+
+impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
+    fn eq(&self, other: &&Seq<A>) -> bool {
+        self.bv == other.bv
+    }
+}
+
+impl<A: Codec> PartialEq<Seq<A>> for &Seq<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self.bv == other.bv
     }
 }
 
@@ -553,7 +595,9 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
 mod tests {
     use crate::prelude::*;
     use bitvec::prelude::*;
+    use core::hash::{Hash, Hasher};
     use core::marker::PhantomData;
+    use std::collections::hash_map::DefaultHasher;
 
     #[test]
     fn test_revcomp() {
@@ -764,4 +808,141 @@ mod tests {
         assert_eq!(s, "CACGTCTG");
         assert_eq!(raw, Kmer::<Dna, 8>::from(&s[..8]).bs);
     }
+
+    #[test]
+    fn test_seq_eq_and_hash() {
+        let seq1: Seq<Dna> = "ACGT".try_into().unwrap();
+        let seq2: Seq<Dna> = "ACGT".try_into().unwrap();
+
+        // Equality checks
+        assert_eq!(seq1, seq2);
+
+        // Hash checks
+        let mut hasher1 = DefaultHasher::new();
+        seq1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        seq2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_seq_slice_eq() {
+        let seq1: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTA".try_into().unwrap();
+        let seq2: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTAA".try_into().unwrap();
+
+        let slice1a: &SeqSlice<Dna> = &seq1[..];
+        let slice1b: &SeqSlice<Dna> = &seq1[..];
+        let slice2a: &SeqSlice<Dna> = &seq2[..seq2.len() - 1];
+        let slice2b: &SeqSlice<Dna> = &seq2[..seq2.len() - 1];
+
+        let seq3: Seq<Dna> = slice2b.into();
+
+        assert_eq!(slice1a, slice2b);
+        assert_eq!(&slice2a, &slice2b);
+        assert_eq!(seq1, slice2a);
+        assert_eq!(slice1b, seq3);
+        assert_eq!(slice1a, slice1b);
+        assert_eq!(seq1, seq3);
+
+        assert_ne!(seq1, seq2);
+        assert_ne!(seq2, seq3);
+        assert_ne!(seq2, slice2a);
+        assert_ne!(seq2, slice1b);
+
+        assert_eq!(slice1a, &slice1b);
+        assert_eq!(&slice1a, slice1b);
+        assert_eq!(&slice1a, &slice1b);
+
+        assert_eq!(seq1, &seq1);
+
+        assert_eq!(seq1, &seq3);
+        assert_eq!(&seq1, seq3);
+        assert_eq!(&seq1, &seq3);
+
+        assert_eq!(slice1a, &seq3);
+        //assert_eq!(&slice1a, seq3);
+
+        assert_eq!(&seq1, &slice2a);
+        assert_eq!(&seq1, slice2a);
+        //assert_eq!(seq1, &slice2a);
+
+        assert_eq!(&seq1, slice2a);
+    }
+    #[test]
+    fn test_seq_slice_hash() {
+        let seq1: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGAAAAA".try_into().unwrap();
+        let seq2: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGAAAAA".try_into().unwrap();
+
+        let seq3: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGG".try_into().unwrap();
+
+        let slice1 = &seq1[..];
+        let slice2 = &seq2[..];
+
+        let slice3 = &seq3[..];
+
+        let slice1_32 = &seq1[..32];
+
+        let mut hasher1 = DefaultHasher::new();
+        seq1.hash(&mut hasher1);
+        let full1 = hasher1.finish();
+
+        let mut hasher1a = DefaultHasher::new();
+        seq1.hash(&mut hasher1a);
+        let full1_alt = hasher1a.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        seq2.hash(&mut hasher2);
+        let full2 = hasher2.finish();
+
+        let mut hasher3 = DefaultHasher::new();
+        slice1.hash(&mut hasher3);
+        let full1_slice = hasher3.finish();
+
+        let mut hasher4 = DefaultHasher::new();
+        slice2.hash(&mut hasher4);
+        let full2_slice = hasher4.finish();
+
+        let mut hasher5 = DefaultHasher::new();
+        slice3.hash(&mut hasher5);
+        let short1_slice = hasher5.finish();
+
+        let mut hasher6 = DefaultHasher::new();
+        slice1_32.hash(&mut hasher6);
+        let seq1_short = hasher6.finish();
+
+        assert_eq!(full1, full1_alt);
+        assert_eq!(full1, full2);
+        assert_ne!(full2_slice, short1_slice);
+        assert_eq!(full2, full1_slice);
+        assert_eq!(short1_slice, seq1_short);
+        assert_ne!(seq1_short, full1_slice);
+
+        assert_ne!(full1, short1_slice);
+    }
+    /*
+        #[test]
+        fn test_seq_and_seq_slice_eq_and_hash() {
+            let seq: Seq<text::Dna> = Seq::from("ACGT".to_string());
+            let slice = &seq[..];
+
+            // Equality checks
+            assert_eq!(&seq, slice);
+            assert_eq!(slice, &seq);
+
+            // Hash checks
+            let mut hasher1 = std::collections::hash_map::DefaultHasher::new();
+            seq.hash(&mut hasher1);
+            let hash1 = hasher1.finish();
+
+            let mut hasher2 = std::collections::hash_map::DefaultHasher::new();
+            slice.hash(&mut hasher2);
+            let hash2 = hasher2.finish();
+
+            assert_eq!(hash1, hash2);
+        }
+    */
 }
