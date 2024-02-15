@@ -116,7 +116,7 @@ impl<'a, A: Codec> Iterator for RevIter<'a, A> {
     }
 }
 
-impl<'a, A: Codec + std::fmt::Debug> Iterator for SeqChunks<'a, A> {
+impl<'a, A: Codec + core::fmt::Debug> Iterator for SeqChunks<'a, A> {
     type Item = &'a SeqSlice<A>;
 
     fn next(&mut self) -> Option<Self::Item> {

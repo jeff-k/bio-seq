@@ -1,9 +1,8 @@
 //! Standard amino acid translation table
 
-//use std::lazy::OnceCell;
+use core::str::FromStr;
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use crate::codec::Codec;
 use crate::codec::{amino::Amino, dna::Dna, iupac::Iupac};

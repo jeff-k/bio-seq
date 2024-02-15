@@ -6,9 +6,9 @@
 //!
 //! ## Errors
 //!
+use core::fmt::Display;
+use core::iter::FromIterator;
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::iter::FromIterator;
 
 use crate::codec::Codec;
 use crate::prelude::{Seq, SeqSlice};
