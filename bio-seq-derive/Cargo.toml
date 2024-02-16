@@ -1,0 +1,15 @@
+[package]
+name = "bio-seq-derive"
+version = "1.6.5"
+authors = ["jeff-k <jeff_k@fastmail.com>"]
+edition = "2021"
+homepage = "https://github.com/jeff-k/bio-seq"
+description = "Derive macros for the bio-seq crate"
+license = "MIT"
+
+[dependencies]
+syn = { version="2", features=["full"] }
+quote = "1"
+
+[lib]
+proc-macro = true
