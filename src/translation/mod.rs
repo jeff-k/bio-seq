@@ -11,16 +11,10 @@ use core::iter::FromIterator;
 use std::collections::HashMap;
 
 use crate::codec::Codec;
+use crate::error::TranslationError;
 use crate::prelude::{Seq, SeqSlice};
 
 pub mod standard;
-
-/// Error conditions for codon/amino acid translation
-#[derive(Debug, PartialEq, Eq, Clone)]
-enum TranslationError {
-    AmbiguousCodon,
-    InvalidCodon,
-}
 
 /// A codon translation table where all codons map to amino acids
 trait TranslationTable<A: Codec, B: Codec> {
