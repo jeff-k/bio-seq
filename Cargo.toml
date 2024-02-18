@@ -1,23 +1,6 @@
-[package]
-name = "bio-seq"
-version = "0.11.2"
-authors = ["jeff-k <jeff_k@fastmail.com>"]
-edition = "2021"
-description = "Bit packed and well-typed biological sequences"
-homepage = "https://github.com/jeff-k/bio-seq"
-documentation = "https://docs.rs/bio-seq"
-readme = "README.md"
-license = "MIT"
-keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
-
-#[dev-dependencies]
-#bio-streams = { git="https://github.com/jeff-k/bio-streams.git" }
-#clap = { version="4", features=["derive"] }
-
-[dependencies]
-bitvec = "1"
-bio-seq-derive = "1.6.4"
-once_cell = "1.8.0"
-
-#[[example]]
-#name = "aminokmers"
+[workspace]
+members = [
+    "bio-seq",
+    "bio-seq-derive",
+]
+resolver = "2"
