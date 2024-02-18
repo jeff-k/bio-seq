@@ -16,32 +16,6 @@ use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Token};
 
-/// The width attribute should take the form #[width = 2]
-struct WidthAttr {
-    width: syn::LitInt,
-}
-
-impl syn::parse::Parse for WidthAttr {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _: syn::Token![=] = input.parse()?;
-        let width: syn::LitInt = input.parse()?;
-        Ok(Self { width })
-    }
-}
-
-/// Alternate representation attributes look like `#[alt(0b00, 0b11)]`
-struct AltAttr {
-    chr: syn::LitChar,
-}
-
-impl syn::parse::Parse for AltAttr {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let _: syn::Token![=] = input.parse()?;
-        let chr: syn::LitChar = input.parse()?;
-        Ok(Self { chr })
-    }
-}
-
 #[proc_macro_derive(Codec, attributes(width, display, alt))]
 pub fn codec_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::Item);
@@ -99,13 +73,13 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         let mut char_repr = ident.to_string().chars().next().unwrap();
 
         for attr in &variant.attrs {
-            if attr.path.is_ident("display") {
-                let alt_attr: AltAttr = match syn::parse2(attr.tokens.clone()) {
+            if attr.path().is_ident("display") {
+                let alt_attr: syn::LitChar = match attr.parse_args() {
                     Ok(attr) => attr,
                     Err(err) => return err.to_compile_error().into(),
                 };
-                char_repr = alt_attr.chr.value();
-            } else if attr.path.is_ident("alt") {
+                char_repr = alt_attr.value();
+            } else if attr.path().is_ident("alt") {
                 let discs: Punctuated<syn::ExprLit, Token![,]> =
                     match attr.parse_args_with(Punctuated::parse_terminated) {
                         Ok(discs) => discs,
@@ -127,10 +101,10 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
     let mut width = f32::ceil(f32::log2(max_variant as f32)) as u8;
 
     for attr in &enum_ast.attrs {
-        if attr.path.is_ident("width") {
-            width = match syn::parse2::<WidthAttr>(attr.tokens.clone()) {
+        if attr.path().is_ident("width") {
+            width = match attr.parse_args::<syn::LitInt>() {
                 Ok(w) => {
-                    let chosen_width = w.width.base10_parse::<u8>().unwrap();
+                    let chosen_width = w.base10_parse::<u8>().unwrap();
                     // test whether the specified width is too small
                     if chosen_width < width {
                         return syn::Error::new_spanned(

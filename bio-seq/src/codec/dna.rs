@@ -10,7 +10,7 @@ use crate::{kmer::Kmer, ParseBioError};
 use bitvec::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Codec)]
-#[width = 2]
+#[width(2)]
 #[repr(u8)]
 pub enum Dna {
     A = 0b00,

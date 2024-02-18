@@ -30,7 +30,7 @@ use core::ops::{BitAnd, BitOr};
 use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
-#[width = 4]
+#[width(4)]
 #[repr(u8)]
 pub enum Iupac {
     A = 0b1000,
@@ -48,7 +48,7 @@ pub enum Iupac {
     H = 0b1101,
     V = 0b1110,
     N = 0b1111,
-    #[display = '-']
+    #[display('-')]
     X = 0b0000,
 }
 

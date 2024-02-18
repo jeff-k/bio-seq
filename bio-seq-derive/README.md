@@ -16,7 +16,7 @@ To use `bio-seq-derive`, add it as a dependency in your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-bio-seq-derive = "0.1.0"
+bio-seq-derive = "2.0"
 ```
 
 Then, import the `bio_seq_derive::Codec` macro in your Rust code:

@@ -6,7 +6,7 @@ use crate::codec::Codec;
 use core::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
-#[width = 6]
+#[width(6)]
 #[repr(u8)]
 pub enum Amino {
     #[alt(0b110110, 0b010110, 0b100110)]
@@ -47,7 +47,7 @@ pub enum Amino {
     W = 0b101011, // TGG
     #[alt(0b110011)]
     Y = 0b010011, // TAC
-    #[display = '*']
+    #[display('*')]
     #[alt(0b001011, 0b100011)]
     X = 0b000011, // TAA (stop)
 }
