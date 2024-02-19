@@ -54,7 +54,7 @@ The goal of this crate is to make handling biological sequence data safe and con
 // This is a debruijn sequence of all possible 3-mers:
 let seq: Seq<Dna> =
     dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-let aminos: Seq<Amino> = Seq::from_iter(seq.kmers().map(|kmer| translation::STANDARD.to_amino(kmer)));
+let aminos: Seq<Amino> = Seq::from_iter(seq.windows(3).map(|codon| translation::STANDARD.to_amino(codon)));
 assert_eq!(
     aminos,
     amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
@@ -236,7 +236,7 @@ The standard genetic code is provided in the `translation::standard` module:
 
 ```rust
 use crate::prelude::*;
-use crate::translation::standard::STANDARD;
+use crate::translation::STANDARD;
 use crate::translation::TranslationTable;
 
 let seq: Seq<Dna> =

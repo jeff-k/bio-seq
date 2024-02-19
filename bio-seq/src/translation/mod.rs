@@ -13,7 +13,9 @@ use crate::codec::Codec;
 use crate::error::TranslationError;
 use crate::prelude::{Seq, SeqSlice};
 
-pub mod standard;
+mod standard;
+
+pub use crate::translation::standard::STANDARD;
 
 /// A codon translation table where all codons map to amino acids
 pub trait TranslationTable<A: Codec, B: Codec> {

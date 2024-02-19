@@ -9,7 +9,7 @@ use crate::codec::{amino::Amino, dna::Dna, iupac::Iupac};
 use crate::prelude::{Seq, SeqSlice};
 use crate::translation::{PartialTranslationTable, TranslationError, TranslationTable};
 
-struct Standard;
+pub struct Standard;
 
 static AMINO_TO_IUPAC: OnceCell<HashMap<Amino, Option<Seq<Iupac>>>> = OnceCell::new();
 
@@ -102,13 +102,12 @@ impl PartialTranslationTable<Iupac, Amino> for Standard {
     }
 }
 
-#[allow(dead_code)]
-const STANDARD: Standard = Standard;
+pub const STANDARD: Standard = Standard;
 
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::translation::standard::STANDARD;
+    use crate::translation::STANDARD;
     use crate::translation::{PartialTranslationTable, TranslationError, TranslationTable};
 
     #[test]
