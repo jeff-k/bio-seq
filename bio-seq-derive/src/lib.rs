@@ -30,6 +30,24 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         }
     };
 
+    // Test that enum is repr(u8)
+    let test_repr_u8 = enum_ast.attrs.iter().any(|attr| {
+        attr.path().is_ident("repr")
+            && match attr.parse_args::<syn::Ident>() {
+                Ok(ident) => ident == "u8",
+                Err(_) => false,
+            }
+    });
+
+    if !test_repr_u8 {
+        return syn::Error::new_spanned(
+            &enum_ast.ident,
+            "Enums deriving Codec must be annotated with #[repr(u8)]",
+        )
+        .to_compile_error()
+        .into();
+    }
+
     let variants = enum_ast.variants;
     let enum_ident = enum_ast.ident;
     let mut max_variant = 0u8;
@@ -159,6 +177,44 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         impl #enum_ident {
             pub fn iter() -> impl Iterator<Item = Self> {
                 vec![ #(Self::#variant_idents,)* ].into_iter()
+            }
+        }
+
+        impl From<#enum_ident> for char {
+            fn from(item: #enum_ident) -> char {
+                item.to_char()
+            }
+        }
+
+        impl core::convert::TryFrom<char> for #enum_ident {
+            type Error = #parse_error;
+            fn try_from(c: char) -> Result<Self, Self::Error> {
+                Self::from_char(c)
+            }
+        }
+
+        impl From<u8> for #enum_ident {
+            fn from(b: u8) -> Self {
+                Self::unsafe_from_bits(b)
+            }
+        }
+
+        impl From<#enum_ident> for u8 {
+            fn from(item: #enum_ident) -> Self {
+                item as u8
+            }
+        }
+
+        impl core::str::FromStr for #enum_ident {
+            type Err = #parse_error;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Self::try_from(s.chars().next().unwrap())
+            }
+        }
+
+        impl core::fmt::Display for #enum_ident {
+            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(f, "{:?}", self)
             }
         }
     };

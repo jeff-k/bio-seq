@@ -1,11 +1,9 @@
 /// 2-bit DNA representation
 ///
-use core::fmt;
 use core::marker::PhantomData;
-use core::str::FromStr;
 
 use crate::codec::{Codec, Complement};
-use crate::{kmer::Kmer, ParseBioError};
+use crate::kmer::Kmer;
 
 use bitvec::prelude::*;
 
@@ -37,45 +35,6 @@ impl Complement for Dna {
             Dna::G => Dna::C,
             Dna::T => Dna::A,
         }
-    }
-}
-
-impl From<Dna> for char {
-    fn from(dna: Dna) -> char {
-        dna.to_char()
-    }
-}
-
-impl TryFrom<char> for Dna {
-    type Error = ParseBioError;
-    fn try_from(c: char) -> Result<Self, Self::Error> {
-        Dna::from_char(c)
-    }
-}
-
-impl From<u8> for Dna {
-    fn from(b: u8) -> Self {
-        Dna::unsafe_from_bits(b)
-    }
-}
-
-impl From<Dna> for u8 {
-    fn from(dna: Dna) -> Self {
-        dna as u8
-    }
-}
-
-impl FromStr for Dna {
-    type Err = ParseBioError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Dna::try_from(s.as_bytes()[0] as char)
-    }
-}
-
-impl fmt::Display for Dna {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{self:?}")
     }
 }
 

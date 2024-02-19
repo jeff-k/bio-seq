@@ -2,6 +2,7 @@ use crate::codec::{dna, Codec, Complement};
 use crate::ParseBioError;
 
 #[derive(Copy, Clone, PartialEq, Debug, Ord, Eq, PartialOrd, Hash)]
+#[repr(transparent)]
 pub struct Dna(u8);
 
 impl Codec for Dna {
@@ -20,7 +21,7 @@ impl Codec for Dna {
     fn from_char(c: char) -> Result<Self, Self::Error> {
         match u8::try_from(c) {
             Ok(b) => Ok(Self(b)),
-            _ => Err(ParseBioError {}),
+            _ => Err(Self::Error {}),
         }
     }
 

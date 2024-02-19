@@ -23,11 +23,8 @@
 /// ```
 use crate::codec::{dna::Dna, Codec};
 use crate::seq::{Seq, SeqSlice};
-use crate::ParseBioError;
 
-use core::fmt;
 use core::ops::{BitAnd, BitOr};
-use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[width(4)]
@@ -52,19 +49,6 @@ pub enum Iupac {
     X = 0b0000,
 }
 
-impl TryFrom<char> for Iupac {
-    type Error = ParseBioError;
-    fn try_from(c: char) -> Result<Self, Self::Error> {
-        Iupac::from_char(c)
-    }
-}
-
-impl From<Iupac> for char {
-    fn from(iupac: Iupac) -> char {
-        iupac.to_char()
-    }
-}
-
 impl From<Dna> for Iupac {
     fn from(dna: Dna) -> Self {
         match dna {
@@ -73,18 +57,6 @@ impl From<Dna> for Iupac {
             Dna::G => Iupac::G,
             Dna::T => Iupac::T,
         }
-    }
-}
-
-impl From<u8> for Iupac {
-    fn from(b: u8) -> Self {
-        Iupac::unsafe_from_bits(b)
-    }
-}
-
-impl From<Iupac> for u8 {
-    fn from(iupac: Iupac) -> Self {
-        iupac as u8
     }
 }
 
@@ -117,23 +89,6 @@ impl BitOr for &SeqSlice<Iupac> {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         self.bit_or(rhs)
-    }
-}
-
-impl FromStr for Iupac {
-    type Err = ParseBioError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Iupac::try_from(s.as_bytes()[0] as char)
-    }
-}
-
-impl fmt::Display for Iupac {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Iupac::X => write!(f, "-"),
-            _ => write!(f, "{self:?}"),
-        }
     }
 }
 

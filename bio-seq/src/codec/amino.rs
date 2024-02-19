@@ -3,7 +3,6 @@
 /// With the 6-bit representation a `Seq<Dna>` sequence can be read as an amino acid
 /// sequence in place.
 use crate::codec::Codec;
-use core::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[width(6)]
@@ -50,18 +49,6 @@ pub enum Amino {
     #[display('*')]
     #[alt(0b001011, 0b100011)]
     X = 0b000011, // TAA (stop)
-}
-
-impl From<Amino> for u8 {
-    fn from(amino: Amino) -> Self {
-        amino as u8
-    }
-}
-
-impl fmt::Display for Amino {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
 }
 
 #[macro_export]
