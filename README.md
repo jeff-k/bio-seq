@@ -9,7 +9,7 @@ Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 
 ```toml
 [dependencies]
-bio-seq = "0.11"
+bio-seq = "0.12"
 ```
 
 ```rust

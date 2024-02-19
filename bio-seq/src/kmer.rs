@@ -4,8 +4,10 @@
 // except according to those terms.
 
 use crate::codec::Codec;
+use crate::prelude::{Complement, ReverseComplement};
 use crate::seq::{Seq, SeqSlice};
 use crate::ParseBioError;
+
 use bitvec::prelude::*;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -152,6 +154,15 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     }
 }
 
+/// An iterator over the bases of a kmer
+impl<A: Codec, const K: usize> Iterator for Kmer<A, K> {
+    type Item = A;
+
+    fn next(&mut self) -> Option<A> {
+        unimplemented!()
+    }
+}
+
 /// The value of K is included in the hasher state so that
 /// `hash(kmer!("AAA")) != hash(kmer!("AAAA"))
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
@@ -214,6 +225,20 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
         }
         let seq: Seq<A> = Seq::from_str(s)?;
         Kmer::<A, K>::try_from(seq)
+    }
+}
+
+impl<A: Codec, const K: usize> Into<Seq<A>> for Kmer<A, K> {
+    fn into(self) -> Seq<A> {
+        unimplemented!()
+    }
+}
+
+impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
+    fn revcomp(&self) -> Self {
+        let seq: Seq<A> = (*self).into();
+        let x: usize = seq.revcomp().into();
+        Self::from(x)
     }
 }
 
@@ -342,5 +367,16 @@ mod tests {
     #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
     fn invalid_k_check_dna() {
         Kmer::<Dna, 33>::check_k();
+    }
+
+    #[test]
+    fn kmer_revcomp() {
+        assert_eq!(kmer!("ACGT"), kmer!("TGCA").revcomp());
+        assert_ne!(kmer!("ACGT"), kmer!("TGCA"));
+
+        assert_eq!(
+            kmer!("ATCGCTATCGATCTGATCGTATATAATATATA"),
+            kmer!("TATATATTATATACGATCAGATCGATAGCGAT").revcomp()
+        );
     }
 }

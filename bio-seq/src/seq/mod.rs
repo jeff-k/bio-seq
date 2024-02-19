@@ -72,15 +72,11 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 }
 
 pub trait ReverseComplement {
-    type A: Codec + Complement;
-
     /// Reverse complement of a sequence
-    fn revcomp(&self) -> Seq<Self::A>;
+    fn revcomp(&self) -> Self;
 }
 
 impl<A: Codec + Complement> ReverseComplement for Seq<A> {
-    type A = A;
-
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
         seq.extend(self.rev().map(|base| base.comp()));
@@ -88,15 +84,15 @@ impl<A: Codec + Complement> ReverseComplement for Seq<A> {
     }
 }
 
-impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
-    type A = A;
-
+/*
+impl<A: Codec + Complement> ReverseComplement for Seq<A> {
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
         seq.extend(self.rev().map(|base| base.comp()));
         seq
     }
 }
+*/
 
 impl<A: Codec> Default for Seq<A> {
     fn default() -> Self {
