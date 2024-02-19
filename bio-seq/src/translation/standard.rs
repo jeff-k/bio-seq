@@ -67,6 +67,7 @@ impl TranslationTable<Dna, Amino> for Standard {
         if codon.len() != 3 {
             panic!("Invalid codon of length {}", codon.len());
         }
+        // It should be possible to assert that this is safe at compile time
         Amino::unsafe_from_bits(Into::<u8>::into(codon))
     }
 

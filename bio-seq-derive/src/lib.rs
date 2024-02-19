@@ -147,9 +147,10 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
             type Error = #parse_error;
             const WIDTH: u8 = #width;
             fn unsafe_from_bits(b: u8) -> Self {
+                //debug_assert!(false, "Invalid encoding: {b:?}");
                 match b {
                     #(#unsafe_alts),*,
-                    _ => panic!(),
+                    _ => unreachable!(),
                 }
             }
 
