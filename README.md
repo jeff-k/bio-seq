@@ -128,11 +128,11 @@ for i in 0..=15 {
 
 ## Kmers
 
-kmers are short sequences of length `k` that can fit into a `usize`. these are implemented with const generics and `k` is fixed at compile time.
+kmers are short sequences of length `k` that can fit into a register (`usize`). these are implemented with const generics and `k` is fixed at compile time.
 
-### Dense encodings
+### Efficient encodings
 
-For dense encodings, a lookup table can be populated and indexed in constant time by treating kmers directly as `usize`:
+For encodings with a dense mapping between characters and integers a lookup table can be indexed in constant time by treating kmers directly as `usize`:
 
 ```rust
 fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
@@ -167,7 +167,7 @@ let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 
 ### Kmer minimisers
 
-The 2-bit representation of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored in little-endian and are ordered colexicographically. This means that `AAAA < CAAA < GAAA < ... < AAAC < ... < TTTT`
+The 2-bit representation of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
@@ -193,30 +193,114 @@ use bio_seq_derive::Codec;
 use bio_seq::codec::Codec;
 
 #[derive(Clone, Copy, Debug, PartialEq, Codec)]
+#[repr(u8)]
 pub enum Dna {
     A = 0b00,
     C = 0b01,
     G = 0b10,
     T = 0b11,
 }
-
-impl From<Dna> for u8 {
-    fn from(dna: Dna) -> Self {
-        dna as u8
-    }
-}
 ```
 
-A `#[width = n]` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
+A `#[width(n)]` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
 
-`#[alt(...,)]` and `#[display = 'x']` attributes can be used to define alternative representations or display the item with a special character. Here is the definition for the stop codon in `codec::Amino`:
+`#[alt(...,)]` and `#[display('x')]` attributes can be used to define alternative representations or display the item with a special character. Here is the definition for the stop codon in `codec::Amino`:
 
 ```rust
-    #[display = '*'] // print the stop codon as a '*'
+pub enum Amino {
+    #[display('*')] // print the stop codon as a '*'
     #[alt(0b001011, 0b100011)] // TGA, TAG
     X = 0b000011, // TAA (stop)
 ```
 
 ## Sequence conversions
 
-### The `TranslationTable` trait
+### Translation table traits 
+
+Translation tables provide methods for translating codons into amino acids:
+
+```rust
+pub trait TranslationTable<A: Codec, B: Codec> {
+    fn to_amino(&self, codon: &SeqSlice<A>) -> B;
+    fn to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError>;
+}
+
+/// A partial translation table where not all triples of characters map to amino acids
+pub trait PartialTranslationTable<A: Codec, B: Codec> {
+    fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError>;
+    fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError>;
+}
+```
+
+The standard genetic code is provided in the `translation::standard` module:
+
+```rust
+use crate::prelude::*;
+use crate::translation::standard::STANDARD;
+use crate::translation::TranslationTable;
+
+let seq: Seq<Dna> =
+    dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+
+let aminos: Seq<Amino> = seq
+    .windows(3)
+    .map(|codon| STANDARD.to_amino(&codon))
+    .collect::<Seq<Amino>>();
+
+assert_eq!(
+    aminos,
+    amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+);
+```
+
+### Custom translation tables
+
+Instantiate a translation table from a type that implements `Into<HashMap<Seq<A>, B>>`:
+
+```rust
+let codon_mapping: [(Seq<Dna>, Amino); 6] = [
+    (dna!("AAA"), Amino::A),
+    (dna!("ATG"), Amino::A),
+    (dna!("CCC"), Amino::C),
+    (dna!("GGG"), Amino::E),
+    (dna!("TTT"), Amino::D),
+    (dna!("TTA"), Amino::F),
+];
+
+let table = CodonTable::from_map(codon_mapping);
+
+let seq: Seq<Dna> = dna!("AAACCCGGGTTTTTATTAATG");
+let mut amino_seq: Seq<Amino> = Seq::new();
+
+for codon in seq.chunks(3) {
+    amino_seq.push(table.try_to_amino(codon).unwrap());
+}
+
+assert_eq!(amino_seq, amino!("ACEDFFA"));
+```
+
+Implementing the `TranslationTable` trait directly:
+
+```rust
+struct Mitochondria;
+
+impl TranslationTable<Dna, Amino> for Mitochondria {
+    fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
+        if *codon == dna!("AGA") {
+            Amino::X
+        } else if *codon == dna!("AGG") {
+            Amino::X
+        } else if *codon == dna!("ATA") {
+            Amino::M
+        } else if *codon == dna!("TGA") {
+            Amino::W
+        } else {
+            Amino::unsafe_from_bits(Into::<u8>::into(codon))
+        }
+    }
+
+    fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
+        unimplemented!()
+    }
+}
+```
