@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq-derive"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 homepage = "https://github.com/jeff-k/bio-seq"
