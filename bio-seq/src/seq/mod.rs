@@ -11,7 +11,6 @@ use crate::error::ParseBioError;
 use bitvec::prelude::*;
 
 use core::borrow::Borrow;
-use core::convert::TryFrom;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
@@ -72,11 +71,15 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 }
 
 pub trait ReverseComplement {
+    type Output;
+
     /// Reverse complement of a sequence
-    fn revcomp(&self) -> Self;
+    fn revcomp(&self) -> Self::Output;
 }
 
 impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+    type Output = Seq<A>;
+
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
         seq.extend(self.rev().map(|base| base.comp()));
@@ -84,15 +87,15 @@ impl<A: Codec + Complement> ReverseComplement for Seq<A> {
     }
 }
 
-/*
-impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
+    type Output = Seq<A>;
+
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
         seq.extend(self.rev().map(|base| base.comp()));
         seq
     }
 }
-*/
 
 impl<A: Codec> Default for Seq<A> {
     fn default() -> Self {

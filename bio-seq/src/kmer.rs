@@ -228,13 +228,15 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> Into<Seq<A>> for Kmer<A, K> {
-    fn into(self) -> Seq<A> {
+impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
+    fn from(_kmer: Kmer<A, K>) -> Self {
         unimplemented!()
     }
 }
 
 impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
+    type Output = Kmer<A, K>;
+
     fn revcomp(&self) -> Self {
         let seq: Seq<A> = (*self).into();
         let x: usize = seq.revcomp().into();
