@@ -70,6 +70,8 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
     }
 }
 
+/// Note that we could set a default output type later:
+/// #![feature(associated_type_defaults)]
 pub trait ReverseComplement {
     type Output;
 
@@ -78,7 +80,7 @@ pub trait ReverseComplement {
 }
 
 impl<A: Codec + Complement> ReverseComplement for Seq<A> {
-    type Output = Seq<A>;
+    type Output = Self;
 
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
