@@ -31,6 +31,7 @@ use core::str::FromStr;
 ///     }
 /// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[repr(transparent)]
 pub struct Kmer<C: Codec, const K: usize> {
     pub _p: PhantomData<C>,
     pub bs: usize,
@@ -80,6 +81,14 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
         Kmer {
             _p: PhantomData,
             bs: x.load_le::<usize>(),
+        }
+    }
+
+    pub fn iter(self) -> KmerBases<A, K> {
+        KmerBases {
+            _p: PhantomData,
+            bits: BitArray::<usize, Lsb0>::from(self.bs),
+            index: 0,
         }
     }
 
@@ -154,12 +163,24 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     }
 }
 
+pub struct KmerBases<A: Codec, const K: usize> {
+    pub _p: PhantomData<A>,
+    pub bits: BitArray<usize, Lsb0>,
+    pub index: usize,
+}
+
 /// An iterator over the bases of a kmer
-impl<A: Codec, const K: usize> Iterator for Kmer<A, K> {
+impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
     type Item = A;
 
     fn next(&mut self) -> Option<A> {
-        unimplemented!()
+        let i = self.index * A::WIDTH as usize;
+        if self.index >= K {
+            return None;
+        }
+        self.index += 1;
+        let chunk = &self.bits[i..i + (A::WIDTH as usize)];
+        Some(A::unsafe_from_bits(chunk.load_le::<u8>()))
     }
 }
 
@@ -229,13 +250,15 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
 }
 
 impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
-    fn from(_kmer: Kmer<A, K>) -> Self {
-        unimplemented!()
+    fn from(kmer: Kmer<A, K>) -> Self {
+        let mut seq: Seq<A> = Seq::with_capacity(K);
+        seq.extend(kmer.iter());
+        seq
     }
 }
 
 impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
-    type Output = Kmer<A, K>;
+    type Output = Self;
 
     fn revcomp(&self) -> Self {
         let seq: Seq<A> = (*self).into();
@@ -373,8 +396,8 @@ mod tests {
 
     #[test]
     fn kmer_revcomp() {
-        assert_eq!(kmer!("ACGT"), kmer!("TGCA").revcomp());
-        assert_ne!(kmer!("ACGT"), kmer!("TGCA"));
+        assert_eq!(kmer!("ACGT"), kmer!("ACGT").revcomp());
+        assert_ne!(kmer!("GTCGTA"), kmer!("TACGAC"));
 
         assert_eq!(
             kmer!("ATCGCTATCGATCTGATCGTATATAATATATA"),
