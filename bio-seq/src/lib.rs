@@ -5,13 +5,21 @@
 
 //! Bit-packed and well-typed biological sequences
 //!
-//! - [Seq] heap allocated sequences of variable length
-//! - [Kmer] short fixed length sequences
-//! - [Codec] coder/decoder implementations
+//! - [seq] heap allocated sequences of variable length
+//! - [mod@kmer] short fixed length sequences
+//! - [codec] coder/decoder implementations
+//! - [translation] amino acid translation tables
 //!
 //! This crate is designed to facilitate common bioinformatics tasks,
 //! incuding amino acid translation, k-mer minimisation and hashing, and
 //! nucleotide sequence manipulation.
+//!
+//! Add `bio-seq` to `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! bio-seq = "0.12"
+//! ```
 //!
 //! ```rust
 //! use bio_seq::prelude::*;
@@ -20,24 +28,47 @@
 //!
 //! // iterate over the 8-mers of the reverse complement
 //! for kmer in seq.revcomp().kmers::<8>() {
-//!     println!("{}", kmer);
+//!     println!("{kmer}");
 //! }
+//!
+//! // ACGGATCG
+//! // CGGATCGA
+//! // GGATCGAT
+//! // GATCGATC
+//! // ATCGATCG
+//! // ...
 //! ```
 //!
-//! Custom encodings are supported with the help of the `bio-seq-derive`
-//! crate.
+//! The 4-bit encoding of IUPAC nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
 //!
 //! ```rust
 //! use bio_seq::prelude::*;
 //!
 //! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
-//! let pattern = Seq::<Iupac>::from_str("AYG").unwrap();
+//! let pattern = iupac!("AYG");
 //!
 //! for slice in seq.windows(pattern.len()) {
 //!     if pattern.contains(slice) {
-//!         println!("{} matches pattern", slice);
+//!         println!("{slice} matches pattern");
 //!     }
 //! }
+//!
+//! // ACG matches pattern
+//! // ATG matches pattern
+//! ```
+//!
+//! Logical `or` is the union:
+//!
+//! ```rust
+//! # use bio_seq::prelude::*;
+//! assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+//! ```
+//!
+//! Logical `and` is the intersection of two iupac sequences:
+//!
+//! ```rust
+//! # use bio_seq::prelude::*;
+//! assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 //! ```
 
 #[macro_use]
@@ -46,8 +77,6 @@ pub mod error;
 pub mod kmer;
 pub mod seq;
 pub mod translation;
-
-pub use error::ParseBioError;
 
 pub mod prelude {
     pub use crate::codec::amino::Amino;
@@ -61,6 +90,8 @@ pub mod prelude {
 
     pub use crate::translation;
     pub use core::str::FromStr;
+
+    pub use crate::error::ParseBioError;
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
-//! Amino acids
-///
-/// With the 6-bit representation a `Seq<Dna>` sequence can be read as an amino acid
-/// sequence in place.
+//! 6-bit representation of amino acids
+//!
+//! A `Seq<Dna>` sequence of length 3 can be read as an amino acid
+//! sequence in place.
 use crate::codec::Codec;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]

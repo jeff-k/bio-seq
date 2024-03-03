@@ -1,26 +1,55 @@
-//! IUPAC nucleotide ambiguity codes
-
-/// IUPAC  nucleotide ambiguity codes are represented with 4 bits
-///
-/// |   | A | C | G | T |
-/// | - | - | - | - | - |
-/// | S | 0 | 1 | 1 | 0 |
-/// | - | 0 | 0 | 0 | 0 |
-/// | C | 0 | 1 | 0 | 0 |
-/// | N | 1 | 1 | 1 | 1 |
-/// | B | 0 | 1 | 1 | 1 |
-///
-/// This supports membership resolution with bitwise operations:
-///
-/// ```rust
-/// use bio_seq::prelude::*;
-///
-/// // Set union:
-/// assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-///
-/// // Set intersection:
-/// assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
-/// ```
+//! 4-bit IUPAC nucleotide ambiguity codes
+//!
+//! IUPAC nucleotide ambiguity codes are represented with 4 bits
+//!
+//! |   | A | C | G | T |
+//! | - | - | - | - | - |
+//! | A | 1 | 0 | 0 | 0 |
+//! | C | 0 | 1 | 0 | 0 |
+//! | G | 0 | 0 | 1 | 0 |
+//! | T | 0 | 0 | 0 | 1 |
+//! | Y | 0 | 1 | 0 | 1 |
+//! | R | 1 | 0 | 1 | 0 |
+//! | W | 1 | 0 | 0 | 1 |
+//! | S | 0 | 1 | 1 | 0 |
+//! | K | 0 | 0 | 1 | 1 |
+//! | M | 1 | 1 | 0 | 0 |
+//! | D | 1 | 0 | 1 | 1 |
+//! | V | 1 | 1 | 1 | 0 |
+//! | H | 1 | 1 | 0 | 1 |
+//! | B | 0 | 1 | 1 | 1 |
+//! | N | 1 | 1 | 1 | 1 |
+//! | X/- | 0 | 0 | 0 | 0 |
+//!
+//! This naturally supports set membership operations:
+//!
+//! ```rust
+//! use bio_seq::prelude::*;
+//!
+//! // Set union:
+//! assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+//!
+//! // Set intersection:
+//! assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
+//! ```
+//!
+//! Which can be used to implement pattern matching:
+//!
+//! ```rust
+//! use bio_seq::prelude::*;
+//!
+//! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+//! let pattern = iupac!("AYG");
+//!
+//! for slice in seq.windows(pattern.len()) {
+//!    if pattern.contains(slice) {
+//!        println!("{} matches pattern", slice);
+//!    }
+//! }
+//!
+//! // ACG matches pattern
+//! // ATG matches pattern
+//! ```
 use crate::codec::{dna::Dna, Codec};
 use crate::seq::{Seq, SeqSlice};
 

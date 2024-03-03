@@ -1,4 +1,21 @@
 //! Coding/Decoding trait for bit-packable enums representing biological alphabets
+//!
+//! The [dna], [iupac], [text], and [amino] alphabets are built in.
+//!
+//! ## Deriving custom Codecs
+//!
+//! ```ignore
+//! use bio_seq_derive::Codec;
+//! use bio_seq::prelude::*;
+//!
+//! #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
+//! pub enum Dna {
+//!     A = 0b00,
+//!     C = 0b01,
+//!     G = 0b10,
+//!     T = 0b11,
+//! }
+//! ```
 use core::hash::Hash;
 
 #[macro_use]
@@ -10,7 +27,7 @@ pub mod iupac;
 
 pub mod text;
 
-use bio_seq_derive::Codec;
+pub use bio_seq_derive::Codec;
 
 pub trait Codec: Copy + Clone + Into<u8> + PartialEq + Hash + Eq {
     const WIDTH: u8;

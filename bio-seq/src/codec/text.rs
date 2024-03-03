@@ -1,5 +1,8 @@
+//! 8-bit UTF-8/ASCII representation of nucleotides
+//!
+//! This encoding is a literal interpretation of bytes of text as DNA
 use crate::codec::{dna, Codec, Complement};
-use crate::ParseBioError;
+use crate::error::ParseBioError;
 
 #[derive(Copy, Clone, PartialEq, Debug, Ord, Eq, PartialOrd, Hash)]
 #[repr(transparent)]

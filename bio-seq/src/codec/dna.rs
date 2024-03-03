@@ -1,5 +1,6 @@
-/// 2-bit DNA representation
-///
+//! 2-bit DNA representation
+//!
+//! Bitwise negation results in the complement.
 use core::marker::PhantomData;
 
 use crate::codec::{Codec, Complement};
@@ -9,7 +10,6 @@ use bitvec::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Codec)]
 #[width(2)]
-#[repr(u8)]
 pub enum Dna {
     A = 0b00,
     C = 0b01,

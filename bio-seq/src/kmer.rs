@@ -4,9 +4,8 @@
 // except according to those terms.
 
 use crate::codec::Codec;
-use crate::prelude::{Complement, ReverseComplement};
+use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqSlice};
-use crate::ParseBioError;
 
 use bitvec::prelude::*;
 use core::fmt;
