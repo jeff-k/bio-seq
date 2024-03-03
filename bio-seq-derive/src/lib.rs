@@ -30,6 +30,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         }
     };
 
+    /*
     // Test that enum is repr(u8)
     let test_repr_u8 = enum_ast.attrs.iter().any(|attr| {
         attr.path().is_ident("repr")
@@ -47,6 +48,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         .to_compile_error()
         .into();
     }
+    */
 
     let variants = enum_ast.variants;
     let enum_ident = enum_ast.ident;
@@ -139,7 +141,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         };
     }
 
-    let parse_error = quote! { crate::ParseBioError };
+    let parse_error = quote! { crate::prelude::ParseBioError };
 
     // Generate the implementation
     let output = quote! {
