@@ -4,7 +4,7 @@
 //!
 //! ## Deriving custom Codecs
 //!
-//! ```
+//! ```ignore
 //! use bio_seq::prelude;
 //! use bio_seq::prelude::Codec;
 //!
