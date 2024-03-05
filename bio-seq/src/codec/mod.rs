@@ -4,9 +4,9 @@
 //!
 //! ## Deriving custom Codecs
 //!
-//! ```ignore
-//! use bio_seq_derive::Codec;
-//! use bio_seq::prelude::*;
+//! ```
+//! use bio_seq::prelude;
+//! use bio_seq::prelude::Codec;
 //!
 //! #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 //! pub enum Dna {
