@@ -11,7 +11,7 @@ pub struct Dna(u8);
 impl Codec for Dna {
     type Error = ParseBioError;
 
-    const WIDTH: u8 = 8;
+    const BITS: usize = 8;
 
     fn unsafe_from_bits(b: u8) -> Self {
         Self(b)

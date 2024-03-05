@@ -3,6 +3,22 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! ## Kmers
+//!
+//! Encoded sequences of length `k`, fixed at compile time.
+//!
+//! For this implementation `k * codec::BITS` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
+//!
+//! ```
+//! use bio_seq::prelude::*;
+//!
+//! for (amino_kmer, amino_string) in amino!("SSLMNHKKL")
+//!         .kmers::<3>()
+//!         .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
+//!     {
+//!         assert_eq!(amino_kmer, amino_string);
+//!     }
+//! ```
 use crate::codec::Codec;
 use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqSlice};
@@ -13,22 +29,7 @@ use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::str::FromStr;
 
-/// ## Kmers
-///
-/// Encoded sequences length `k`, fixed at compile time.
-///
-/// For this implementation `k * codec::WIDTH` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
-///
-/// ```
-/// use bio_seq::prelude::*;
-///
-/// for (amino_kmer, amino_string) in amino!("SSLMNHKKL")
-///         .kmers::<3>()
-///         .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
-///     {
-///         assert_eq!(amino_kmer, amino_string);
-///     }
-/// ```
+/// Kmers are backed by `usize`, Codec::BITS * K must be <= 64
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[repr(transparent)]
 pub struct Kmer<C: Codec, const K: usize> {
@@ -42,8 +43,8 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     #[inline]
     fn check_k() {
         assert!(
-            K <= usize::BITS as usize / A::WIDTH as usize,
-            "K is too large: it should be <= usize::BITS / A::WIDTH"
+            K <= usize::BITS as usize / A::BITS,
+            "K is too large: it should be <= usize::BITS / A::BITS"
         );
     }
 
@@ -57,11 +58,11 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
     /// ```
     pub fn pushr(self, base: A) -> Kmer<A, K> {
-        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
+        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::BITS];
         let ba = &BitArray::<usize, Lsb0>::from(self.bs);
 
         let mut x: BitVec<usize, Lsb0> = BitVec::new();
-        x.extend_from_bitslice(&ba[A::WIDTH as usize..A::WIDTH as usize * K]);
+        x.extend_from_bitslice(&ba[A::BITS..A::BITS * K]);
         x.extend_from_bitslice(bs);
         Kmer {
             _p: PhantomData,
@@ -71,18 +72,19 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
     /// Push a base from the left
     pub fn pushl(self, base: A) -> Kmer<A, K> {
-        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::WIDTH as usize];
+        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::BITS];
         let ba = &BitArray::<usize, Lsb0>::from(self.bs);
 
         let mut x: BitVec<usize, Lsb0> = BitVec::new();
         x.extend_from_bitslice(bs);
-        x.extend_from_bitslice(&ba[..A::WIDTH as usize * K - A::WIDTH as usize]);
+        x.extend_from_bitslice(&ba[..A::BITS * K - A::BITS]);
         Kmer {
             _p: PhantomData,
             bs: x.load_le::<usize>(),
         }
     }
 
+    /// Iterate through all bases of a Kmer
     pub fn iter(self) -> KmerBases<A, K> {
         KmerBases {
             _p: PhantomData,
@@ -98,7 +100,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
         Seq {
             _p: PhantomData,
-            bv: bv[A::WIDTH as usize..],
+            bv: bv[A::BITS ..],
         }
     }
     */
@@ -129,9 +131,7 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
 impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        for chunk in BitArray::<usize, Lsb0>::from(self.bs)[..K * A::WIDTH as usize]
-            .chunks(A::WIDTH as usize)
-        {
+        for chunk in BitArray::<usize, Lsb0>::from(self.bs)[..K * A::BITS].chunks(A::BITS) {
             s.push_str(
                 &A::unsafe_from_bits(chunk.load_le::<u8>())
                     .to_char()
@@ -173,18 +173,31 @@ impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
     type Item = A;
 
     fn next(&mut self) -> Option<A> {
-        let i = self.index * A::WIDTH as usize;
+        let i = self.index * A::BITS;
         if self.index >= K {
             return None;
         }
         self.index += 1;
-        let chunk = &self.bits[i..i + (A::WIDTH as usize)];
+        let chunk = &self.bits[i..i + (A::BITS)];
         Some(A::unsafe_from_bits(chunk.load_le::<u8>()))
     }
 }
 
-/// The value of K is included in the hasher state so that
-/// `hash(kmer!("AAA")) != hash(kmer!("AAAA"))
+/// ```
+/// use bio_seq::prelude::*;
+/// use std::collections::hash_map::DefaultHasher;
+/// use std::hash::{Hash, Hasher};
+///
+/// let mut hasher1 = DefaultHasher::new();
+/// kmer!("AAA").hash(&mut hasher1);
+/// let hash1 = hasher1.finish();
+///
+/// let mut hasher2 = DefaultHasher::new();
+/// kmer!("AAAA").hash(&mut hasher2);
+/// let hash2 = hasher2.finish();
+///
+/// assert_ne!(hash1, hash2);
+/// ```
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
@@ -378,17 +391,17 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
     fn invalid_k_check() {
         Kmer::<Dna, 33>::check_k();
     }
     #[test]
-    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
     fn invalid_k_check_amino() {
         Kmer::<Amino, 11>::check_k();
     }
     #[test]
-    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::WIDTH")]
+    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
     fn invalid_k_check_dna() {
         Kmer::<Dna, 33>::check_k();
     }

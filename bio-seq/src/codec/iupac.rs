@@ -56,7 +56,7 @@ use crate::seq::{Seq, SeqSlice};
 use core::ops::{BitAnd, BitOr};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
-#[width(4)]
+#[bits(4)]
 #[repr(u8)]
 pub enum Iupac {
     A = 0b1000,

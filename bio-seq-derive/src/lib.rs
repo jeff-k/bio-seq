@@ -16,7 +16,7 @@ use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Token};
 
-#[proc_macro_derive(Codec, attributes(width, display, alt))]
+#[proc_macro_derive(Codec, attributes(bits, display, alt))]
 pub fn codec_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::Item);
 
@@ -118,18 +118,20 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
     }
 
     // default width is the log2 of the max_variant
-    let mut width = f32::ceil(f32::log2(max_variant as f32)) as u8;
+    let mut width = f32::ceil(f32::log2(max_variant as f32)) as usize;
 
     for attr in &enum_ast.attrs {
-        if attr.path().is_ident("width") {
+        if attr.path().is_ident("bits") {
             width = match attr.parse_args::<syn::LitInt>() {
                 Ok(w) => {
-                    let chosen_width = w.base10_parse::<u8>().unwrap();
+                    let chosen_width = w.base10_parse::<usize>().unwrap();
                     // test whether the specified width is too small
                     if chosen_width < width {
                         return syn::Error::new_spanned(
                             attr,
-                            format!("Width is not large enough encode all variants (max: {width})"),
+                            format!(
+                                "Bit width is not large enough encode all variants (max: {width})"
+                            ),
                         )
                         .to_compile_error()
                         .into();
@@ -147,7 +149,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
     let output = quote! {
         impl Codec for #enum_ident {
             type Error = #parse_error;
-            const WIDTH: u8 = #width;
+            const BITS: usize = #width;
             fn unsafe_from_bits(b: u8) -> Self {
                 //debug_assert!(false, "Invalid encoding: {b:?}");
                 match b {

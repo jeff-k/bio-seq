@@ -5,7 +5,7 @@
 use crate::codec::Codec;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
-#[width(6)]
+#[bits(6)]
 #[repr(u8)]
 pub enum Amino {
     #[alt(0b110110, 0b010110, 0b100110)]

@@ -9,7 +9,7 @@ use crate::kmer::Kmer;
 use bitvec::prelude::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Codec)]
-#[width(2)]
+#[bits(2)]
 pub enum Dna {
     A = 0b00,
     C = 0b01,
@@ -21,8 +21,7 @@ impl<const K: usize> Complement for Kmer<Dna, K> {
     fn comp(self: Kmer<Dna, K>) -> Self {
         Kmer {
             _p: PhantomData,
-            bs: (self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::WIDTH as usize]
-                .load_le::<usize>(),
+            bs: (self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::BITS].load_le::<usize>(),
         }
     }
 }

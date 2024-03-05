@@ -2,6 +2,15 @@
 //!
 //! The [dna], [iupac], [text], and [amino] alphabets are built in.
 //!
+//! This trait implements the translation between the UTF-8 representation of an alphabet and it's efficient bit-packing.
+//! The `BITS` attribute stores the number of bits used by the representation.
+//! ```
+//! use bio_seq::prelude::{Dna, Codec};
+//! use bio_seq::codec::text;
+//! assert_eq!(Dna::BITS, 2);
+//! assert_eq!(text::Dna::BITS, 8);
+//! ```
+//!
 //! ## Deriving custom Codecs
 //!
 //! ```ignore
@@ -29,8 +38,10 @@ pub mod text;
 
 pub use bio_seq_derive::Codec;
 
+/// The bit encoding of an alphabet is represented with a `u8`. Encoding from UTF-8 or
+/// a raw `u8` will always be fallible but should usually be safe
 pub trait Codec: Copy + Clone + Into<u8> + PartialEq + Hash + Eq {
-    const WIDTH: u8;
+    const BITS: usize;
     type Error: std::error::Error + core::fmt::Display;
 
     fn unsafe_from_bits(b: u8) -> Self;
@@ -39,6 +50,12 @@ pub trait Codec: Copy + Clone + Into<u8> + PartialEq + Hash + Eq {
     fn to_char(self) -> char;
 }
 
+/// Nucleotide alphabets that can be complemented implement `Complement`
+///
+/// ```
+/// use bio_seq::prelude::{Dna, Complement};
+/// assert_eq!(Dna::A.comp(), Dna::T);
+/// ````
 pub trait Complement {
     fn comp(self) -> Self;
 }
