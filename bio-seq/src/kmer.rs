@@ -29,10 +29,15 @@ use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::str::FromStr;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Kmers are backed by `usize`, Codec::BITS * K must be <= 64
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Kmer<C: Codec, const K: usize> {
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub _p: PhantomData<C>,
     pub bs: usize,
 }
@@ -162,6 +167,7 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     }
 }
 
+/// An iterator over the bases of a kmer
 pub struct KmerBases<A: Codec, const K: usize> {
     pub _p: PhantomData<A>,
     pub bits: BitArray<usize, Lsb0>,

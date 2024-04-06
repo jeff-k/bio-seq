@@ -3,6 +3,9 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! A sequence of bit-packed genomic data
+//!
+//!
 pub mod iterators;
 
 use crate::codec::{text, Codec, Complement};
@@ -70,8 +73,9 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
     }
 }
 
-/// Note that we could set a default output type later:
-/// #![feature(associated_type_defaults)]
+// Note that we could set a default output type later:
+// #![feature(associated_type_defaults)]
+/// An sequence of things that can be complemented can be reverse complemented
 pub trait ReverseComplement {
     type Output;
 
