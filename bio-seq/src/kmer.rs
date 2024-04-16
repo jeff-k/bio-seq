@@ -30,7 +30,7 @@ use core::marker::PhantomData;
 use core::str::FromStr;
 
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 /// Kmers are backed by `usize`, Codec::BITS * K must be <= 64
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]

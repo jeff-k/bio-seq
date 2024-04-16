@@ -18,7 +18,7 @@ keywords = ["bioinformatics", "kmer", "sequencing", "dna", "iupac"]
 bitvec = "1"
 bio-seq-derive = { path = "../bio-seq-derive" }
 once_cell = "1.19"
-serde = { version = "1", optional = true }
+serde = { version = "1", optional = true, features=["derive"] }
 serde_derive = { version = "1", optional = true }
 
 [features]
