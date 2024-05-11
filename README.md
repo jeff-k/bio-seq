@@ -1,3 +1,6 @@
+[![Docs.rs](https://docs.rs/bio-seq/badge.svg)](https://docs.rs/bio-seq)
+[![CI status](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml/badge.svg)](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml)]
+
 <div class="title-block" style="text-align: center;" align="center">
 
 # bio-seq
