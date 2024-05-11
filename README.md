@@ -71,7 +71,7 @@ assert_eq!(
 
 ## Codecs
 
-The `Codec` trait describes the coding/decoding process for the characters of a biological sequence. This trait can be derived procedurally. There are three built-in codecs:
+The `Codec` trait describes the coding/decoding process for the characters of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
 
 ### `codec::Dna`
 Using the lexicographically ordered 2-bit representation
@@ -97,8 +97,7 @@ Amino acid sequences are represented with 6 bits. The representation of amino ac
 
 ## Sequences
 
-Strings of encoded characters are packed into `Seq`. Slicing, chunking, and windowing return `SeqSlice`. `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`.
-
+Strings of encoded characters are packed into `Seq`. Slicing, chunking, and windowing return `SeqSlice`. `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. `Kmer`s are generally stored on the stack, implementing `Copy`.
 All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
 
 ```rust
@@ -128,7 +127,7 @@ for i in 0..=15 {
 
 ## Kmers
 
-kmers are short sequences of length `k` that can fit into a register (`usize`). these are implemented with const generics and `k` is fixed at compile time.
+kmers are short sequences of length `k` that can fit into a register (`usize`, or SIMD) and implement `Copy`. these are implemented with const generics and `k` is fixed at compile time.
 
 ### Efficient encodings
 
