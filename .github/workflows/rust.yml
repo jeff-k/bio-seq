@@ -22,4 +22,4 @@ jobs:
       run: cargo test --verbose
 
     - name: Coveralls GitHub Action
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@v2.3.0
