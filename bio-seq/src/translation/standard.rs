@@ -1,8 +1,8 @@
 //! Standard amino acid translation table
 
 use core::str::FromStr;
-use once_cell::sync::OnceCell;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 use crate::codec::Codec;
 use crate::codec::{amino::Amino, dna::Dna, iupac::Iupac};
@@ -11,9 +11,9 @@ use crate::translation::{PartialTranslationTable, TranslationError, TranslationT
 
 pub struct Standard;
 
-static AMINO_TO_IUPAC: OnceCell<HashMap<Amino, Option<Seq<Iupac>>>> = OnceCell::new();
+static AMINO_TO_IUPAC: OnceLock<HashMap<Amino, Option<Seq<Iupac>>>> = OnceLock::new();
 
-static IUPAC_TO_AMINO: OnceCell<[(Seq<Iupac>, Amino); 29]> = OnceCell::new();
+static IUPAC_TO_AMINO: OnceLock<[(Seq<Iupac>, Amino); 29]> = OnceLock::new();
 
 fn initialise_iupac_to_amino() -> [(Seq<Iupac>, Amino); 29] {
     [
