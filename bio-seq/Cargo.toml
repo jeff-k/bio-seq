@@ -6,9 +6,9 @@ edition = "2021"
 description = "Bit packed and well-typed biological sequences"
 homepage = "https://github.com/jeff-k/bio-seq"
 documentation = "https://docs.rs/bio-seq"
-readme = "README.md"
 license = "MIT"
 keywords = ["bioinformatics", "genomics", "science", "kmer", "sequencing", "dna", "iupac"]
+readme = "../README.md"
 
 #[dev-dependencies]
 #bio-streams = { git="https://github.com/jeff-k/bio-streams.git" }
