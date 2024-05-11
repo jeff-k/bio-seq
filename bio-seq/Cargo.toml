@@ -16,7 +16,7 @@ readme = "../README.md"
 
 [dependencies]
 bitvec = "1"
-bio-seq-derive = { path = "../bio-seq-derive" }
+bio-seq-derive = { path = "../bio-seq-derive", version="2.0.1" }
 serde = { version = "1", optional = true, features=["derive"] }
 serde_derive = { version = "1", optional = true }
 
