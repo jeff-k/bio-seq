@@ -21,7 +21,5 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
 
-  coverage:
     - name: Coveralls GitHub Action
-      uses: coverallsapp/github-action@v2.3.0
-            
+      uses: coverallsapp/github-action@v2
