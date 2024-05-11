@@ -7,7 +7,7 @@ description = "Bit packed and well-typed biological sequences"
 homepage = "https://github.com/jeff-k/bio-seq"
 documentation = "https://docs.rs/bio-seq"
 license = "MIT"
-keywords = ["bioinformatics", "genomics", "science", "kmer", "sequencing", "dna", "iupac"]
+keywords = ["bioinformatics", "genomics", "kmer", "dna", "iupac"]
 readme = "../README.md"
 
 #[dev-dependencies]
