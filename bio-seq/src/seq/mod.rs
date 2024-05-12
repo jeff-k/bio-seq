@@ -1,11 +1,31 @@
-// Copyright 2021, 2022 Jeff Knaggs
+// Copyright 2021-2024 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! A sequence of bit-packed genomic data
+//! Arbitrary length sequences of bit-packed genomic data, stored on the heap.
 //!
+//! `Seq` and `SeqSlice` are analogous to `String` and `str`. A `Seq` owns its data and a `SeqSlice` is a read-only window into a `Seq`.
 //!
+//! ```
+//! use std::collections::HashMap;
+//! use bio_seq::prelude::*;
+//!
+//! let reference: Seq<Dna> = dna!("ACGTTCGCATGCTACGACGATC");
+//!
+//! let mut table: HashMap<Seq<Dna>, &SeqSlice<Dna>> = HashMap::new();
+//! table.insert(dna!("ACGTT"), &reference[2..5]);
+//! table.insert(dna!("ACACCCCC"), &reference[6..]);
+//!
+//! // The query is a short window in the reference `Seq`
+//! let query: &SeqSlice<Dna> = &reference[..5];
+//!
+//! // The keys of the hashmap are `Seq`, but since `Seq` can be borrowed as a SeqSlice we can call `HashMap::get` on another slice.
+//! if let Some(value) = table.get(query) {
+//!        // `SeqSlice` implements `Display`
+//!        println!("{value}");
+//! }
+//! ```
 pub mod index;
 pub mod iterators;
 
@@ -26,14 +46,14 @@ use core::str::FromStr;
 
 /// A sequence of bit-packed characters of arbitrary length
 ///
-/// Allocated to the heap
+/// Stored on the heap
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
     bv: Bv,
 }
 
-/// A slice of a Seq
+/// A lightweight, read-only window into part of a sequence
 #[derive(Debug, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
@@ -76,25 +96,13 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 
 // Note that we could set a default output type later:
 // #![feature(associated_type_defaults)]
-/// A sequence of things that can be complemented can be reverse complemented
+/// A reversible sequence of things that can be complemented can be reverse complemented
 pub trait ReverseComplement {
     type Output;
 
     /// Reverse complement of a sequence
     fn revcomp(&self) -> Self::Output;
 }
-
-/*
-impl<A: Codec + Complement> ReverseComplement for Seq<A> {
-    type Output = Self;
-
-    fn revcomp(&self) -> Seq<A> {
-        let mut seq = Seq::<A>::with_capacity(self.len());
-        seq.extend(self.rev().map(|base| base.comp()));
-        seq
-    }
-}
-*/
 
 impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
     type Output = Seq<A>;
@@ -127,8 +135,18 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    /// Unsafely index into a sequence.
     pub fn nth(&self, i: usize) -> A {
         A::unsafe_from_bits(self[i].into())
+    }
+
+    /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
+    pub fn get(&self, i: usize) -> Option<A> {
+        if i >= self.bv.len() / A::BITS {
+            None
+        } else {
+            Some(A::unsafe_from_bits(self[i].into()))
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -197,11 +215,9 @@ impl<A: Codec> SeqSlice<A> {
         self.len() == 0
     }
 
-    /*
     pub fn contains(&self, _other: &SeqSlice<A>) -> bool {
         unimplemented!()
     }
-    */
 
     pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
         let mut bv: Bv = Bv::from_bitslice(&self.bs);
@@ -224,12 +240,6 @@ impl<A: Codec> SeqSlice<A> {
     }
 }
 
-impl<A: Codec> PartialEq for SeqSlice<A> {
-    fn eq(&self, other: &Self) -> bool {
-        self.bs == other.bs
-    }
-}
-
 impl<A: Codec> From<Seq<A>> for String {
     fn from(seq: Seq<A>) -> Self {
         seq.into_iter().map(|base| base.to_char()).collect()
@@ -245,6 +255,12 @@ impl<A: Codec> From<&SeqSlice<A>> for String {
 impl<A: Codec> From<&Seq<A>> for String {
     fn from(seq: &Seq<A>) -> Self {
         seq.into_iter().map(|base| base.to_char()).collect()
+    }
+}
+
+impl<A: Codec> PartialEq for SeqSlice<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bs == other.bs
     }
 }
 
@@ -297,19 +313,6 @@ impl<A: Codec> PartialEq<&SeqSlice<A>> for SeqSlice<A> {
     }
 }
 
-impl<A: Codec> Hash for SeqSlice<A> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bs.hash(state);
-        // theory: this is prevent Hash(AAAA) from equaling Hash(AAAAA)
-        //self.len().hash(state);
-    }
-}
-impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
-    fn borrow(&self) -> &SeqSlice<A> {
-        &self[..]
-    }
-}
-
 impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
     fn eq(&self, other: &&Seq<A>) -> bool {
         self.bv == other.bv
@@ -322,6 +325,46 @@ impl<A: Codec> PartialEq<Seq<A>> for &Seq<A> {
     }
 }
 
+impl<A: Codec> Hash for SeqSlice<A> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bs.hash(state);
+        // theory: this is prevent Hash(AAAA) from equaling Hash(AAAAA)
+        //self.len().hash(state);
+    }
+}
+
+/// Borrow a `Seq<A>` as a `SeqSlice<A>`.
+///
+/// The `Borrow` trait to is used to obtain a reference to a `SeqSlice` from a `Seq`, allowing it to be used wherever a `SeqSlice` is expected.
+///
+/// ```
+/// use bio_seq::prelude::*;
+/// use std::borrow::Borrow;
+///
+/// let seq: Seq<Dna> = dna!("CTACGTACGATCATCG");
+/// let slice: &SeqSlice<Dna> = seq.borrow();
+/// ```
+///
+impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
+    fn borrow(&self) -> &SeqSlice<A> {
+        &self[..]
+    }
+}
+
+/// Automatic dereferencing of `Seq<A>` to `SeqSlice<A>`.
+///
+/// ```
+/// use bio_seq::prelude::*;
+///
+/// fn count_bases(s: &SeqSlice<Dna>) -> usize {
+///    s.len()
+/// }
+///
+/// let seq: Seq<Dna> = dna!("CATCGATCGATC");
+/// let count = count_bases(&seq);
+/// assert_eq!(count, 12);
+/// ```
+///
 impl<A: Codec> Deref for Seq<A> {
     type Target = SeqSlice<A>;
     fn deref(&self) -> &Self::Target {
@@ -329,12 +372,38 @@ impl<A: Codec> Deref for Seq<A> {
     }
 }
 
+/// A Seq can be borrowed as a SeqSlice through generic constraints.
+///
+/// ```
+/// use bio_seq::prelude::*;
+///
+/// fn count_bases<S: AsRef<SeqSlice<Dna>>>(s: S) -> usize {
+///    s.as_ref().len()
+/// }
+///
+/// let seq: Seq<Dna> = dna!("CATCGATCGATC");
+/// let count = count_bases(seq); // the AsRef implementation allows us to directly pass a Seq
+/// assert_eq!(count, 12);
+/// ```
+///
 impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
     fn as_ref(&self) -> &SeqSlice<A> {
         &self[..]
     }
 }
 
+/// Clone a borrowed slice of a sequence into an owned version.
+///
+/// ```
+/// use bio_seq::prelude::*;
+///
+/// let seq = dna!("CATCGATCGATCG");
+/// let slice = &seq[2..7]; // TCGAT
+/// let owned = slice.to_owned();
+///
+/// assert_eq!(&owned, &seq[2..7]);
+/// ```
+///
 impl<A: Codec> ToOwned for SeqSlice<A> {
     type Owned = Seq<A>;
 
@@ -346,6 +415,18 @@ impl<A: Codec> ToOwned for SeqSlice<A> {
     }
 }
 
+/// Creates a deep copy of the sequence.
+///
+/// ```
+/// use bio_seq::prelude::*;
+///
+/// let mut seq1: Seq<Dna> = dna!("CATCGATCGATC");
+/// let seq2: Seq<Dna> = seq1.clone();
+///
+/// seq1.push(Dna::A);
+/// assert_ne!(seq1, seq2);
+/// ```
+///
 impl<A: Codec> Clone for Seq<A> {
     fn clone(&self) -> Self {
         Self {
@@ -456,6 +537,7 @@ mod tests {
     use crate::prelude::*;
     use crate::{Bv, Order};
     use bitvec::prelude::*;
+    use core::borrow::Borrow;
     use core::hash::{Hash, Hasher};
     use core::marker::PhantomData;
     use std::collections::hash_map::DefaultHasher;
@@ -674,6 +756,47 @@ mod tests {
         assert_eq!(raw, Kmer::<Dna, 8>::from(&s[..8]).bs);
     }
 
+    #[test]
+    fn test_borrow() {
+        let seq: Seq<Dna> = dna!("ACGACCCCCATAGATGGGCTG");
+        let slice: &SeqSlice<Dna> = seq.borrow();
+        assert_eq!(slice, &seq[..]);
+        assert_ne!(slice, &seq[1..]);
+    }
+
+    #[test]
+    fn test_deref() {
+        let seq: Seq<Dna> = dna!("AGAATGATCG");
+        let slice: &SeqSlice<Dna> = &*seq;
+
+        assert_eq!(slice, &seq[..]);
+        assert_ne!(slice, &seq[1..]);
+    }
+
+    #[test]
+    fn test_asref() {
+        let seq: Seq<Dna> = dna!("AGAATGATCAAAATATATATAAAG");
+        let slice: &SeqSlice<Dna> = seq.as_ref();
+        assert_ne!(slice, &seq[2..5]);
+        assert_eq!(slice, &seq[..]);
+    }
+
+    #[test]
+    fn test_to_owned() {
+        let seq: Seq<Dna> = dna!("AGAATGAATCG");
+        let slice: &SeqSlice<Dna> = &seq;
+        let owned: Seq<Dna> = slice[2..5].to_owned();
+        assert_eq!(&owned, &seq[2..5]);
+        assert_eq!(owned, seq[2..5].to_owned());
+        assert_ne!(&owned, &seq[..]);
+    }
+
+    #[test]
+    fn test_clone() {
+        let seq: Seq<Dna> = dna!("AGAATGATGGGGGGGGGGGCG");
+        let cloned = seq.clone();
+        assert_eq!(seq, cloned);
+    }
     #[test]
     fn test_seq_eq_and_hash() {
         let seq1: Seq<Dna> = "ACGT".try_into().unwrap();

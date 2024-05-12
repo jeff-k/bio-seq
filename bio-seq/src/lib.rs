@@ -5,10 +5,10 @@
 
 //! Bit-packed and well-typed biological sequences
 //!
-//! - [seq] heap allocated sequences of variable length
-//! - [mod@kmer] short fixed length sequences
-//! - [codec] coder/decoder implementations
-//! - [translation] amino acid translation tables
+//! - [seq]: A `Seq` is a heap allocated sequences of variable length that owns it's own data. A `SeqSlice` is a read-only window into a `Seq`.
+//! - [mod@kmer]: `Kmer`s are short fixed length sequences. They generally implement `Copy` and can efficiently be passed on the stack.
+//! - [codec]: Encodings of genomic data types to be packed into sequences.
+//! - [translation]: Amino acid translation tables
 //!
 //! This crate is designed to facilitate common bioinformatics tasks,
 //! incuding amino acid translation, k-mer minimisation and hashing, and
