@@ -5,14 +5,17 @@
 
 //! Bit-packed and well-typed biological sequences
 //!
-//! - [seq]: A `Seq` is a heap allocated sequences of variable length that owns it's own data. A `SeqSlice` is a read-only window into a `Seq`.
-//! - [mod@kmer]: `Kmer`s are short fixed length sequences. They generally implement `Copy` and can efficiently be passed on the stack.
-//! - [codec]: Encodings of genomic data types to be packed into sequences.
-//! - [translation]: Amino acid translation tables
+//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of variable length that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`.
 //!
-//! This crate is designed to facilitate common bioinformatics tasks,
-//! incuding amino acid translation, k-mer minimisation and hashing, and
-//! nucleotide sequence manipulation.
+//! [`Kmer`](mod@kmer)s are short, fixed-length sequences. They generally implement `Copy` and are used for optimised algorithms on sequences. The default implementation uses a `usize` for storage.
+//!
+//! Binary encodings of genomic data types are implemented as "[`codec`]s." Custom codecs can be defined, and this crate has four built in:
+//!   - [codec::dna]: 2-bit encoding of the four nucleotides
+//!   - [codec::text]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
+//!   - [codec::iupac]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
+//!   - [codec::amino]: 6-bit encoding of amino acids
+//!
+//! Each of these encodings is designed to facilitate common bioinformatics tasks, such as minimising k-mers and implementing succinct datastructures. The [translation] module provides traits and methods for translating between nucleotide and amino acid sequences.
 //!
 //! Add `bio-seq` to `Cargo.toml`:
 //!
@@ -39,38 +42,6 @@
 //! // ...
 //! ```
 //!
-//! The 4-bit encoding of IUPAC nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
-//!
-//! ```rust
-//! use bio_seq::prelude::*;
-//!
-//! let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
-//! let pattern = iupac!("AYG");
-//!
-//! for slice in seq.windows(pattern.len()) {
-//!     if pattern.contains(slice) {
-//!         println!("{slice} matches pattern");
-//!     }
-//! }
-//!
-//! // ACG matches pattern
-//! // ATG matches pattern
-//! ```
-//!
-//! Logical `or` is the union:
-//!
-//! ```rust
-//! # use bio_seq::prelude::*;
-//! assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-//! ```
-//!
-//! Logical `and` is the intersection of two iupac sequences:
-//!
-//! ```rust
-//! # use bio_seq::prelude::*;
-//! assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
-//! ```
-
 use bitvec::prelude::*;
 
 type Order = Lsb0;

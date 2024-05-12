@@ -3,11 +3,11 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! ## Kmers
+//! ## Short sequences of fixed length.
 //!
-//! Encoded sequences of length `k`, fixed at compile time.
+//! Encoded sequences of length `k`, fixed at compile time. Generally, the underlying storage type of `Kmer` should lend itself to optimisation. For example, the default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
 //!
-//! For this implementation `k * codec::BITS` must fit in a `usize` (i.e. 64 bits). for larger kmers use `SeqSlice` or
+//! `k * codec::BITS` must fit in the storage type, e.g. `usize` (64 bits).
 //!
 //! ```
 //! use bio_seq::prelude::*;
@@ -101,7 +101,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     /*
     /// tail
     pub fn tail(self, base: A) -> Seq<A> {
-        let bv: BitVec::<usize, Lsb0>::from(self.bs);
+        let bv: Bv::from(self.bs);
 
         Seq {
             _p: PhantomData,

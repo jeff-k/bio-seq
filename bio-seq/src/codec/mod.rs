@@ -13,6 +13,8 @@
 //!
 //! ## Deriving custom Codecs
 //!
+//! Custom encodings can be easily defined on enums using the derivable `Codec` trait.
+//!
 //! ```ignore
 //! use bio_seq::prelude;
 //! use bio_seq::prelude::Codec;
@@ -38,8 +40,8 @@ pub mod text;
 
 pub use bio_seq_derive::Codec;
 
-/// The bit encoding of an alphabet is represented with a `u8`. Encoding from UTF-8 or
-/// a raw `u8` will always be fallible but should usually be safe
+/// The binary encodings of an alphabet's characters are represented with `u8`s. Encoding from UTF-8 or
+/// a raw `u8` will always be fallible but often can be assumed safe.
 pub trait Codec: Copy + Clone + Into<u8> + PartialEq + Hash + Eq {
     const BITS: usize;
     type Error: std::error::Error + core::fmt::Display;
@@ -68,7 +70,13 @@ mod tests {
     #[test]
     fn dna_to_iupac() {
         assert_eq!(Iupac::from(Dna::A), Iupac::A);
-        assert_ne!(Iupac::from(Dna::A), Iupac::T);
         assert_eq!(Iupac::from(Dna::C), Iupac::C);
+        assert_eq!(Iupac::from(Dna::G), Iupac::G);
+        assert_eq!(Iupac::from(Dna::T), Iupac::T);
+
+        assert_ne!(Iupac::from(Dna::A), Iupac::T);
+        assert_ne!(Iupac::from(Dna::T), Iupac::A);
+        assert_ne!(Iupac::from(Dna::C), Iupac::T);
+        assert_ne!(Iupac::from(Dna::G), Iupac::T);
     }
 }

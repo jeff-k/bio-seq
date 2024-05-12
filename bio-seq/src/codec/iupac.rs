@@ -43,7 +43,7 @@
 //!
 //! for slice in seq.windows(pattern.len()) {
 //!    if pattern.contains(slice) {
-//!        println!("{} matches pattern", slice);
+//!        println!("{slice} matches pattern");
 //!    }
 //! }
 //!

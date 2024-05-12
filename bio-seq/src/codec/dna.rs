@@ -1,10 +1,9 @@
-//! 2-bit DNA representation
-//!
-//! Bitwise negation results in the complement.
+//! 2-bit DNA representation: `A: 00, C: 01, G: 10, T: 11`
 use core::marker::PhantomData;
 
 use crate::codec::{Codec, Complement};
 use crate::kmer::Kmer;
+use crate::Order;
 
 use bitvec::prelude::*;
 
@@ -17,11 +16,12 @@ pub enum Dna {
     T = 0b11,
 }
 
+/// Bitwise negation results in the complement of a base. This can be used to efficiently complement a bit-packed sequence of Dna.
 impl<const K: usize> Complement for Kmer<Dna, K> {
     fn comp(self: Kmer<Dna, K>) -> Self {
         Kmer {
             _p: PhantomData,
-            bs: (self.bs ^ usize::MAX).view_bits::<Lsb0>()[..K * Dna::BITS].load_le::<usize>(),
+            bs: (self.bs ^ usize::MAX).view_bits::<Order>()[..K * Dna::BITS].load_le::<usize>(),
         }
     }
 }
