@@ -15,6 +15,8 @@ Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 bio-seq = "0.12"
 ```
 
+Example: Iterating over the [kmer](https://docs.rs/bio-seq/kmer)s for a [sequence](https://docs.rs/bio-seq/seq):
+
 ```rust
 use bio_seq::prelude::*;
 
@@ -33,7 +35,7 @@ for kmer in seq.revcomp().kmers::<8>() {
 // ...
 ```
 
-The 4-bit encoding of IUPAC nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
+Example: The [4-bit encoding of IUPAC](https://docs.rs/bio-seq/codec/iupac) nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
 
 ```rust
 use bio_seq::prelude::*;
@@ -51,7 +53,7 @@ for slice in seq.windows(pattern.len()) {
 // ATG matches pattern
 ```
 
-The goal of this crate is to make handling biological sequence data safe and convenient. The `TranslationTable` trait implements genetic coding:
+The goal of this crate is to make handling biological sequence data safe and convenient. The [`TranslationTable`]() trait implements genetic coding:
 
 ```rust
 // This is a debruijn sequence of all possible 3-mers:
@@ -98,9 +100,9 @@ utf-8 strings that are read directly from common plain-text file formats can be 
 ### `codec::Amino`
 Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
-## Sequences
+## [Sequences]()
 
-Strings of encoded characters are packed into `Seq`. Slicing, chunking, and windowing return `SeqSlice`. `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. `Kmer`s are generally stored on the stack, implementing `Copy`.
+Strings of encoded characters are packed into [`Seq`](). Slicing, chunking, and windowing return [`SeqSlice`](). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. [`Kmer`]()s are generally stored on the stack, implementing `Copy`.
 All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
 
 ```rust
@@ -128,9 +130,9 @@ for i in 0..=15 {
 15: TTAAA
 ```
 
-## Kmers
+## [Kmers]()
 
-kmers are short sequences of length `k` that can fit into a register (`usize`, or SIMD) and implement `Copy`. these are implemented with const generics and `k` is fixed at compile time.
+kmers are short sequences of length `k` that can fit into a register (e.g. `usize`, or SIMD vector) and generally implement `Copy`. these are implemented with const generics and `k` is fixed at compile time.
 
 ### Efficient encodings
 
@@ -169,7 +171,7 @@ let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
 
 ### Kmer minimisers
 
-The 2-bit representation of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`
+The [2-bit representation]() of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
@@ -219,7 +221,7 @@ pub enum Amino {
 
 ### Translation table traits 
 
-Translation tables provide methods for translating codons into amino acids:
+[Translation tables]() provide methods for translating codons into amino acids:
 
 ```rust
 pub trait TranslationTable<A: Codec, B: Codec> {
