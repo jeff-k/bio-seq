@@ -3,7 +3,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! ## Short sequences of fixed length.
+//! Short sequences of fixed length.
 //!
 //! Encoded sequences of length `k`, fixed at compile time. Generally, the underlying storage type of `Kmer` should lend itself to optimisation. For example, the default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
 //!
@@ -32,14 +32,26 @@ use core::str::FromStr;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
-/// Kmers are backed by `usize`, Codec::BITS * K must be <= 64
+// TODO
+pub trait KmerStorage {
+    fn new() -> Self;
+}
+
+// TODO
+impl KmerStorage for usize {
+    fn new() -> Self {
+        0
+    }
+}
+
+/// By default k-mers are backed by `usize`, Codec::BITS * K must be <= 64
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Kmer<C: Codec, const K: usize> {
+pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
     #[cfg_attr(feature = "serde", serde(skip))]
     pub _p: PhantomData<C>,
-    pub bs: usize,
+    pub bs: S,
 }
 
 impl<A: Codec, const K: usize> Kmer<A, K> {
