@@ -71,6 +71,13 @@
 //! assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
 //! ```
 
+use bitvec::prelude::*;
+
+type Order = Lsb0;
+type Bs = BitSlice<u8, Order>;
+type Bv = BitVec<u8, Order>;
+type Ba = BitArray<usize, Order>;
+
 #[macro_use]
 pub mod codec;
 pub mod error;

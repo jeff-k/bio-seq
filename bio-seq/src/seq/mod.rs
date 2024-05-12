@@ -12,7 +12,9 @@ pub mod iterators;
 use crate::codec::{text, Codec, Complement};
 use crate::error::ParseBioError;
 
-use bitvec::prelude::*;
+use crate::{Bs, Bv, Order};
+use bitvec::field::BitField;
+use bitvec::view::BitView;
 
 use core::borrow::Borrow;
 use core::fmt;
@@ -28,7 +30,7 @@ use core::str::FromStr;
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
-    bv: BitVec<u8, Lsb0>,
+    bv: Bv,
 }
 
 /// A slice of a Seq
@@ -36,14 +38,14 @@ pub struct Seq<A: Codec> {
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
-    bs: BitSlice<u8, Lsb0>,
+    bs: Bs,
 }
 
 impl From<Vec<u8>> for Seq<text::Dna> {
     fn from(vec: Vec<u8>) -> Self {
         Seq {
             _p: PhantomData,
-            bv: BitVec::from_vec(vec),
+            bv: Bv::from_vec(vec),
         }
     }
 }
@@ -114,14 +116,14 @@ impl<A: Codec> Seq<A> {
     pub fn new() -> Self {
         Seq {
             _p: PhantomData,
-            bv: BitVec::new(),
+            bv: Bv::new(),
         }
     }
 
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
-            bv: BitVec::<u8, Lsb0>::with_capacity(len * A::BITS),
+            bv: Bv::with_capacity(len * A::BITS),
         }
     }
 
@@ -140,21 +142,21 @@ impl<A: Codec> Seq<A> {
     pub fn bit_and(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
-            bv: BitVec::from_bitslice(&(self.bv & rhs.bv)),
+            bv: Bv::from_bitslice(&(self.bv & rhs.bv)),
         }
     }
 
     pub fn bit_or(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
-            bv: BitVec::<u8, Lsb0>::from_bitslice(&(self.bv | rhs.bv)),
+            bv: Bv::from_bitslice(&(self.bv | rhs.bv)),
         }
     }
 
     pub fn push(&mut self, item: A) {
         let byte: u8 = item.into();
         self.bv
-            .extend_from_bitslice(&byte.view_bits::<Lsb0>()[..A::BITS]);
+            .extend_from_bitslice(&byte.view_bits::<Order>()[..A::BITS]);
     }
 
     pub fn clear(&mut self) {
@@ -202,8 +204,8 @@ impl<A: Codec> SeqSlice<A> {
     */
 
     pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: BitVec<u8, Lsb0> = BitVec::from_bitslice(&self.bs);
-        bv &= BitVec::from_bitslice(&rhs.bs);
+        let mut bv: Bv = Bv::from_bitslice(&self.bs);
+        bv &= Bv::from_bitslice(&rhs.bs);
 
         Seq::<A> {
             _p: PhantomData,
@@ -212,8 +214,8 @@ impl<A: Codec> SeqSlice<A> {
     }
 
     pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: BitVec<u8, Lsb0> = BitVec::from_bitslice(&self.bs);
-        bv |= BitVec::from_bitslice(&rhs.bs);
+        let mut bv: Bv = Bv::from_bitslice(&self.bs);
+        bv |= Bv::from_bitslice(&rhs.bs);
 
         Seq::<A> {
             _p: PhantomData,
@@ -452,6 +454,7 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
+    use crate::{Bv, Order};
     use bitvec::prelude::*;
     use core::hash::{Hash, Hasher};
     use core::marker::PhantomData;
@@ -660,8 +663,8 @@ mod tests {
     #[test]
     fn test_bit_order() {
         let raw: usize = 0b10_11_01_11_10_01_00_01;
-        let mut bv: BitVec<u8, Lsb0> = Default::default();
-        bv.extend(&raw.view_bits::<Lsb0>()[..(Dna::BITS * 8)]);
+        let mut bv: Bv = Default::default();
+        bv.extend(&raw.view_bits::<Order>()[..(Dna::BITS * 8)]);
         let s = Seq::<Dna> {
             bv,
             _p: PhantomData,

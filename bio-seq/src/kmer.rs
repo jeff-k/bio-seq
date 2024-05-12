@@ -22,8 +22,8 @@
 use crate::codec::Codec;
 use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqSlice};
-
-use bitvec::prelude::*;
+use crate::{Ba, Bv};
+use bitvec::field::BitField;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
@@ -63,10 +63,10 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
     /// ```
     pub fn pushr(self, base: A) -> Kmer<A, K> {
-        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::BITS];
-        let ba = &BitArray::<usize, Lsb0>::from(self.bs);
+        let bs = &Ba::from(base.into() as usize)[..A::BITS];
+        let ba = &Ba::from(self.bs);
 
-        let mut x: BitVec<usize, Lsb0> = BitVec::new();
+        let mut x: Bv = Bv::new();
         x.extend_from_bitslice(&ba[A::BITS..A::BITS * K]);
         x.extend_from_bitslice(bs);
         Kmer {
@@ -77,10 +77,10 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
     /// Push a base from the left
     pub fn pushl(self, base: A) -> Kmer<A, K> {
-        let bs = &BitArray::<usize, Lsb0>::from(base.into() as usize)[..A::BITS];
-        let ba = &BitArray::<usize, Lsb0>::from(self.bs);
+        let bs = &Ba::from(base.into() as usize)[..A::BITS];
+        let ba = &Ba::from(self.bs);
 
-        let mut x: BitVec<usize, Lsb0> = BitVec::new();
+        let mut x: Bv = Bv::new();
         x.extend_from_bitslice(bs);
         x.extend_from_bitslice(&ba[..A::BITS * K - A::BITS]);
         Kmer {
@@ -93,7 +93,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     pub fn iter(self) -> KmerBases<A, K> {
         KmerBases {
             _p: PhantomData,
-            bits: BitArray::<usize, Lsb0>::from(self.bs),
+            bits: Ba::from(self.bs),
             index: 0,
         }
     }
@@ -136,7 +136,7 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
 impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        BitArray::<usize, Lsb0>::from(self.bs)[..K * A::BITS]
+        Ba::from(self.bs)[..K * A::BITS]
             .chunks(A::BITS)
             .for_each(|chunk| {
                 s.push_str(
@@ -172,7 +172,7 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
 /// An iterator over the bases of a kmer
 pub struct KmerBases<A: Codec, const K: usize> {
     pub _p: PhantomData<A>,
-    pub bits: BitArray<usize, Lsb0>,
+    pub bits: Ba,
     pub index: usize,
 }
 
