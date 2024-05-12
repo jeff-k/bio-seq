@@ -100,7 +100,7 @@ utf-8 strings that are read directly from common plain-text file formats can be 
 ### `codec::Amino`
 Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
-## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/codec/iupac)
+## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
 Strings of encoded characters are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. [`Kmer`](https://docs.rs/bio-seq/latest/bio_seq/kmer)s are generally stored on the stack, implementing `Copy`.
 All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
