@@ -1,4 +1,4 @@
-// Copyright 2021, 2022, 2023 Jeff Knaggs
+// Copyright 2021-2024 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -131,13 +131,13 @@ mod tests {
     #[test]
     fn test_display_aminos() {
         let a: Seq<Amino> = Seq::from_str("DCMNLKG*HI").unwrap();
-        assert_eq!(format!("{}", a), "DCMNLKG*HI");
+        assert_eq!(format!("{a}"), "DCMNLKG*HI");
     }
 
     #[test]
     fn test_display_dna() {
         let seq = Seq::from(&vec![A, C, G, T, T, A, T, C]);
-        assert_eq!(format!("{}", seq), "ACGTTATC");
+        assert_eq!(format!("{}", &seq), "ACGTTATC");
         assert_eq!(format!("{}", dna!("ACGT")), "ACGT");
     }
 

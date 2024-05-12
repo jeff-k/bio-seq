@@ -136,13 +136,15 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
 impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        for chunk in BitArray::<usize, Lsb0>::from(self.bs)[..K * A::BITS].chunks(A::BITS) {
-            s.push_str(
-                &A::unsafe_from_bits(chunk.load_le::<u8>())
-                    .to_char()
-                    .to_string(),
-            );
-        }
+        BitArray::<usize, Lsb0>::from(self.bs)[..K * A::BITS]
+            .chunks(A::BITS)
+            .for_each(|chunk| {
+                s.push_str(
+                    &A::unsafe_from_bits(chunk.load_le::<u8>())
+                        .to_char()
+                        .to_string(),
+                );
+            });
         write!(f, "{s}")
     }
 }

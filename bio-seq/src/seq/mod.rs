@@ -6,6 +6,7 @@
 //! A sequence of bit-packed genomic data
 //!
 //!
+pub mod index;
 pub mod iterators;
 
 use crate::codec::{text, Codec, Complement};
@@ -17,9 +18,7 @@ use core::borrow::Borrow;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::{
-    Deref, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
-};
+use core::ops::Deref;
 use core::str;
 use core::str::FromStr;
 
@@ -75,7 +74,7 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 
 // Note that we could set a default output type later:
 // #![feature(associated_type_defaults)]
-/// An sequence of things that can be complemented can be reverse complemented
+/// A sequence of things that can be complemented can be reverse complemented
 pub trait ReverseComplement {
     type Output;
 
@@ -83,6 +82,7 @@ pub trait ReverseComplement {
     fn revcomp(&self) -> Self::Output;
 }
 
+/*
 impl<A: Codec + Complement> ReverseComplement for Seq<A> {
     type Output = Self;
 
@@ -92,6 +92,7 @@ impl<A: Codec + Complement> ReverseComplement for Seq<A> {
         seq
     }
 }
+*/
 
 impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
     type Output = Seq<A>;
@@ -177,9 +178,7 @@ impl<A: Codec> Seq<A> {
     }
 
     pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
-        for item in iter {
-            self.push(item);
-        }
+        iter.into_iter().for_each(|base| self.push(base));
     }
 }
 
@@ -231,15 +230,25 @@ impl<A: Codec> PartialEq for SeqSlice<A> {
 
 impl<A: Codec> From<Seq<A>> for String {
     fn from(seq: Seq<A>) -> Self {
-        // potential optimisation: pre-allocate the String upfront:
-        // let mut s = String::with_capacity(self.bs.len() / A::BITS.into());
+        seq.into_iter().map(|base| base.to_char()).collect()
+    }
+}
+
+impl<A: Codec> From<&SeqSlice<A>> for String {
+    fn from(seq: &SeqSlice<A>) -> Self {
+        seq.into_iter().map(|base| base.to_char()).collect()
+    }
+}
+
+impl<A: Codec> From<&Seq<A>> for String {
+    fn from(seq: &Seq<A>) -> Self {
         seq.into_iter().map(|base| base.to_char()).collect()
     }
 }
 
 impl<A: Codec> PartialEq<&str> for Seq<A> {
     fn eq(&self, other: &&str) -> bool {
-        let s: String = self.into_iter().map(|base| base.to_char()).collect();
+        let s: String = self.into();
         s == *other
     }
 }
@@ -311,146 +320,6 @@ impl<A: Codec> PartialEq<Seq<A>> for &Seq<A> {
     }
 }
 
-impl<A: Codec> Index<Range<usize>> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: Range<usize>) -> &Self::Output {
-        let s = range.start * A::BITS;
-        let e = range.end * A::BITS;
-        let bs = &self.bv[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeTo<usize>> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeTo<usize>) -> &Self::Output {
-        let e = range.end * A::BITS;
-        let bs = &self.bv[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeToInclusive<usize>> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
-        let e = (range.end + 1) * A::BITS;
-        let bs = &self.bv[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeInclusive<usize>> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
-        let s = range.start() * A::BITS;
-        let e = (range.end() + 1) * A::BITS;
-        let bs = &self.bv[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeFrom<usize>> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
-        let s = range.start * A::BITS;
-        let bs = &self.bv[s..] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeFull> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bv[0..self.bv.len()] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<usize> for Seq<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, i: usize) -> &Self::Output {
-        &self[i..i + 1]
-    }
-}
-
-impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: Range<usize>) -> &Self::Output {
-        let s = range.start * A::BITS;
-        let e = range.end * A::BITS;
-        let bs = &self.bs[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeTo<usize>> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeTo<usize>) -> &Self::Output {
-        let e = range.end * A::BITS;
-        let bs = &self.bs[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeToInclusive<usize>> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
-        let e = (range.end + 1) * A::BITS;
-        let bs = &self.bs[..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeInclusive<usize>> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
-        let s = range.start() * A::BITS;
-        let e = (range.end() + 1) * A::BITS;
-        let bs = &self.bs[s..e] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeFrom<usize>> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
-        let s = range.start * A::BITS;
-        let bs = &self.bs[s..] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs = &self.bs[0..self.bs.len()] as *const BitSlice<u8, Lsb0> as *const SeqSlice<A>;
-        unsafe { &*bs }
-    }
-}
-
-impl<A: Codec> Index<usize> for SeqSlice<A> {
-    type Output = SeqSlice<A>;
-
-    fn index(&self, i: usize) -> &Self::Output {
-        //A::unsafe_from_bits(self.bs[s..e].load());
-        //&self.bs[s..e].load::<u8>()
-        &self[i..i + 1]
-    }
-}
-
 impl<A: Codec> Deref for Seq<A> {
     type Target = SeqSlice<A>;
     fn deref(&self) -> &Self::Target {
@@ -486,11 +355,7 @@ impl<A: Codec> Clone for Seq<A> {
 
 impl<A: Codec> From<&Vec<A>> for Seq<A> {
     fn from(vec: &Vec<A>) -> Self {
-        let mut seq = Seq::<A>::with_capacity(vec.len());
-        for c in vec.iter() {
-            seq.push(*c);
-        }
-        seq
+        vec.iter().cloned().collect()
     }
 }
 
@@ -545,19 +410,13 @@ impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
 
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for base in self {
-            write!(f, "{}", base.to_char())?;
-        }
-        Ok(())
+        fmt::Display::fmt(&String::from(self), f)
     }
 }
 
 impl<A: Codec> fmt::Display for SeqSlice<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for base in self {
-            write!(f, "{}", base.to_char())?;
-        }
-        Ok(())
+        fmt::Display::fmt(&String::from(self), f)
     }
 }
 
@@ -566,19 +425,12 @@ impl<A: Codec> FromStr for Seq<A> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut seq = Seq::with_capacity(s.len());
-        for i in s.chars() {
-            match A::from_char(i) {
-                Ok(b) => seq.push(b),
-                Err(_) => return Err(ParseBioError {}),
-            }
-        }
+        s.chars().try_for_each(|c| {
+            A::from_char(c)
+                .map(|b| seq.push(b))
+                .map_err(|_| ParseBioError {})
+        })?;
         Ok(seq)
-    }
-}
-
-impl<A: Codec> IndexMut<usize> for Seq<A> {
-    fn index_mut(&mut self, _index: usize) -> &mut SeqSlice<A> {
-        unimplemented!()
     }
 }
 
@@ -589,9 +441,10 @@ impl<A: Codec> Extend<A> for Seq<A> {
 }
 
 impl<A: Codec> FromIterator<A> for Seq<A> {
-    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
-        let mut seq = Seq::new();
-        seq.extend(iter);
+    fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
+        let i = iter.into_iter();
+        let mut seq = Seq::with_capacity(i.size_hint().0);
+        seq.extend(i);
         seq
     }
 }
@@ -606,9 +459,13 @@ mod tests {
 
     #[test]
     fn test_revcomp() {
-        let s1 = dna!("ATGTGTGCGACTGA");
-        let s2 = dna!("TCAGTCGCACACAT");
-        assert_eq!(s1, s2.revcomp());
+        let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA");
+        let s2: Seq<Dna> = dna!("TCAGTCGCACACAT");
+        let s3: &SeqSlice<Dna> = &s1;
+        assert_eq!(s3.revcomp(), s2.revcomp().revcomp());
+        assert_eq!(s3.revcomp(), s2);
+        assert_ne!(s3.revcomp(), s2.revcomp());
+        assert_eq!(s3, s2.revcomp());
     }
 
     #[test]
