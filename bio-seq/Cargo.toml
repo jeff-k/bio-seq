@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.12.3"
+version = "0.12.4"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 description = "Bit packed and well-typed biological sequences"
@@ -16,7 +16,7 @@ readme = "../README.md"
 
 [dependencies]
 bitvec = "1"
-bio-seq-derive = { path = "../bio-seq-derive", version="2.0.1" }
+bio-seq-derive = { path = "../bio-seq-derive", version="2.0.2" }
 serde = { version = "1", optional = true, features=["derive"] }
 serde_derive = { version = "1", optional = true }
 
