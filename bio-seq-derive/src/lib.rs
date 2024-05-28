@@ -150,6 +150,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         impl Codec for #enum_ident {
             type Error = #parse_error;
             const BITS: usize = #width;
+
             fn unsafe_from_bits(b: u8) -> Self {
                 //debug_assert!(false, "Invalid encoding: {b:?}");
                 match b {
@@ -158,14 +159,21 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn try_from_bits(b: u8) -> Result<Self, Self::Error> {
+            fn try_from_bits(b: u8) -> Option<Self> {
                 match b {
                     #(#alt_discriminants),*,
-                    _ => Err(#parse_error {}),
+                    _ => None,
                 }
             }
 
-            fn from_char(c: char) -> Result<Self, Self::Error> {
+            fn unsafe_from_ascii(c: u8) -> Self {
+                match c {
+                    #(#chars_to_variant),*,
+                    _ => panic!(),
+                }
+            }
+
+            fn try_from_ascii(c: u8) -> Result<Self, Self::Error> {
                 match c {
                     #(#chars_to_variant),*,
                     _ => Err(#parse_error {}),
@@ -177,51 +185,12 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                     #(#variants_to_char),*,
                 }
             }
-        }
 
-        impl #enum_ident {
-            pub fn iter() -> impl Iterator<Item = Self> {
+            pub fn items() -> impl Iterator<Item = Self> {
                 vec![ #(Self::#variant_idents,)* ].into_iter()
             }
         }
 
-        impl From<#enum_ident> for char {
-            fn from(item: #enum_ident) -> char {
-                item.to_char()
-            }
-        }
-
-        impl core::convert::TryFrom<char> for #enum_ident {
-            type Error = #parse_error;
-            fn try_from(c: char) -> Result<Self, Self::Error> {
-                Self::from_char(c)
-            }
-        }
-
-        impl From<u8> for #enum_ident {
-            fn from(b: u8) -> Self {
-                Self::unsafe_from_bits(b)
-            }
-        }
-
-        impl From<#enum_ident> for u8 {
-            fn from(item: #enum_ident) -> Self {
-                item as u8
-            }
-        }
-
-        impl core::str::FromStr for #enum_ident {
-            type Err = #parse_error;
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                Self::try_from(s.chars().next().unwrap())
-            }
-        }
-
-        impl core::fmt::Display for #enum_ident {
-            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-                write!(f, "{:?}", self)
-            }
-        }
     };
     output.into()
 }
