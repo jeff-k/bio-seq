@@ -19,7 +19,7 @@ pub enum Dna {
 
 impl From<Dna> for u8 {
     fn from(b: Dna) -> u8 {
-        unimplemented!()
+        b as u8
     }
 }
 
