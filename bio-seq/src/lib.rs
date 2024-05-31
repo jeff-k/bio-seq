@@ -60,7 +60,7 @@ pub mod prelude {
     //    pub use crate::codec::amino::Amino;
     pub use crate::codec::dna::Dna;
     //    pub use crate::codec::iupac::Iupac;
-    pub use crate::codec::{Codec, Complement, IntoComplement};
+    pub use crate::codec::{Codec, Complement};
 
     pub use crate::kmer::Kmer;
     pub use crate::seq::{ReverseComplement, Seq, SeqSlice};
@@ -167,68 +167,68 @@ mod tests {
                 );
             }
         */
+    }
+    #[test]
+    fn iterate_kmers() {
+        let seq = dna!("ACGTAAGGGG");
+        for (kmer, answer) in seq
+            .kmers::<4>()
+            .zip(["ACGT", "CGTA", "GTAA", "TAAG", "AAGG", "AGGG", "GGGG"])
+        {
+            assert_eq!(format!("{}", kmer), answer);
+        }
+    }
+
+    #[test]
+    fn iterate_kmer8() {
+        let seq = dna!("AAAACCCCGGGG");
+        for (kmer, answer) in seq
+            .kmers::<8>()
+            .zip(["AAAACCCC", "AAACCCCG", "AACCCCGG", "ACCCCGGG", "CCCCGGGG"])
+        {
+            assert_eq!(format!("{}", kmer), answer);
+        }
+    }
+
+    #[test]
+    fn iterate_kmer4() {
+        let seq = dna!("AAAACCCCGGGGTTTT");
+        for (kmer, answer) in seq.kmers::<4>().zip([
+            "AAAA", "AAAC", "AACC", "ACCC", "CCCC", "CCCG", "CCGG", "CGGG", "GGGG", "GGGT", "GGTT",
+            "GTTT", "TTTT",
+        ]) {
+            assert_eq!(format!("{}", kmer), answer);
+        }
+    }
+
+    /*
         #[test]
-        fn iterate_kmers() {
-            let seq = dna!("ACGTAAGGGG");
-            for (kmer, answer) in seq
-                .kmers::<4>()
-                .zip(["ACGT", "CGTA", "GTAA", "TAAG", "AAGG", "AGGG", "GGGG"])
-            {
-                assert_eq!(format!("{}", kmer), answer);
-            }
+        fn iupac_bitwise_ops() {
+            assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+            assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
         }
 
         #[test]
-        fn iterate_kmer8() {
-            let seq = dna!("AAAACCCCGGGG");
-            for (kmer, answer) in seq
-                .kmers::<8>()
-                .zip(["AAAACCCC", "AAACCCCG", "AACCCCGG", "ACCCCGGG", "CCCCGGGG"])
-            {
-                assert_eq!(format!("{}", kmer), answer);
-            }
+        fn nth_chars() {
+            assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::A);
+            assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::C);
+            assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(15), Iupac::X);
+            assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::T));
+            assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::G));
+
+            assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
+            assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
         }
+    */
 
-        #[test]
-        fn iterate_kmer4() {
-            let seq = dna!("AAAACCCCGGGGTTTT");
-            for (kmer, answer) in seq.kmers::<4>().zip([
-                "AAAA", "AAAC", "AACC", "ACCC", "CCCC", "CCCG", "CCGG", "CGGG", "GGGG", "GGGT",
-                "GGTT", "GTTT", "TTTT",
-            ]) {
-                assert_eq!(format!("{}", kmer), answer);
-            }
-        }
-
-        /*
-            #[test]
-            fn iupac_bitwise_ops() {
-                assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-                assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
-            }
-
-            #[test]
-            fn nth_chars() {
-                assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::A);
-                assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::C);
-                assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(15), Iupac::X);
-                assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::T));
-                assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::G));
-
-                assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
-                assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
-            }
-        */
-
-        #[test]
-        fn colexicographic_order() {
-            for (i, e) in ["AA", "CA", "GA", "TA", "AC", "CC", "GC", "TC"]
-                .iter()
-                .enumerate()
-            {
-                assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), format!("{}", e));
-                assert_eq!(Kmer::<Dna, 2>::from(i), *e);
-            }
+    #[test]
+    fn colexicographic_order() {
+        for (i, e) in ["AA", "CA", "GA", "TA", "AC", "CC", "GC", "TC"]
+            .iter()
+            .enumerate()
+        {
+            assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), format!("{}", e));
+            assert_eq!(Kmer::<Dna, 2>::from(i), *e);
         }
     }
 }

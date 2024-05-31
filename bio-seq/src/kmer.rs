@@ -20,7 +20,7 @@
 //!     }
 //! ```
 use crate::codec::Codec;
-use crate::prelude::{Complement, IntoComplement, ParseBioError, ReverseComplement};
+use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqSlice};
 use crate::{Ba, Bv};
 use bitvec::field::BitField;
@@ -230,7 +230,7 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
 
     fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
         if seq.len() != K {
-            Err(ParseBioError {})
+            Err(ParseBioError::MismatchedLength(K, seq.len()))
         } else {
             Ok(Kmer::<A, K>::from(&seq[0..K]))
         }
@@ -274,7 +274,7 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != K {
-            return Err(ParseBioError {});
+            return Err(ParseBioError::MismatchedLength(K, s.len()));
         }
         let seq: Seq<A> = Seq::from_str(s)?;
         Kmer::<A, K>::try_from(seq)
@@ -289,7 +289,7 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
     }
 }
 
-impl<A: Codec + IntoComplement, const K: usize> ReverseComplement for Kmer<A, K> {
+impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
     type Output = Self;
 
     fn revcomp(&self) -> Self {

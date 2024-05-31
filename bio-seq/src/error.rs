@@ -1,11 +1,21 @@
 use core::fmt;
 
-#[derive(Debug)]
-pub struct ParseBioError {}
+#[derive(Debug, PartialEq)]
+pub enum ParseBioError {
+    UnrecognisedBase(u8),
+    MismatchedLength(usize, usize),
+}
 
 impl fmt::Display for ParseBioError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Error parsing sequence")
+        match self {
+            ParseBioError::UnrecognisedBase(byte) => {
+                write!(f, "Unrecognised character: {byte}")
+            }
+            ParseBioError::MismatchedLength(got, expected) => {
+                write!(f, "Expected length {expected}, got {got}")
+            }
+        }
     }
 }
 

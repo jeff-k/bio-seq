@@ -189,7 +189,7 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::{Dna, Dna::*};
-    use crate::codec::Complement;
+    //    use crate::codec::Complement;
     use crate::seq::{FromStr, Seq};
 
     #[test]
