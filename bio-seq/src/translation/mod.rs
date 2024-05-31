@@ -6,27 +6,55 @@
 //!
 //! ## Errors
 //!
-use core::fmt::Display;
+use core::fmt;
 use std::collections::HashMap;
 
 use crate::codec::Codec;
-use crate::error::TranslationError;
-use crate::prelude::{Seq, SeqSlice};
+use crate::prelude::{Amino, Dna, Seq, SeqSlice};
 
 mod standard;
 
 pub use crate::translation::standard::STANDARD;
 
+/// Error conditions for codon/amino acid translation
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum TranslationError<A: Codec = Dna, B: Codec + fmt::Display + fmt::Debug = Amino> {
+    AmbiguousCodon(B),
+    AmbiguousTranslation(Seq<A>),
+    InvalidCodon(Seq<A>),
+    InvalidAmino(B),
+}
+
+impl<A: Codec, B: Codec + fmt::Display> fmt::Display for TranslationError<A, B> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TranslationError::AmbiguousCodon(amino) => {
+                write!(f, "Multiple codon sequences: {}", amino)
+            }
+            TranslationError::AmbiguousTranslation(codon) => {
+                write!(f, "Ambiguous translations for codon: {}", codon)
+            }
+            TranslationError::InvalidCodon(codon) => write!(f, "Invalid codon sequence: {}", codon),
+            TranslationError::InvalidAmino(amino) => {
+                write!(f, "Invalid amino acid character: {:?}", amino)
+            }
+        }
+    }
+}
+
+// #![feature(error_in_core)
+impl<A: Codec, B: Codec + fmt::Display + fmt::Debug> std::error::Error for TranslationError<A, B> {}
+
 /// A codon translation table where all codons map to amino acids
-pub trait TranslationTable<A: Codec, B: Codec> {
+pub trait TranslationTable<A: Codec, B: Codec + fmt::Display> {
     fn to_amino(&self, codon: &SeqSlice<A>) -> B;
-    fn to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError>;
+    fn to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>>;
 }
 
 /// A partial translation table where not all triples of characters map to amino acids
-pub trait PartialTranslationTable<A: Codec, B: Codec> {
-    fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError>;
-    fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError>;
+pub trait PartialTranslationTable<A: Codec, B: Codec + fmt::Display> {
+    fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError<A, B>>;
+    fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>>;
 }
 
 /// A customisable translation table
@@ -36,7 +64,7 @@ pub struct CodonTable<A: Codec, B: Codec> {
     inverse_table: HashMap<B, Option<Seq<A>>>,
 }
 
-impl<A: Codec, B: Codec + Display> CodonTable<A, B> {
+impl<A: Codec, B: Codec + fmt::Display> CodonTable<A, B> {
     pub fn from_map<T>(table: T) -> Self
     where
         T: Into<HashMap<Seq<A>, B>>,
@@ -57,19 +85,22 @@ impl<A: Codec, B: Codec + Display> CodonTable<A, B> {
     }
 }
 
-impl<A: Codec, B: Codec + Display> PartialTranslationTable<A, B> for CodonTable<A, B> {
-    fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError> {
+impl<A: Codec, B: Codec + fmt::Display> PartialTranslationTable<A, B> for CodonTable<A, B> {
+    fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError<A, B>> {
         match self.table.get(&Seq::from(codon)) {
             Some(amino) => Ok(*amino),
-            None => Err(TranslationError::InvalidCodon),
+            None => Err(TranslationError::InvalidCodon(Seq::from(codon))),
         }
     }
 
-    fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError> {
-        match self.inverse_table.get(&amino) {
-            Some(Some(codon)) => Ok(codon.clone()),
-            Some(None) => Err(TranslationError::AmbiguousCodon),
-            None => Err(TranslationError::InvalidCodon),
+    fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>> {
+        if let Some(codon) = self.inverse_table.get(&amino) {
+            match codon {
+                Some(codon) => Ok(codon.clone()),
+                None => Err(TranslationError::AmbiguousCodon(amino)),
+            }
+        } else {
+            Err(TranslationError::InvalidAmino(amino))
         }
     }
 }
@@ -105,11 +136,11 @@ mod tests {
         assert_eq!(table.try_to_codon(Amino::C), Ok(dna!("CCC")));
         assert_eq!(
             table.try_to_codon(Amino::A),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::A))
         );
         assert_eq!(
             table.try_to_codon(Amino::X),
-            Err(TranslationError::InvalidCodon)
+            Err(TranslationError::InvalidAmino(Amino::X))
         );
     }
 

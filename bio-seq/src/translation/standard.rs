@@ -72,15 +72,18 @@ impl TranslationTable<Dna, Amino> for Standard {
     }
 
     /// There are no unambiguous translations from amino acid to DNA codon except M and W
-    fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
-        Err(TranslationError::AmbiguousCodon)
+    fn to_codon(&self, amino: Amino) -> Result<Seq<Dna>, TranslationError<Dna, Amino>> {
+        Err(TranslationError::AmbiguousCodon(amino))
     }
 }
 
 impl PartialTranslationTable<Iupac, Amino> for Standard {
-    fn try_to_amino(&self, codon: &SeqSlice<Iupac>) -> Result<Amino, TranslationError> {
+    fn try_to_amino(
+        &self,
+        codon: &SeqSlice<Iupac>,
+    ) -> Result<Amino, TranslationError<Iupac, Amino>> {
         if codon.len() != 3 {
-            return Err(TranslationError::InvalidCodon);
+            return Err(TranslationError::InvalidCodon(codon.into()));
         }
         for (iupac_set, amino) in IUPAC_TO_AMINO.get_or_init(initialise_iupac_to_amino) {
             if iupac_set.contains(codon) {
@@ -88,16 +91,16 @@ impl PartialTranslationTable<Iupac, Amino> for Standard {
             }
         }
 
-        Err(TranslationError::AmbiguousCodon)
+        Err(TranslationError::AmbiguousTranslation(codon.into()))
     }
 
-    fn try_to_codon(&self, amino: Amino) -> Result<Seq<Iupac>, TranslationError> {
+    fn try_to_codon(&self, amino: Amino) -> Result<Seq<Iupac>, TranslationError<Iupac, Amino>> {
         let amino_to_iupac = AMINO_TO_IUPAC.get_or_init(initialise_amino_to_iupac);
 
         match amino_to_iupac.get(&amino) {
-            Some(None) => Err(TranslationError::AmbiguousCodon),
+            Some(None) => Err(TranslationError::AmbiguousCodon(amino)),
             Some(Some(codon)) => Ok(codon.clone()),
-            None => Err(TranslationError::AmbiguousCodon),
+            None => Err(TranslationError::AmbiguousCodon(amino)),
         }
     }
 }
@@ -171,7 +174,7 @@ mod tests {
         for amino in &seq {
             match STANDARD.try_to_codon(amino) {
                 Ok(codon) => iupacs.extend(&codon),
-                Err(TranslationError::AmbiguousCodon) => ambs.push(amino),
+                Err(TranslationError::AmbiguousCodon(amino)) => ambs.push(amino),
                 _ => panic!(),
             }
         }
@@ -196,16 +199,20 @@ mod tests {
     fn iupac_to_amino_errors() {
         assert_eq!(
             STANDARD.try_to_amino(&iupac!("TN")),
-            Err(TranslationError::InvalidCodon)
+            Err(TranslationError::InvalidCodon(
+                Seq::<Iupac>::try_from("TN").unwrap()
+            ))
         );
 
         assert_eq!(
             STANDARD.try_to_amino(&iupac!("NYTN")),
-            Err(TranslationError::InvalidCodon)
+            Err(TranslationError::InvalidCodon("NYTN".try_into().unwrap()))
         );
         assert_eq!(
             STANDARD.try_to_amino(&iupac!("YTN")),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousTranslation(
+                "YTN".try_into().unwrap()
+            ))
         );
     }
 
@@ -213,36 +220,36 @@ mod tests {
     fn ambiguous_amino_to_iupac() {
         assert_eq!(
             STANDARD.try_to_codon(Amino::L),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::L))
         );
         assert_eq!(
             STANDARD.try_to_codon(Amino::S),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::S))
         );
         assert_eq!(
             STANDARD.try_to_codon(Amino::R),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::R))
         );
         assert_eq!(
             STANDARD.try_to_codon(Amino::X),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::X))
         );
 
         assert_ne!(
             STANDARD.try_to_codon(Amino::A),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::A))
         );
         assert_ne!(
             STANDARD.try_to_codon(Amino::N),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::N))
         );
         assert_ne!(
             STANDARD.try_to_codon(Amino::W),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::W))
         );
         assert_ne!(
             STANDARD.try_to_codon(Amino::M),
-            Err(TranslationError::AmbiguousCodon)
+            Err(TranslationError::AmbiguousCodon(Amino::M))
         );
     }
 }
