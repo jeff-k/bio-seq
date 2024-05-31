@@ -80,7 +80,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 }
             };
 
-            alt_discriminants.push(quote! { #value => Ok(Self::#ident) });
+            alt_discriminants.push(quote! { #value => Some(Self::#ident) });
             unsafe_alts.push(quote! { #value => Self::#ident });
 
             max_variant = max_variant.max(value);
@@ -90,7 +90,9 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 .into();
         }
 
-        let mut char_repr = ident.to_string().chars().next().unwrap();
+        //let mut char_repr = ident.to_string().chars().next().unwrap();
+
+        let mut char_repr = ident.to_string().bytes().next().unwrap();
 
         for attr in &variant.attrs {
             if attr.path().is_ident("display") {
@@ -98,7 +100,7 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                     Ok(attr) => attr,
                     Err(err) => return err.to_compile_error().into(),
                 };
-                char_repr = alt_attr.value();
+                char_repr = alt_attr.value() as u8;
             } else if attr.path().is_ident("alt") {
                 let discs: Punctuated<syn::ExprLit, Token![,]> =
                     match attr.parse_args_with(Punctuated::parse_terminated) {
@@ -107,24 +109,24 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                     };
 
                 for d in discs.into_iter() {
-                    alt_discriminants.push(quote! { #d => Ok(Self::#ident) });
+                    alt_discriminants.push(quote! { #d => Some(Self::#ident) });
                     unsafe_alts.push(quote! { #d => Self::#ident });
                 }
             };
         }
 
         variants_to_char.push(quote! { Self::#ident => #char_repr });
-        chars_to_variant.push(quote! { #char_repr => Ok(Self::#ident) });
+        chars_to_variant.push(quote! { #char_repr => Some(Self::#ident) });
     }
 
     // default width is the log2 of the max_variant
-    let mut width = f32::ceil(f32::log2(max_variant as f32)) as usize;
+    let mut width = f32::ceil(f32::log2(max_variant as f32)) as u8;
 
     for attr in &enum_ast.attrs {
         if attr.path().is_ident("bits") {
             width = match attr.parse_args::<syn::LitInt>() {
                 Ok(w) => {
-                    let chosen_width = w.base10_parse::<usize>().unwrap();
+                    let chosen_width = w.base10_parse::<u8>().unwrap();
                     // test whether the specified width is too small
                     if chosen_width < width {
                         return syn::Error::new_spanned(
@@ -143,19 +145,18 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         };
     }
 
-    let parse_error = quote! { crate::prelude::ParseBioError };
+    //let parse_error = quote! { crate::prelude::ParseBioError };
 
     // Generate the implementation
     let output = quote! {
         impl Codec for #enum_ident {
-            type Error = #parse_error;
-            const BITS: usize = #width;
+            const BITS: u8 = #width;
 
             fn unsafe_from_bits(b: u8) -> Self {
                 //debug_assert!(false, "Invalid encoding: {b:?}");
                 match b {
                     #(#unsafe_alts),*,
-                    _ => unreachable!(),
+                    x => panic!("Unrecognised bit pattern: {}", x),
                 }
             }
 
@@ -169,28 +170,35 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
             fn unsafe_from_ascii(c: u8) -> Self {
                 match c {
                     #(#chars_to_variant),*,
-                    _ => panic!(),
-                }
+                    x => {
+                        if x.is_ascii_alphanumeric() {
+                            panic!("Unrecognised character: {} ({:#04X?})", x as char, x);
+                        } else {
+                            panic!("Unrecognised character: {:#04X?}", x);
+                        }
+                    },
+                }.unwrap()
             }
 
-            fn try_from_ascii(c: u8) -> Result<Self, Self::Error> {
+            fn try_from_ascii(c: u8) -> Option<Self> {
                 match c {
                     #(#chars_to_variant),*,
-                    _ => Err(#parse_error {}),
+                    _ => None,
                 }
             }
 
             fn to_char(self) -> char {
                 match self {
                     #(#variants_to_char),*,
-                }
+                }.into()
             }
 
-            pub fn items() -> impl Iterator<Item = Self> {
+            fn items() -> impl Iterator<Item = Self> {
                 vec![ #(Self::#variant_idents,)* ].into_iter()
             }
         }
 
     };
+    //println!("{}", output);
     output.into()
 }

@@ -6,9 +6,9 @@
 //! The `BITS` attribute stores the number of bits used by the representation.
 //! ```
 //! use bio_seq::prelude::{Dna, Codec};
-//! //use bio_seq::codec::text;
+//! use bio_seq::codec::text;
 //! assert_eq!(Dna::BITS, 2);
-//! //assert_eq!(text::Dna::BITS, 8);
+//! assert_eq!(text::Dna::BITS, 8);
 //! ```
 //!
 //! ## Deriving custom Codecs
@@ -31,29 +31,95 @@
 //!
 //! Custom encodings can be defined on enums by implementing the `Codec` trait.
 //!
-//! ```ignore
+//! ```
 //! use bio_seq::prelude;
 //! use bio_seq::prelude::Codec;
 //!
-//! #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
+//! #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 //! pub enum Dna {
 //!     A = 0b00,
 //!     C = 0b01,
 //!     G = 0b10,
 //!     T = 0b11,
 //! }
+//!
+//! impl From<Dna> for u8 {
+//!    fn from(base: Dna) -> u8 {
+//!         match base {
+//!             Dna::A => 0b00,
+//!             Dna::C => 0b01,
+//!             Dna::G => 0b10,
+//!             Dna::T => 0b11,
+//!         }
+//!    }
+//! }
+//!
+//! impl Codec for Dna {
+//!     const BITS: u8 = 2;
+//!
+//!     fn unsafe_from_bits(bits: u8) -> Self {
+//!         if let Some(base) = Self::try_from_bits(bits) {
+//!             base
+//!         } else {
+//!             panic!("Unrecognised bit pattern!")
+//!         }
+//!     }
+//!
+//!     fn try_from_bits(bits: u8) -> Option<Self> {
+//!         match bits {
+//!             0b00 => Some(Dna::A),
+//!             0b01 => Some(Dna::C),
+//!             0b10 => Some(Dna::G),
+//!             0b11 => Some(Dna::T),
+//!             _ => None,
+//!         }
+//!     }
+//!
+//!     fn unsafe_from_ascii(chr: u8) -> Self {
+//!         if let Some(base) = Self::try_from_ascii(chr) {
+//!             base
+//!         } else {
+//!             panic!("Unrecognised bit pattern!")
+//!         }
+//!     }
+//!
+//!     fn try_from_ascii(chr: u8) -> Option<Self> {
+//!         match chr {
+//!             b'A' => Some(Dna::A),
+//!             b'C' => Some(Dna::C),
+//!             b'G' => Some(Dna::G),
+//!             b'T' => Some(Dna::T),
+//!             _ => None,
+//!         }
+//!     }
+//!
+//!     fn to_char(self) -> char {
+//!         match self {
+//!             Dna::A => 'A',
+//!             Dna::C => 'C',
+//!             Dna::G => 'G',
+//!             Dna::T => 'T',
+//!         }
+//!     }
+//!
+//!     fn items() -> impl Iterator<Item = Self> {
+//!         vec![Dna::A, Dna::C, Dna::G, Dna::T].into_iter()
+//!     }
+//! }
+//!
 //! ```
 
+use core::fmt;
 use core::hash::Hash;
 
-//#[macro_use]
-//pub mod amino;
+#[macro_use]
+pub mod amino;
 #[macro_use]
 pub mod dna;
-//#[macro_use]
-//pub mod iupac;
+#[macro_use]
+pub mod iupac;
 
-//pub mod text;
+pub mod text;
 
 pub use bio_seq_derive::Codec;
 
@@ -62,7 +128,7 @@ pub use bio_seq_derive::Codec;
 /// the `Codec` trait.  
 ///
 /// The intended representation is an `Enum`, transparently represented as a `u8`.
-pub trait Codec: Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
+pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
     /// The number of bits used to encode the characters. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
     const BITS: u8;
 
@@ -92,20 +158,19 @@ pub trait Codec: Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
 pub trait Complement {
     /// ```
     /// use bio_seq::prelude::{Dna, Complement};
-    /// assert_eq!(Dna::A.to_comp(), Dna::T);
+    /// assert_eq!(Dna::A.comp(), Dna::T);
     /// ````
-    fn to_comp(&self) -> Self;
+    fn comp(&self) -> Self;
 
     /// `Complement` a value in place
-    fn comp(&mut self)
+    fn comp_assign(&mut self)
     where
         Self: Sized,
     {
-        *self = self.to_comp();
+        *self = self.comp();
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::dna::Dna;
@@ -124,4 +189,3 @@ mod tests {
         assert_ne!(Iupac::from(Dna::G), Iupac::T);
     }
 }
-*/

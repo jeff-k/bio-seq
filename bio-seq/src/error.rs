@@ -10,8 +10,17 @@ impl fmt::Display for ParseBioError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseBioError::UnrecognisedBase(byte) => {
-                write!(f, "Unrecognised character: {byte}")
+                if byte.is_ascii_alphanumeric() {
+                    write!(
+                        f,
+                        "Unrecognised character: '{}' ({:#04X?})",
+                        *byte as char, byte
+                    )
+                } else {
+                    write!(f, "Unrecognised character: {:#04X?}", byte)
+                }
             }
+
             ParseBioError::MismatchedLength(got, expected) => {
                 write!(f, "Expected length {expected}, got {got}")
             }
@@ -21,22 +30,3 @@ impl fmt::Display for ParseBioError {
 
 // #![feature(error_in_core)
 impl std::error::Error for ParseBioError {}
-
-/// Error conditions for codon/amino acid translation
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum TranslationError {
-    AmbiguousCodon,
-    InvalidCodon,
-}
-
-impl fmt::Display for TranslationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            TranslationError::AmbiguousCodon => write!(f, ""),
-            TranslationError::InvalidCodon => write!(f, ""),
-        }
-    }
-}
-
-// #![feature(error_in_core)
-impl std::error::Error for TranslationError {}
