@@ -29,7 +29,7 @@
 pub mod index;
 pub mod iterators;
 
-use crate::codec::{Codec, Complement, IntoComplement};
+use crate::codec::{Codec, Complement};
 //use crate::codec::{text, Codec, Complement};
 use crate::error::ParseBioError;
 
@@ -107,13 +107,13 @@ pub trait ReverseComplement {
     fn revcomp(&self) -> Self::Output;
 }
 
-impl<A: Codec + IntoComplement> ReverseComplement for SeqSlice<A> {
+impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
     type Output = Seq<A>;
 
     /// The inefficient default complementation of complement
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
-        seq.extend(self.rev().map(|base| base.into_comp()));
+        seq.extend(self.rev().map(|base| base.to_comp()));
         seq
     }
 }
@@ -446,16 +446,6 @@ impl<A: Codec> From<&Vec<A>> for Seq<A> {
     }
 }
 
-/*
-impl<A: Codec> From<&Vec<u8>> for Seq<A> {
-    fn from(vec: &Vec<u8>) -> Self {
-        let mut seq = Seq::<A>::with_capacity(vec.len());
-        vec.into_iter().map(|c| seq.push(A::unsafe_from_bits(*c)));
-        seq
-    }
-}
-*/
-
 impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
     fn from(slice: &SeqSlice<A>) -> Self {
         Seq {
@@ -469,14 +459,7 @@ impl<A: Codec> TryFrom<&str> for Seq<A> {
     type Error = ParseBioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let mut seq = Seq::<A>::with_capacity(s.len());
-        seq.extend(
-            s.bytes()
-                .map(A::try_from_ascii)
-                .collect::<Result<Vec<A>, _>>()
-                .map_err(|_| ParseBioError {})?,
-        );
-        Ok(seq)
+        Seq::<A>::try_from(s.as_bytes())
     }
 }
 
@@ -485,12 +468,15 @@ impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
 
     fn try_from(s: &[u8]) -> Result<Self, Self::Error> {
         let mut seq = Seq::<A>::with_capacity(s.len());
-        seq.extend(
-            s.iter()
-                .map(|&b| A::try_from_ascii(b))
-                .collect::<Result<Vec<A>, _>>()
-                .map_err(|_| ParseBioError {})?,
-        );
+
+        for byte in s {
+            if let Some(b) = A::try_from_ascii(*byte) {
+                seq.push(b);
+            } else {
+                return Err(ParseBioError::UnrecognisedBase(*byte));
+            }
+        }
+
         Ok(seq)
     }
 }
@@ -511,13 +497,7 @@ impl<A: Codec> FromStr for Seq<A> {
     type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut seq = Seq::with_capacity(s.len());
-        s.bytes().try_for_each(|c| {
-            A::try_from_ascii(c)
-                .map(|b| seq.push(b))
-                .map_err(|_| ParseBioError {})
-        })?;
-        Ok(seq)
+        Seq::<A>::try_from(s)
     }
 }
 
@@ -916,6 +896,17 @@ mod tests {
         assert_ne!(seq1_short, full1_slice);
 
         assert_ne!(full1, short1_slice);
+    }
+
+    #[test]
+    fn test_fromstr() {
+        let seq: Result<Seq<Dna>, ParseBioError> =
+            "ACGATGAGTAGTCGCCATCGTATCTTTGACTGCCGATGCTA".parse();
+        assert!(seq.is_ok());
+
+        let seq: Result<Seq<Dna>, ParseBioError> =
+            "ACGATGAGTAGBCGCCATCGTATCTTTGACTGCCGATGCTA".parse();
+        assert_eq!(seq, Err(ParseBioError::UnrecognisedBase(b'B')));
     }
     /*
         #[test]

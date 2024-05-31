@@ -63,9 +63,6 @@ pub use bio_seq_derive::Codec;
 ///
 /// The intended representation is an `Enum`, transparently represented as a `u8`.
 pub trait Codec: Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
-    /// Associated parsing error for unknown characters
-    type Error;
-
     /// The number of bits used to encode the characters. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
     const BITS: u8;
 
@@ -82,7 +79,7 @@ pub trait Codec: Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
     fn unsafe_from_ascii(c: u8) -> Self;
 
     /// Fallibly encode an ASCII byte as a codec enum item
-    fn try_from_ascii(c: u8) -> Result<Self, Self::Error>;
+    fn try_from_ascii(c: u8) -> Option<Self>;
 
     /// Decode enum item as a UTF-8 character
     fn to_char(self) -> char;
@@ -91,19 +88,21 @@ pub trait Codec: Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
     fn items() -> impl Iterator<Item = Self>;
 }
 
-/// Nucleotide alphabets that can be complemented implement `FromComplement`
-///
-/// ```
-/// use bio_seq::prelude::{Dna, Complement};
-/// assert_eq!(Dna::A.from_comp(), Dna::T);
-/// ````
-pub trait IntoComplement {
-    fn into_comp(&self) -> Self;
-}
-
-/// `Complement` a value in place
+/// Nucleotides and nucleotide sequences can be complemented
 pub trait Complement {
-    fn comp(&mut self);
+    /// ```
+    /// use bio_seq::prelude::{Dna, Complement};
+    /// assert_eq!(Dna::A.to_comp(), Dna::T);
+    /// ````
+    fn to_comp(&self) -> Self;
+
+    /// `Complement` a value in place
+    fn comp(&mut self)
+    where
+        Self: Sized,
+    {
+        *self = self.to_comp();
+    }
 }
 
 /*
