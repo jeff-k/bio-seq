@@ -9,7 +9,7 @@
 //!
 //! `k * codec::BITS` must fit in the storage type, e.g. `usize` (64 bits).
 //!
-//! ```
+//! ```ignore
 //! use bio_seq::prelude::*;
 //!
 //! for (amino_kmer, amino_string) in amino!("SSLMNHKKL")

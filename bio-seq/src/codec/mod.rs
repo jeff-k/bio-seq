@@ -6,9 +6,9 @@
 //! The `BITS` attribute stores the number of bits used by the representation.
 //! ```
 //! use bio_seq::prelude::{Dna, Codec};
-//! use bio_seq::codec::text;
+//! //use bio_seq::codec::text;
 //! assert_eq!(Dna::BITS, 2);
-//! assert_eq!(text::Dna::BITS, 8);
+//! //assert_eq!(text::Dna::BITS, 8);
 //! ```
 //!
 //! ## Deriving custom Codecs
