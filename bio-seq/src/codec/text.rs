@@ -1,4 +1,4 @@
-//! 8-bit UTF-8/ASCII representation of nucleotides
+//! 8-bit ASCII representation of nucleotides
 //!
 //! This encoding is a literal interpretation of bytes of text as DNA
 use crate::codec::{dna, Codec, Complement};
@@ -9,27 +9,34 @@ use crate::error::ParseBioError;
 pub struct Dna(u8);
 
 impl Codec for Dna {
-    type Error = ParseBioError;
-
-    const BITS: usize = 8;
+    const BITS: u8 = 8;
 
     fn unsafe_from_bits(b: u8) -> Self {
         Self(b)
     }
 
-    fn try_from_bits(b: u8) -> Result<Self, Self::Error> {
-        Ok(Self(b))
+    fn try_from_bits(b: u8) -> Option<Self> {
+        Some(Self(b))
     }
 
-    fn from_char(c: char) -> Result<Self, Self::Error> {
-        match u8::try_from(c) {
-            Ok(b) => Ok(Self(b)),
-            _ => Err(Self::Error {}),
+    fn unsafe_from_ascii(c: u8) -> Self {
+        Self(c)
+    }
+
+    fn try_from_ascii(c: u8) -> Option<Self> {
+        //        if c.is_ascii_alphanumeric() {
+        match c {
+            b'A' | b'C' | b'G' | b'T' | b'N' => Some(Self(c)),
+            _ => None,
         }
     }
 
     fn to_char(self) -> char {
         self.0.into()
+    }
+
+    fn items() -> impl Iterator<Item = Self> {
+        vec![Dna(b'A'), Dna(b'C'), Dna(b'G'), Dna(b'T'), Dna(b'N')].into_iter()
     }
 }
 
@@ -40,8 +47,15 @@ impl Codec for Dna {
 //}
 
 impl Complement for Dna {
-    fn comp(self) -> Self {
-        unimplemented!()
+    fn comp(&self) -> Self {
+        match self {
+            Self(b'A') => Self(b'T'),
+            Self(b'C') => Self(b'G'),
+            Self(b'G') => Self(b'C'),
+            Self(b'T') => Self(b'A'),
+            Self(b'N') => Self(b'N'),
+            _ => Self(b'N'),
+        }
     }
 }
 
@@ -71,11 +85,14 @@ impl TryFrom<Dna> for dna::Dna {
             b'C' => Ok(dna::Dna::C),
             b'G' => Ok(dna::Dna::G),
             b'T' => Ok(dna::Dna::T),
+            // Todo: decide whether to support lower cases
+            /*
             b'a' => Ok(dna::Dna::A),
             b'c' => Ok(dna::Dna::C),
             b'g' => Ok(dna::Dna::G),
             b't' => Ok(dna::Dna::T),
-            _ => Err(ParseBioError {}),
+            */
+            _ => Err(ParseBioError::UnrecognisedBase(base.0)),
         }
     }
 }

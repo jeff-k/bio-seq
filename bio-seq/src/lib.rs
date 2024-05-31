@@ -54,20 +54,19 @@ pub mod codec;
 pub mod error;
 pub mod kmer;
 pub mod seq;
-//pub mod translation;
+pub mod translation;
 
 pub mod prelude {
-    //    pub use crate::codec::amino::Amino;
+    pub use crate::codec::amino::Amino;
     pub use crate::codec::dna::Dna;
-    //    pub use crate::codec::iupac::Iupac;
+    pub use crate::codec::iupac::Iupac;
     pub use crate::codec::{Codec, Complement};
 
     pub use crate::kmer::Kmer;
     pub use crate::seq::{ReverseComplement, Seq, SeqSlice};
-    //    pub use crate::{amino, dna, iupac, kmer};
-    pub use crate::{dna, kmer};
+    pub use crate::{amino, dna, iupac, kmer};
 
-    //    pub use crate::translation;
+    pub use crate::translation;
     pub use core::str::FromStr;
 
     pub use crate::error::ParseBioError;

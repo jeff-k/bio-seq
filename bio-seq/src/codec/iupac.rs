@@ -55,6 +55,37 @@ use crate::seq::{Seq, SeqSlice};
 
 use core::ops::{BitAnd, BitOr};
 
+/*
+const LTABLE: [u8; 256] = {
+    let mut table = [0; 256];
+
+    table[b'A' as usize] = 0b1000;
+    table[b'C' as usize] = 0b0100;
+    table[b'G' as usize] = 0b0010;
+    table[b'T' as usize] = 0b0001;
+    table[b'R' as usize] = 0b1010;
+    table[b'Y' as usize] = 0b0101;
+    table[b'S' as usize] = 0b0110;
+    table[b'W' as usize] = 0b1001;
+    table[b'K' as usize] = 0b0011;
+    table[b'M' as usize] = 0b1100;
+    table[b'B' as usize] = 0b0111;
+    table[b'D' as usize] = 0b1011;
+    table[b'H' as usize] = 0b1101;
+    table[b'V' as usize] = 0b1110;
+    table[b'N' as usize] = 0b1111;
+    table[b'-' as usize] = 0b0000;
+
+    table
+};
+*/
+
+impl From<Iupac> for u8 {
+    fn from(b: Iupac) -> u8 {
+        b as u8
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[bits(4)]
 #[repr(u8)]

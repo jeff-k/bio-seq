@@ -51,6 +51,18 @@ pub enum Amino {
     X = 0b000011, // TAA (stop)
 }
 
+impl From<Amino> for u8 {
+    fn from(b: Amino) -> u8 {
+        b as u8
+    }
+}
+
+impl core::fmt::Display for Amino {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_char())
+    }
+}
+
 #[macro_export]
 macro_rules! amino {
     ($seq:expr) => {

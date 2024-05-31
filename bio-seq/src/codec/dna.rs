@@ -69,7 +69,7 @@ impl Codec for Dna {
 impl Complement for Dna {
     /// This 2-bit representation of nucleotides lends itself to a very fast
     /// complement implementation with bitwise xor
-    fn to_comp(&self) -> Self {
+    fn comp(&self) -> Self {
         // flip the bits
         let b = *self as u8 ^ 0b11;
         Dna::unsafe_from_bits(b)

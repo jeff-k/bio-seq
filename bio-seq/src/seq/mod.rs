@@ -29,8 +29,8 @@
 pub mod index;
 pub mod iterators;
 
-use crate::codec::{Codec, Complement};
-//use crate::codec::{text, Codec, Complement};
+//use crate::codec::{Codec, Complement};
+use crate::codec::{text, Codec, Complement};
 use crate::error::ParseBioError;
 
 use crate::{Bs, Bv, Order};
@@ -61,17 +61,6 @@ pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
     bs: Bs,
 }
-
-/*
-impl From<Vec<u8>> for Seq<text::Dna> {
-    fn from(vec: Vec<u8>) -> Self {
-        Seq {
-            _p: PhantomData,
-            bv: Bv::from_vec(vec),
-        }
-    }
-}
-    */
 
 impl<A: Codec> From<Seq<A>> for usize {
     fn from(slice: Seq<A>) -> usize {
@@ -113,7 +102,7 @@ impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
     /// The inefficient default complementation of complement
     fn revcomp(&self) -> Seq<A> {
         let mut seq = Seq::<A>::with_capacity(self.len());
-        seq.extend(self.rev().map(|base| base.to_comp()));
+        seq.extend(self.rev().map(|base| base.comp()));
         seq
     }
 }
@@ -513,6 +502,15 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
         let mut seq = Seq::with_capacity(i.size_hint().0);
         seq.extend(i);
         seq
+    }
+}
+
+impl From<Vec<u8>> for Seq<text::Dna> {
+    fn from(vec: Vec<u8>) -> Self {
+        Seq {
+            _p: PhantomData,
+            bv: Bv::from_vec(vec),
+        }
     }
 }
 
