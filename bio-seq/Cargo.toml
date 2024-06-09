@@ -23,6 +23,7 @@ serde_derive = { version = "1", optional = true }
 
 [features]
 serde = ["dep:serde",  "dep:serde_derive"]
+translation = []
 
 #[[example]]
 #name = "aminokmers"
