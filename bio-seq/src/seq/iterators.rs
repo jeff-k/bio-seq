@@ -189,7 +189,7 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::{Dna, Dna::*};
-    //    use crate::codec::Complement;
+    use crate::codec::Complement;
     use crate::seq::{FromStr, Seq};
 
     #[test]
@@ -226,7 +226,6 @@ mod tests {
         assert_eq!(cs.len(), 2);
     }
 
-    /*
     #[test]
     fn test_chain() {
         let seq1 = Seq::<Dna>::try_from("ATG").unwrap();
@@ -244,7 +243,6 @@ mod tests {
             assert_ne!(a, b);
         }
     }
-    */
 
     #[test]
     fn windows() {

@@ -54,6 +54,8 @@ pub mod codec;
 pub mod error;
 pub mod kmer;
 pub mod seq;
+
+#[cfg(feature = "translation")]
 pub mod translation;
 
 pub mod prelude {
@@ -66,7 +68,9 @@ pub mod prelude {
     pub use crate::seq::{ReverseComplement, Seq, SeqSlice};
     pub use crate::{amino, dna, iupac, kmer};
 
+    #[cfg(feature = "translation")]
     pub use crate::translation;
+
     pub use core::str::FromStr;
 
     pub use crate::error::ParseBioError;
@@ -76,12 +80,11 @@ pub mod prelude {
 mod tests {
     use crate::codec::dna::Dna::{A, C, G, T};
     use crate::prelude::*;
-    /*
+
     #[test]
     fn alt_repr() {
         assert_eq!(iupac!("-").nth(0), Iupac::X);
     }
-    */
 
     #[test]
     fn into_usize() {
@@ -106,13 +109,11 @@ mod tests {
         let g: usize = Seq::from(&vec![A]).into();
         assert_eq!(g, 0b00);
     }
-    /*
         #[test]
         fn test_display_aminos() {
             let a: Seq<Amino> = Seq::from_str("DCMNLKG*HI").unwrap();
             assert_eq!(format!("{a}"), "DCMNLKG*HI");
         }
-    */
     #[test]
     fn test_display_dna() {
         let seq = Seq::from(&vec![A, C, G, T, T, A, T, C]);
@@ -144,7 +145,6 @@ mod tests {
             seq.rev().collect::<Vec<Dna>>(),
             vec![T, G, C, A, T, G, C, A]
         );
-        /*
                 assert_eq!(
                     iupac!("GN-").rev().collect::<Vec<Iupac>>(),
                     vec![Iupac::X, Iupac::N, Iupac::G]
@@ -165,8 +165,6 @@ mod tests {
                     ]
                 );
             }
-        */
-    }
     #[test]
     fn iterate_kmers() {
         let seq = dna!("ACGTAAGGGG");
@@ -200,7 +198,6 @@ mod tests {
         }
     }
 
-    /*
         #[test]
         fn iupac_bitwise_ops() {
             assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
@@ -218,7 +215,6 @@ mod tests {
             assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
             assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
         }
-    */
 
     #[test]
     fn colexicographic_order() {

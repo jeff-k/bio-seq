@@ -9,7 +9,7 @@
 //!
 //! `k * codec::BITS` must fit in the storage type, e.g. `usize` (64 bits).
 //!
-//! ```ignore
+//! ```
 //! use bio_seq::prelude::*;
 //!
 //! for (amino_kmer, amino_string) in amino!("SSLMNHKKL")
@@ -345,17 +345,15 @@ mod tests {
         assert_eq!(k5, kmer!("ATCC"));
     }
 
-    /*
-        #[test]
-        fn amino_kmer_to_usize() {
-            for (kmer, index) in amino!("SRY")
-                .kmers::<2>()
-                .zip([0b001000_011000, 0b010011_001000])
-            {
-                assert_eq!(index as usize, (&kmer).into());
-            }
+    #[test]
+    fn amino_kmer_to_usize() {
+        for (kmer, index) in amino!("SRY")
+            .kmers::<2>()
+            .zip([0b001000_011000, 0b010011_001000])
+        {
+            assert_eq!(index as usize, (&kmer).into());
         }
-    */
+    }
     #[test]
     fn big_kmer_shiftr() {
         let mut kmer: Kmer<Dna, 32> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA");
@@ -373,34 +371,32 @@ mod tests {
         }
         assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA"), kmer);
     }
-    /*
-        #[test]
-        fn amino_kmer_iter() {
-            for (kmer, target) in amino!("SSLMNHKKL")
-                .kmers::<3>()
-                .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
-            {
-                assert_eq!(kmer, target);
-            }
+    #[test]
+    fn amino_kmer_iter() {
+        for (kmer, target) in amino!("SSLMNHKKL")
+            .kmers::<3>()
+            .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
+        {
+            assert_eq!(kmer, target);
         }
+    }
 
-        #[test]
-        fn valid_k_check() {
-            Kmer::<Dna, 1>::check_k();
-            Kmer::<Amino, 1>::check_k();
-            Kmer::<Dna, 32>::check_k();
-            Kmer::<Amino, 10>::check_k();
-        }
+    #[test]
+    fn valid_k_check() {
+        Kmer::<Dna, 1>::check_k();
+        Kmer::<Amino, 1>::check_k();
+        Kmer::<Dna, 32>::check_k();
+        Kmer::<Amino, 10>::check_k();
+    }
 
-        #[test]
-        fn eq_functions() {
-            assert_eq!(kmer!("ACGT"), dna!("ACGT"));
-            assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
-            let kmer: Kmer<Iupac, 4> = Kmer::from_str("ACGT").unwrap();
-            assert_eq!(kmer, iupac!("ACGT"));
-            assert_ne!(kmer, iupac!("NCGT"));
-        }
-    */
+    #[test]
+    fn eq_functions() {
+        assert_eq!(kmer!("ACGT"), dna!("ACGT"));
+        assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
+        let kmer: Kmer<Iupac, 4> = Kmer::from_str("ACGT").unwrap();
+        assert_eq!(kmer, iupac!("ACGT"));
+        assert_ne!(kmer, iupac!("NCGT"));
+    }
     #[test]
     fn kmer_iter() {
         let seq: Seq<Dna> = dna!("ACTGA");
@@ -417,7 +413,6 @@ mod tests {
         Kmer::<Dna, 33>::check_k();
     }
 
-    /*
     #[test]
     #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
     fn invalid_k_check_amino() {
@@ -439,5 +434,4 @@ mod tests {
             kmer!("TATATATTATATACGATCAGATCGATAGCGAT").revcomp()
         );
     }
-    */
 }

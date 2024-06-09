@@ -524,7 +524,6 @@ mod tests {
     use core::marker::PhantomData;
     use std::collections::hash_map::DefaultHasher;
 
-    /*
         #[test]
         fn test_revcomp() {
             let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA");
@@ -550,7 +549,6 @@ mod tests {
 
             assert_eq!(s.revcomp().revcomp(), sc);
         }
-    */
     #[test]
     fn slice_index_comparisions() {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
@@ -680,7 +678,6 @@ mod tests {
         assert_eq!(seq, "ACGT")
     }
 
-    /*
         #[test]
         fn test_extend_amino() {
             let mut seq = Seq::<Amino>::new();
@@ -692,7 +689,6 @@ mod tests {
             assert_eq!(seq.len(), 4);
             assert_eq!(seq, "SLYM");
         }
-    */
     #[test]
     fn test_extend() {
         let mut seq = Seq::<Dna>::new();
