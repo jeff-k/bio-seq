@@ -10,6 +10,7 @@ license = "MIT"
 keywords = ["bioinformatics", "genomics", "kmer", "dna", "sequence"]
 categories = ["science::bioinformatics", "science::bioinformatics::genomics", "science::bioinformatics::proteomics", "science::bioinformatics::sequence-analysis"]
 readme = "../README.md"
+rust-version = "1.79"
 
 #[dev-dependencies]
 #bio-streams = { git="https://github.com/jeff-k/bio-streams.git" }

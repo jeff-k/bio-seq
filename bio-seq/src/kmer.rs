@@ -34,11 +34,14 @@ use serde_derive::{Deserialize, Serialize};
 
 // TODO
 pub trait KmerStorage {
+    const BITS: usize;
     fn new() -> Self;
 }
 
 // TODO
 impl KmerStorage for usize {
+    const BITS: usize = usize::BITS as usize;
+
     fn new() -> Self {
         0
     }
@@ -55,16 +58,6 @@ pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
 }
 
 impl<A: Codec, const K: usize> Kmer<A, K> {
-    /// Kmer uses a run-time test to ensure that K is inside bounds. Compile-time
-    /// testing requires nightly.
-    #[inline]
-    fn check_k() {
-        assert!(
-            K <= usize::BITS as usize / A::BITS as usize,
-            "K is too large: it should be <= usize::BITS / A::BITS"
-        );
-    }
-
     /// Push a base from the right:
     ///
     /// ```
@@ -125,7 +118,12 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     fn from(i: usize) -> Kmer<A, K> {
-        Kmer::<A, K>::check_k();
+        const {
+            assert!(
+                K <= usize::BITS as usize / A::BITS as usize,
+                "K is too large: it should be <= usize::BITS / A::BITS"
+            )
+        };
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -151,11 +149,7 @@ impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
         Ba::from(self.bs)[..K * A::BITS as usize]
             .chunks(A::BITS as usize)
             .for_each(|chunk| {
-                s.push_str(
-                    &A::unsafe_from_bits(chunk.load_le::<u8>())
-                        .to_char()
-                        .to_string(),
-                );
+                s.push(A::unsafe_from_bits(chunk.load_le::<u8>()).to_char());
             });
         write!(f, "{s}")
     }
@@ -229,6 +223,12 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
     type Error = ParseBioError;
 
     fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
+        const {
+            assert!(
+                K <= usize::BITS as usize / A::BITS as usize,
+                "K is too large: it should be <= usize::BITS / A::BITS"
+            )
+        };
         if seq.len() != K {
             Err(ParseBioError::MismatchedLength(K, seq.len()))
         } else {
@@ -239,8 +239,13 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
 
 impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
     fn from(slice: &SeqSlice<A>) -> Self {
+        const {
+            assert!(
+                K <= usize::BITS as usize / A::BITS as usize,
+                "K is too large: it should be <= usize::BITS / A::BITS"
+            )
+        };
         assert_eq!(K, slice.len());
-        Kmer::<A, K>::check_k();
         Kmer {
             _p: PhantomData,
             bs: slice.into(),
@@ -382,14 +387,6 @@ mod tests {
     }
 
     #[test]
-    fn valid_k_check() {
-        Kmer::<Dna, 1>::check_k();
-        Kmer::<Amino, 1>::check_k();
-        Kmer::<Dna, 32>::check_k();
-        Kmer::<Amino, 10>::check_k();
-    }
-
-    #[test]
     fn eq_functions() {
         assert_eq!(kmer!("ACGT"), dna!("ACGT"));
         assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
@@ -408,20 +405,10 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
-    fn invalid_k_check() {
-        Kmer::<Dna, 33>::check_k();
-    }
-
-    #[test]
-    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
-    fn invalid_k_check_amino() {
-        Kmer::<Amino, 11>::check_k();
-    }
-    #[test]
-    #[should_panic(expected = "K is too large: it should be <= usize::BITS / A::BITS")]
-    fn invalid_k_check_dna() {
-        Kmer::<Dna, 33>::check_k();
+    fn k_check() {
+        let _kmer = Kmer::<Dna, 32>::from(0);
+        let _kmer = Kmer::<Amino, 10>::from(0);
+        let _kmer = Kmer::<Iupac, 14>::from(0);
     }
 
     #[test]
