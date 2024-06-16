@@ -22,12 +22,16 @@
 use crate::codec::Codec;
 use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqSlice};
-use crate::{Ba, Bv};
+use crate::{Ba, Bs, Bv};
 use bitvec::field::BitField;
+use bitvec::view::BitView;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
+use core::ops::Deref;
 use core::str::FromStr;
+
+//use bitvec::prelude::*;
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
@@ -137,11 +141,31 @@ impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
     }
 }
 
+impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
+    type Target = SeqSlice<A>;
+
+    fn deref(&self) -> &Self::Target {
+        let bs: &Bs = &self.bs.view_bits()[0..K];
+        let bs = bs as *const Bs as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+impl<A: Codec, const K: usize> AsRef<SeqSlice<A>> for Kmer<A, K> {
+    fn as_ref(&self) -> &SeqSlice<A> {
+        let bs: &Bs = &self.bs.view_bits()[0..K];
+        let bs = bs as *const Bs as *const SeqSlice<A>;
+        unsafe { &*bs }
+    }
+}
+
+/*
 impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
     fn from(kmer: Kmer<A, K>) -> usize {
         kmer.bs
     }
 }
+*/
 
 impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -163,6 +187,15 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
     pub _p: PhantomData<A>,
 }
 
+impl<A: Codec, const K: usize> Kmer<A, K> {
+    fn unsafe_from(slice: &SeqSlice<A>) -> Self {
+        Kmer {
+            _p: PhantomData,
+            bs: slice.into(),
+        }
+    }
+}
+
 impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
@@ -171,7 +204,7 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
             return None;
         }
         self.index += 1;
-        Some(Kmer::<A, K>::from(&self.slice[i..i + K]))
+        Some(Kmer::<A, K>::unsafe_from(&self.slice[i..i + K]))
     }
 }
 
@@ -219,6 +252,25 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     }
 }
 
+impl<A: Codec, const K: usize> TryFrom<&SeqSlice<A>> for Kmer<A, K> {
+    type Error = ParseBioError;
+
+    fn try_from(seq: &SeqSlice<A>) -> Result<Self, Self::Error> {
+        const {
+            assert!(
+                K <= usize::BITS as usize / A::BITS as usize,
+                "K is too large: it should be <= usize::BITS / A::BITS"
+            )
+        };
+        if seq.len() != K {
+            Err(ParseBioError::MismatchedLength(K, seq.len()))
+        } else {
+            Ok(Kmer::<A, K>::unsafe_from(&seq[0..K]))
+        }
+    }
+}
+
+// TODO: remove redundant code
 impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
     type Error = ParseBioError;
 
@@ -232,11 +284,12 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
         if seq.len() != K {
             Err(ParseBioError::MismatchedLength(K, seq.len()))
         } else {
-            Ok(Kmer::<A, K>::from(&seq[0..K]))
+            Ok(Kmer::<A, K>::unsafe_from(&seq[0..K]))
         }
     }
 }
 
+/*
 impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
     fn from(slice: &SeqSlice<A>) -> Self {
         const {
@@ -252,6 +305,7 @@ impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
         }
     }
 }
+*/
 
 impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
     fn from(kmer: Kmer<A, K>) -> Self {
@@ -264,7 +318,7 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
         if seq.len() != K {
             return false;
         }
-        &Kmer::<A, K>::from(&seq[..]) == self
+        &Kmer::<A, K>::unsafe_from(&seq[..]) == self
     }
 }
 
@@ -282,7 +336,7 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
             return Err(ParseBioError::MismatchedLength(K, s.len()));
         }
         let seq: Seq<A> = Seq::from_str(s)?;
-        Kmer::<A, K>::try_from(seq)
+        Kmer::<A, K>::try_from(&seq[..])
     }
 }
 
