@@ -45,8 +45,8 @@
 use bitvec::prelude::*;
 
 type Order = Lsb0;
-type Bs = BitSlice<u8, Order>;
-type Bv = BitVec<u8, Order>;
+type Bs = BitSlice<usize, Order>;
+type Bv = BitVec<usize, Order>;
 type Ba = BitArray<usize, Order>;
 
 #[macro_use]
@@ -109,11 +109,11 @@ mod tests {
         let g: usize = Seq::from(&vec![A]).into();
         assert_eq!(g, 0b00);
     }
-        #[test]
-        fn test_display_aminos() {
-            let a: Seq<Amino> = Seq::from_str("DCMNLKG*HI").unwrap();
-            assert_eq!(format!("{a}"), "DCMNLKG*HI");
-        }
+    #[test]
+    fn test_display_aminos() {
+        let a: Seq<Amino> = Seq::from_str("DCMNLKG*HI").unwrap();
+        assert_eq!(format!("{a}"), "DCMNLKG*HI");
+    }
     #[test]
     fn test_display_dna() {
         let seq = Seq::from(&vec![A, C, G, T, T, A, T, C]);
@@ -145,26 +145,26 @@ mod tests {
             seq.rev().collect::<Vec<Dna>>(),
             vec![T, G, C, A, T, G, C, A]
         );
-                assert_eq!(
-                    iupac!("GN-").rev().collect::<Vec<Iupac>>(),
-                    vec![Iupac::X, Iupac::N, Iupac::G]
-                );
+        assert_eq!(
+            iupac!("GN-").rev().collect::<Vec<Iupac>>(),
+            vec![Iupac::X, Iupac::N, Iupac::G]
+        );
 
-                assert_eq!(
-                    amino!("DCMNLKGHI").rev().collect::<Vec<Amino>>(),
-                    vec![
-                        Amino::I,
-                        Amino::H,
-                        Amino::G,
-                        Amino::K,
-                        Amino::L,
-                        Amino::N,
-                        Amino::M,
-                        Amino::C,
-                        Amino::D
-                    ]
-                );
-            }
+        assert_eq!(
+            amino!("DCMNLKGHI").rev().collect::<Vec<Amino>>(),
+            vec![
+                Amino::I,
+                Amino::H,
+                Amino::G,
+                Amino::K,
+                Amino::L,
+                Amino::N,
+                Amino::M,
+                Amino::C,
+                Amino::D
+            ]
+        );
+    }
     #[test]
     fn iterate_kmers() {
         let seq = dna!("ACGTAAGGGG");
@@ -198,23 +198,23 @@ mod tests {
         }
     }
 
-        #[test]
-        fn iupac_bitwise_ops() {
-            assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-            assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
-        }
+    #[test]
+    fn iupac_bitwise_ops() {
+        assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+        assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
+    }
 
-        #[test]
-        fn nth_chars() {
-            assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::A);
-            assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::C);
-            assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(15), Iupac::X);
-            assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::T));
-            assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::G));
+    #[test]
+    fn nth_chars() {
+        assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::A);
+        assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(0), Iupac::C);
+        assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(15), Iupac::X);
+        assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::T));
+        assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::G));
 
-            assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
-            assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
-        }
+        assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
+        assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
+    }
 
     #[test]
     fn colexicographic_order() {
