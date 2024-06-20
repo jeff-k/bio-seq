@@ -270,42 +270,13 @@ impl<A: Codec, const K: usize> TryFrom<&SeqSlice<A>> for Kmer<A, K> {
     }
 }
 
-// TODO: remove redundant code
 impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
     type Error = ParseBioError;
 
     fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
-        const {
-            assert!(
-                K <= usize::BITS as usize / A::BITS as usize,
-                "K is too large: it should be <= usize::BITS / A::BITS"
-            )
-        };
-        if seq.len() != K {
-            Err(ParseBioError::MismatchedLength(K, seq.len()))
-        } else {
-            Ok(Kmer::<A, K>::unsafe_from(&seq[0..K]))
-        }
+        Self::try_from(seq.as_ref())
     }
 }
-
-/*
-impl<A: Codec, const K: usize> From<&SeqSlice<A>> for Kmer<A, K> {
-    fn from(slice: &SeqSlice<A>) -> Self {
-        const {
-            assert!(
-                K <= usize::BITS as usize / A::BITS as usize,
-                "K is too large: it should be <= usize::BITS / A::BITS"
-            )
-        };
-        assert_eq!(K, slice.len());
-        Kmer {
-            _p: PhantomData,
-            bs: slice.into(),
-        }
-    }
-}
-*/
 
 impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
     fn from(kmer: Kmer<A, K>) -> Self {
@@ -318,7 +289,7 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
         if seq.len() != K {
             return false;
         }
-        &Kmer::<A, K>::unsafe_from(&seq[..]) == self
+        &Kmer::<A, K>::unsafe_from(seq.as_ref()) == self
     }
 }
 
@@ -336,7 +307,7 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
             return Err(ParseBioError::MismatchedLength(K, s.len()));
         }
         let seq: Seq<A> = Seq::from_str(s)?;
-        Kmer::<A, K>::try_from(&seq[..])
+        Kmer::<A, K>::try_from(seq.as_ref())
     }
 }
 
