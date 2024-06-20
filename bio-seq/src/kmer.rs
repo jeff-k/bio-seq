@@ -145,7 +145,7 @@ impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
     type Target = SeqSlice<A>;
 
     fn deref(&self) -> &Self::Target {
-        let bs: &Bs = &self.bs.view_bits()[0..K];
+        let bs: &Bs = &self.bs.view_bits()[0..(K * A::BITS as usize)];
         let bs = bs as *const Bs as *const SeqSlice<A>;
         unsafe { &*bs }
     }
@@ -153,7 +153,7 @@ impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
 
 impl<A: Codec, const K: usize> AsRef<SeqSlice<A>> for Kmer<A, K> {
     fn as_ref(&self) -> &SeqSlice<A> {
-        let bs: &Bs = &self.bs.view_bits()[0..K];
+        let bs: &Bs = &self.bs.view_bits()[0..(K * A::BITS as usize)];
         let bs = bs as *const Bs as *const SeqSlice<A>;
         unsafe { &*bs }
     }
@@ -475,4 +475,74 @@ mod tests {
             kmer!("TATATATTATATACGATCAGATCGATAGCGAT").revcomp()
         );
     }
+
+    #[test]
+    fn kmer_deref() {
+        let kmer: Kmer<Dna, 3> = kmer!("ACG");
+        let seq: &SeqSlice<Dna> = &kmer;
+
+        assert_eq!(seq.to_string(), "ACG");
+
+        let kmer: Kmer<Dna, 8> = kmer!("AAAAAAAA");
+        let seq: &SeqSlice<Dna> = &kmer;
+
+        assert_eq!(seq.to_string(), "AAAAAAAA");
+
+        let kmer: Kmer<Dna, 8> = kmer!("TTTTTTTT");
+        let seq: &SeqSlice<Dna> = &kmer;
+
+        assert_eq!(seq.to_string(), "TTTTTTTT");
+
+        let kmer: Kmer<Dna, 32> = kmer!("TTTTTTTTTTTTTTTTAGCTAGCTAGCTAGCT");
+        let seq: &SeqSlice<Dna> = &kmer;
+
+        assert_eq!(seq.to_string(), "TTTTTTTTTTTTTTTTAGCTAGCTAGCTAGCT");
+    }
+
+    #[test]
+    fn kmer_as_ref() {
+        let kmer: Kmer<Dna, 4> = kmer!("ACGT");
+        let seq: &SeqSlice<Dna> = &kmer.as_ref();
+
+        assert_eq!(seq.to_string(), "ACGT");
+
+        let kmer: Kmer<Dna, 32> = kmer!("TTTTTTTTTTTTTTTTAGCTAGCTAGCTAGCT");
+        let seq: &SeqSlice<Dna> = &kmer.as_ref();
+
+        assert_eq!(seq.to_string(), "TTTTTTTTTTTTTTTTAGCTAGCTAGCTAGCT");
+    }
+
+    #[test]
+    fn try_from_seq() {
+        let seq: Seq<Dna> = Seq::try_from("ACACACACACACGT").unwrap();
+        assert_eq!(
+            Kmer::<Dna, 8>::try_from(&seq[..8]).unwrap().to_string(),
+            "ACACACAC"
+        );
+        assert_eq!(
+            Kmer::<Dna, 8>::try_from(&seq[1..9]).unwrap().to_string(),
+            "CACACACA"
+        );
+
+        let err: Result<Kmer<Dna, 8>, ParseBioError> = Kmer::try_from(&seq[2..9]);
+        assert_eq!(err, Err(ParseBioError::MismatchedLength(8, 7)));
+
+        let err: Result<Kmer<Dna, 8>, ParseBioError> = Kmer::try_from(seq);
+        assert_eq!(err, Err(ParseBioError::MismatchedLength(8, 14)));
+
+        let seq: Seq<Dna> = Seq::try_from("ACACACACACACGT").unwrap();
+
+        assert_eq!(
+            Kmer::<Dna, 14>::try_from(seq).unwrap().to_string(),
+            "ACACACACACACGT"
+        );
+    }
+    /*
+    #[test]
+    fn kmer_static() {
+        static STATIC_KMER: Kmer<Dna, 8> = kmer!("TTTTTTTT");
+
+        assert_eq!(STATIC_KMER.to_string(), "ACGT");
+    }
+    */
 }
