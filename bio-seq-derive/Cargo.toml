@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq-derive"
-version = "3.0.0"
+version = "4.0.0"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 repository = "https://github.com/jeff-k/bio-seq"
@@ -10,6 +10,7 @@ license = "MIT"
 [dependencies]
 syn = { version="2", features=["full"] }
 quote = "1"
+proc-macro2 = "1"
 
 [lib]
 proc-macro = true

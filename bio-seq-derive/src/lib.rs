@@ -7,9 +7,7 @@
 //! It allows users to define custom bit-packed encodings from an enum. The representation of the enum is derived from the discriminants.
 //! Please refer to the `bio-seq` [documentation](https://github.com/jeff-k/bio-seq) for a complete guide on defining custom alphabets.
 
-extern crate proc_macro;
-
-use crate::proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 
 use quote::quote;
 
@@ -17,7 +15,7 @@ use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Token};
 
 #[proc_macro_derive(Codec, attributes(bits, display, alt))]
-pub fn codec_derive(input: TokenStream) -> TokenStream {
+pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as syn::Item);
 
     // Test for correct usage
@@ -30,39 +28,162 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
         }
     };
 
-    /*
-    // Test that enum is repr(u8)
-    let test_repr_u8 = enum_ast.attrs.iter().any(|attr| {
-        attr.path().is_ident("repr")
-            && match attr.parse_args::<syn::Ident>() {
-                Ok(ident) => ident == "u8",
-                Err(_) => false,
-            }
-    });
+    // Test whether enum is #[repr(u8)]
+    let _is_repr8 = test_repr(&enum_ast);
 
-    if !test_repr_u8 {
-        return syn::Error::new_spanned(
-            &enum_ast.ident,
-            "Enums deriving Codec must be annotated with #[repr(u8)]",
-        )
-        .to_compile_error()
-        .into();
-    }
-    */
+    let variants = match parse_variants(&enum_ast.variants) {
+        Ok(variants) => variants,
+        Err(err) => return err.to_compile_error().into(),
+    };
 
-    let variants = enum_ast.variants;
     let enum_ident = enum_ast.ident;
-    let mut max_variant = 0u8;
-    let mut variant_idents = Vec::new();
 
-    let mut variants_to_char = Vec::new();
-    let mut chars_to_variant = Vec::new();
-    let mut alt_discriminants = Vec::new();
+    let CodecVariants {
+        idents,
+        to_chars,
+        from_chars,
+        unsafe_alts,
+        alts,
+        max_discriminant,
+    } = variants;
+
+    let width = match parse_width(&enum_ast.attrs, max_discriminant) {
+        Ok(width) => width,
+        Err(err) => return err.into_compile_error().into(),
+    };
+
+    // Generate the implementation
+    let output = quote! {
+        impl Codec for #enum_ident {
+            const BITS: u8 = #width;
+
+            fn unsafe_from_bits(b: u8) -> Self {
+                match b {
+                    #(#unsafe_alts),*,
+                    _ => panic!("Unrecognised bit pattern: {:08b}", b),
+                }
+            }
+
+            fn try_from_bits(b: u8) -> Option<Self> {
+                match b {
+                    #(#alts),*,
+                    _ => None,
+                }
+            }
+
+            fn unsafe_from_ascii(c: u8) -> Self {
+                match c {
+                    #(#from_chars),*,
+                    _ => {
+                        if c.is_ascii_alphanumeric() {
+                            panic!("Unrecognised character: {} ({:#04X?})", c as char, c);
+                        } else {
+                            panic!("Unrecognised character: {:#04X?}", c);
+                        }
+                    },
+                }.unwrap()
+            }
+
+            fn try_from_ascii(c: u8) -> Option<Self> {
+                match c {
+                    #(#from_chars),*,
+                    _ => None,
+                }
+            }
+
+            fn to_char(self) -> char {
+                match self {
+                    #(#to_chars),*,
+                }.into()
+            }
+
+            fn items() -> impl Iterator<Item = Self> {
+                vec![ #(Self::#idents,)* ].into_iter()
+            }
+        }
+
+    };
+    output.into()
+}
+
+/// Allow the user to request more bits than used by their encodings
+fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
+    // minimum width is the log2 of the max_variant
+    let min_width = f32::ceil(f32::log2(max_variant as f32)) as u8;
+
+    for attr in attrs {
+        if attr.path().is_ident("bits") {
+            return match attr.parse_args::<syn::LitInt>() {
+                Ok(w) => {
+                    let chosen_width = w.base10_parse::<u8>().unwrap();
+                    // test whether the specified width is too small
+                    if chosen_width < min_width {
+                        Err(syn::Error::new_spanned(
+                            attr,
+                            format!(
+                                "Bit width is not large enough encode all variants (min: {min_width})"
+                            ),
+                        ))
+                    } else {
+                        Ok(chosen_width)
+                    }
+                }
+                Err(err) => Err(err),
+            };
+        };
+    }
+    Ok(min_width)
+}
+
+fn test_repr(enum_ast: &syn::ItemEnum) -> Result<(), syn::Error> {
+    // Test that enum is repr(u8)
+    for attr in enum_ast.attrs.iter() {
+        if attr.path().is_ident("repr") {
+            match attr.parse_args::<syn::Ident>() {
+                Ok(ident) => {
+                    if ident == "u8" {
+                        return Ok(());
+                    } else {
+                        return Err(syn::Error::new_spanned(
+                            &enum_ast.ident,
+                            "Enums deriving Codec must be annotated with #[repr(u8)]",
+                        ));
+                    }
+                }
+                Err(err) => return Err(err),
+            }
+        }
+    }
+
+    Err(syn::Error::new_spanned(
+        &enum_ast.ident,
+        "Enums deriving Codec must be annotated with #[repr(u8)]",
+    ))
+}
+
+struct CodecVariants {
+    idents: Vec<syn::Ident>,
+    to_chars: Vec<TokenStream>,
+    from_chars: Vec<TokenStream>,
+    alts: Vec<TokenStream>,
+    unsafe_alts: Vec<TokenStream>,
+    max_discriminant: u8,
+}
+
+fn parse_variants(
+    variants: &syn::punctuated::Punctuated<syn::Variant, syn::token::Comma>,
+) -> Result<CodecVariants, syn::Error> {
+    let mut max_discriminant = 0u8;
+    let mut idents = Vec::new();
+
+    let mut to_chars = Vec::new();
+    let mut from_chars = Vec::new();
+    let mut alts = Vec::new();
     let mut unsafe_alts = Vec::new();
 
     for variant in variants.iter() {
         let ident = &variant.ident;
-        variant_idents.push(ident.clone());
+        idents.push(ident.clone());
         let discriminant = &variant.discriminant;
 
         if let Some((_, syn::Expr::Lit(expr_lit))) = discriminant {
@@ -71,23 +192,22 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
                 syn::Lit::Byte(lit_byte) => lit_byte.value(),
                 syn::Lit::Int(lit_int) => lit_int.base10_parse::<u8>().unwrap(),
                 _ => {
-                    return syn::Error::new_spanned(
+                    return Err(syn::Error::new_spanned(
                         ident,
                         "Codec derivations require byte or integer discriminants",
-                    )
-                    .to_compile_error()
-                    .into();
+                    ))
                 }
             };
 
-            alt_discriminants.push(quote! { #value => Some(Self::#ident) });
+            alts.push(quote! { #value => Some(Self::#ident) });
             unsafe_alts.push(quote! { #value => Self::#ident });
 
-            max_variant = max_variant.max(value);
+            max_discriminant = max_discriminant.max(value);
         } else {
-            return syn::Error::new_spanned(ident, "Codec derivations require discriminants")
-                .to_compile_error()
-                .into();
+            return Err(syn::Error::new_spanned(
+                ident,
+                "Codec derivations require discriminants",
+            ));
         }
 
         //let mut char_repr = ident.to_string().chars().next().unwrap();
@@ -98,107 +218,33 @@ pub fn codec_derive(input: TokenStream) -> TokenStream {
             if attr.path().is_ident("display") {
                 let alt_attr: syn::LitChar = match attr.parse_args() {
                     Ok(attr) => attr,
-                    Err(err) => return err.to_compile_error().into(),
+                    Err(err) => return Err(err),
                 };
                 char_repr = alt_attr.value() as u8;
             } else if attr.path().is_ident("alt") {
                 let discs: Punctuated<syn::ExprLit, Token![,]> =
                     match attr.parse_args_with(Punctuated::parse_terminated) {
                         Ok(discs) => discs,
-                        Err(err) => return err.to_compile_error().into(),
+                        Err(err) => return Err(err),
                     };
 
                 for d in discs.into_iter() {
-                    alt_discriminants.push(quote! { #d => Some(Self::#ident) });
+                    alts.push(quote! { #d => Some(Self::#ident) });
                     unsafe_alts.push(quote! { #d => Self::#ident });
                 }
             };
         }
 
-        variants_to_char.push(quote! { Self::#ident => #char_repr });
-        chars_to_variant.push(quote! { #char_repr => Some(Self::#ident) });
+        to_chars.push(quote! { Self::#ident => #char_repr });
+        from_chars.push(quote! { #char_repr => Some(Self::#ident) });
     }
 
-    // default width is the log2 of the max_variant
-    let mut width = f32::ceil(f32::log2(max_variant as f32)) as u8;
-
-    for attr in &enum_ast.attrs {
-        if attr.path().is_ident("bits") {
-            width = match attr.parse_args::<syn::LitInt>() {
-                Ok(w) => {
-                    let chosen_width = w.base10_parse::<u8>().unwrap();
-                    // test whether the specified width is too small
-                    if chosen_width < width {
-                        return syn::Error::new_spanned(
-                            attr,
-                            format!(
-                                "Bit width is not large enough encode all variants (max: {width})"
-                            ),
-                        )
-                        .to_compile_error()
-                        .into();
-                    }
-                    chosen_width
-                }
-                Err(err) => return err.to_compile_error().into(),
-            }
-        };
-    }
-
-    //let parse_error = quote! { crate::prelude::ParseBioError };
-
-    // Generate the implementation
-    let output = quote! {
-        impl Codec for #enum_ident {
-            const BITS: u8 = #width;
-
-            fn unsafe_from_bits(b: u8) -> Self {
-                //debug_assert!(false, "Invalid encoding: {b:?}");
-                match b {
-                    #(#unsafe_alts),*,
-                    x => panic!("Unrecognised bit pattern: {}", x),
-                }
-            }
-
-            fn try_from_bits(b: u8) -> Option<Self> {
-                match b {
-                    #(#alt_discriminants),*,
-                    _ => None,
-                }
-            }
-
-            fn unsafe_from_ascii(c: u8) -> Self {
-                match c {
-                    #(#chars_to_variant),*,
-                    x => {
-                        if x.is_ascii_alphanumeric() {
-                            panic!("Unrecognised character: {} ({:#04X?})", x as char, x);
-                        } else {
-                            panic!("Unrecognised character: {:#04X?}", x);
-                        }
-                    },
-                }.unwrap()
-            }
-
-            fn try_from_ascii(c: u8) -> Option<Self> {
-                match c {
-                    #(#chars_to_variant),*,
-                    _ => None,
-                }
-            }
-
-            fn to_char(self) -> char {
-                match self {
-                    #(#variants_to_char),*,
-                }.into()
-            }
-
-            fn items() -> impl Iterator<Item = Self> {
-                vec![ #(Self::#variant_idents,)* ].into_iter()
-            }
-        }
-
-    };
-    //println!("{}", output);
-    output.into()
+    Ok(CodecVariants {
+        idents,
+        to_chars,
+        from_chars,
+        alts,
+        unsafe_alts,
+        max_discriminant,
+    })
 }
