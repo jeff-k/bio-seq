@@ -30,6 +30,10 @@ impl<'a, A: Codec> SeqSlice<A> {
     ) -> Chain<SeqIter<'a, A>, SeqIter<'a, A>> {
         self.into_iter().chain(second)
     }
+
+    pub fn iter(&'a self) -> SeqIter<'a, A> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
 }
 
 impl<A: Codec> SeqSlice<A> {

@@ -10,10 +10,10 @@
 //! [`Kmer`](mod@kmer)s are short, fixed-length sequences. They generally implement `Copy` and are used for optimised algorithms on sequences. The default implementation uses a `usize` for storage.
 //!
 //! Binary encodings of genomic data types are implemented as "[`codec`]s." Custom codecs can be defined, and this crate has four built in:
-//!   - [codec::dna]: 2-bit encoding of the four nucleotides
-//!   - [codec::text]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
-//!   - [codec::iupac]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
-//!   - [codec::amino]: 6-bit encoding of amino acids
+//!   - [`codec::dna`]: 2-bit encoding of the four nucleotides
+//!   - [`codec::text`]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
+//!   - [`codec::iupac`]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
+//!   - [`codec::amino`]: 6-bit encoding of amino acids
 //!
 //! Each of these encodings is designed to facilitate common bioinformatics tasks, such as minimising k-mers and implementing succinct datastructures. The [translation] module provides traits and methods for translating between nucleotide and amino acid sequences.
 //!
@@ -42,6 +42,11 @@
 //! // ...
 //! ```
 //!
+#![warn(clippy::pedantic)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::return_self_not_must_use)]
+#![allow(clippy::module_name_repetitions)]
+
 use bitvec::prelude::*;
 
 type Order = Lsb0;

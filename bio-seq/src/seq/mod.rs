@@ -193,10 +193,6 @@ impl<A: Codec> Seq<A> {
     pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
         iter.into_iter().for_each(|base| self.push(base));
     }
-
-    pub fn iter(&self) -> iterators::SeqIter<A> {
-        <&Self as IntoIterator>::into_iter(self)
-    }
 }
 
 impl<A: Codec> SeqSlice<A> {
@@ -236,10 +232,6 @@ impl<A: Codec> SeqSlice<A> {
             _p: PhantomData,
             bv,
         }
-    }
-
-    pub fn iter(&self) -> iterators::SeqIter<A> {
-        <&Self as IntoIterator>::into_iter(self)
     }
 }
 

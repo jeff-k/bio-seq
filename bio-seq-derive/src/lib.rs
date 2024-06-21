@@ -7,6 +7,8 @@
 //! It allows users to define custom bit-packed encodings from an enum. The representation of the enum is derived from the discriminants.
 //! Please refer to the `bio-seq` [documentation](https://github.com/jeff-k/bio-seq) for a complete guide on defining custom alphabets.
 
+#![warn(clippy::pedantic)]
+
 mod codec;
 
 use crate::codec::{parse_variants, parse_width, test_repr, CodecVariants};

@@ -53,7 +53,6 @@ impl Complement for Dna {
             Self(b'C') => Self(b'G'),
             Self(b'G') => Self(b'C'),
             Self(b'T') => Self(b'A'),
-            Self(b'N') => Self(b'N'),
             _ => Self(b'N'),
         }
     }

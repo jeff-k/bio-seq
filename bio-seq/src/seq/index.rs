@@ -72,7 +72,7 @@ impl<A: Codec> Index<usize> for Seq<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, i: usize) -> &Self::Output {
-        &self[i..i + 1]
+        &self[i..=i]
     }
 }
 

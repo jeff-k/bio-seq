@@ -51,7 +51,7 @@ impl KmerStorage for usize {
     }
 }
 
-/// By default k-mers are backed by `usize`, Codec::BITS * K must be <= 64
+/// By default k-mers are backed by `usize`, `Codec::BITS` * K must be <= 64
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
@@ -126,7 +126,7 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
             assert!(
                 K <= usize::BITS as usize / A::BITS as usize,
                 "K is too large: it should be <= usize::BITS / A::BITS"
-            )
+            );
         };
         Kmer {
             _p: PhantomData,
@@ -260,12 +260,12 @@ impl<A: Codec, const K: usize> TryFrom<&SeqSlice<A>> for Kmer<A, K> {
             assert!(
                 K <= usize::BITS as usize / A::BITS as usize,
                 "K is too large: it should be <= usize::BITS / A::BITS"
-            )
+            );
         };
-        if seq.len() != K {
-            Err(ParseBioError::MismatchedLength(K, seq.len()))
-        } else {
+        if seq.len() == K {
             Ok(Kmer::<A, K>::unsafe_from(&seq[0..K]))
+        } else {
+            Err(ParseBioError::MismatchedLength(K, seq.len()))
         }
     }
 }

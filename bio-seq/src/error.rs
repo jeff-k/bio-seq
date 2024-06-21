@@ -13,11 +13,11 @@ impl fmt::Display for ParseBioError {
                 if byte.is_ascii_alphanumeric() {
                     write!(
                         f,
-                        "Unrecognised character: '{}' ({:#04X?})",
-                        *byte as char, byte
+                        "Unrecognised character: '{}' ({byte:#04X?})",
+                        *byte as char,
                     )
                 } else {
-                    write!(f, "Unrecognised character: {:#04X?}", byte)
+                    write!(f, "Unrecognised character: {byte:#04X?}")
                 }
             }
 
