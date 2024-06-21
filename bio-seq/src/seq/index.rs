@@ -1,6 +1,7 @@
 use core::ops::{
     Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
+use core::ptr;
 
 use crate::codec::Codec;
 use crate::seq::{Seq, SeqSlice};
@@ -140,9 +141,7 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, i: usize) -> &Self::Output {
-        //A::unsafe_from_bits(self.bs[s..e].load());
-        //&self.bs[s..e].load::<u8>()
-        &self[i..i + 1]
+        &self[i..=i]
     }
 }
 

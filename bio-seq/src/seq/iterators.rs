@@ -170,7 +170,7 @@ impl<'a, A: Codec> IntoIterator for &'a SeqSlice<A> {
 
 impl<'a, A: Codec> FromIterator<&'a SeqSlice<A>> for Vec<Seq<A>> {
     fn from_iter<T: IntoIterator<Item = &'a SeqSlice<A>>>(iter: T) -> Self {
-        iter.into_iter().map(|slice| slice.to_owned()).collect()
+        iter.into_iter().map(ToOwned::to_owned).collect()
     }
 }
 

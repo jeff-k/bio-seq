@@ -193,6 +193,10 @@ impl<A: Codec> Seq<A> {
     pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
         iter.into_iter().for_each(|base| self.push(base));
     }
+
+    pub fn iter(&self) -> iterators::SeqIter<A> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
 }
 
 impl<A: Codec> SeqSlice<A> {
@@ -212,6 +216,7 @@ impl<A: Codec> SeqSlice<A> {
         unimplemented!()
     }
 
+    #[must_use]
     pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
         let mut bv: Bv = Bv::from_bitslice(&self.bs);
         bv &= Bv::from_bitslice(&rhs.bs);
@@ -222,6 +227,7 @@ impl<A: Codec> SeqSlice<A> {
         }
     }
 
+    #[must_use]
     pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
         let mut bv: Bv = Bv::from_bitslice(&self.bs);
         bv |= Bv::from_bitslice(&rhs.bs);
@@ -231,23 +237,27 @@ impl<A: Codec> SeqSlice<A> {
             bv,
         }
     }
+
+    pub fn iter(&self) -> iterators::SeqIter<A> {
+        <&Self as IntoIterator>::into_iter(self)
+    }
 }
 
 impl<A: Codec> From<Seq<A>> for String {
     fn from(seq: Seq<A>) -> Self {
-        seq.into_iter().map(|base| base.to_char()).collect()
+        seq.as_ref().to_string()
     }
 }
 
 impl<A: Codec> From<&SeqSlice<A>> for String {
     fn from(seq: &SeqSlice<A>) -> Self {
-        seq.into_iter().map(|base| base.to_char()).collect()
+        seq.into_iter().map(Codec::to_char).collect()
     }
 }
 
 impl<A: Codec> From<&Seq<A>> for String {
     fn from(seq: &Seq<A>) -> Self {
-        seq.into_iter().map(|base| base.to_char()).collect()
+        seq.into_iter().map(Codec::to_char).collect()
     }
 }
 
@@ -365,7 +375,7 @@ impl<A: Codec> Deref for Seq<A> {
     }
 }
 
-/// A Seq can be borrowed as a SeqSlice through generic constraints.
+/// A Seq can be borrowed as a `SeqSlice` through generic constraints.
 ///
 /// ```
 /// use bio_seq::prelude::*;
@@ -431,7 +441,7 @@ impl<A: Codec> Clone for Seq<A> {
 
 impl<A: Codec> From<&Vec<A>> for Seq<A> {
     fn from(vec: &Vec<A>) -> Self {
-        vec.iter().cloned().collect()
+        vec.iter().copied().collect()
     }
 }
 

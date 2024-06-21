@@ -2,7 +2,7 @@
 //!
 //! The [dna], [iupac], [text], and [amino] alphabets are built in.
 //!
-//! This trait implements the translation between the UTF-8 representation of an alphabet and it's efficient bit-packing.
+//! This trait implements the translation between the UTF-8 representation of an alphabet and its efficient bit-packing.
 //! The `BITS` attribute stores the number of bits used by the representation.
 //! ```
 //! use bio_seq::prelude::{Dna, Codec};
