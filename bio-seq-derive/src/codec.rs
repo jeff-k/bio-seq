@@ -13,7 +13,9 @@ use syn::Token;
 /// Allow the user to request more bits than used by their encodings
 pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
     // minimum width is the log2 of the max_variant
-    let min_width = f32::ceil(f32::log2(max_variant as f32)) as u8;
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant))) as u8;
 
     for attr in attrs {
         if attr.path().is_ident("bits") {
@@ -41,18 +43,17 @@ pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Resul
 
 pub(crate) fn test_repr(enum_ast: &syn::ItemEnum) -> Result<(), syn::Error> {
     // Test that enum is repr(u8)
-    for attr in enum_ast.attrs.iter() {
+    for attr in &enum_ast.attrs {
         if attr.path().is_ident("repr") {
             match attr.parse_args::<syn::Ident>() {
                 Ok(ident) => {
                     if ident == "u8" {
                         return Ok(());
-                    } else {
-                        return Err(syn::Error::new_spanned(
-                            &enum_ast.ident,
-                            "Enums deriving Codec must be annotated with #[repr(u8)]",
-                        ));
                     }
+                    return Err(syn::Error::new_spanned(
+                        &enum_ast.ident,
+                        "Enums deriving Codec must be annotated with #[repr(u8)]",
+                    ));
                 }
                 Err(err) => return Err(err),
             }
@@ -85,7 +86,7 @@ pub(crate) fn parse_variants(
     let mut alts = Vec::new();
     let mut unsafe_alts = Vec::new();
 
-    for variant in variants.iter() {
+    for variant in variants {
         let ident = &variant.ident;
         idents.push(ident.clone());
         let discriminant = &variant.discriminant;
@@ -132,7 +133,7 @@ pub(crate) fn parse_variants(
                         Err(err) => return Err(err),
                     };
 
-                for d in discs.into_iter() {
+                for d in discs {
                     alts.push(quote! { #d => Some(Self::#ident) });
                     unsafe_alts.push(quote! { #d => Self::#ident });
                 }

@@ -9,7 +9,7 @@
 
 mod codec;
 
-use crate::codec::*;
+use crate::codec::{parse_variants, parse_width, test_repr, CodecVariants};
 use quote::quote;
 use syn::parse_macro_input;
 
@@ -18,13 +18,10 @@ pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as syn::Item);
 
     // Test for correct usage
-    let enum_ast = match input {
-        syn::Item::Enum(e) => e,
-        _ => {
-            return syn::Error::new_spanned(input, "Codec can only be derived for enums")
-                .to_compile_error()
-                .into()
-        }
+    let syn::Item::Enum(enum_ast) = input else {
+        return syn::Error::new_spanned(input, "Codec can only be derived for enums")
+            .to_compile_error()
+            .into();
     };
 
     // Test whether enum is #[repr(u8)]
