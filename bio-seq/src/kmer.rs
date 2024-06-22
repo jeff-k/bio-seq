@@ -29,6 +29,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::Deref;
+use core::ptr;
 use core::str::FromStr;
 
 //use bitvec::prelude::*;
@@ -146,16 +147,14 @@ impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
 
     fn deref(&self) -> &Self::Target {
         let bs: &Bs = &self.bs.view_bits()[0..(K * A::BITS as usize)];
-        let bs = bs as *const Bs as *const SeqSlice<A>;
-        unsafe { &*bs }
+        let bs: *const Bs = ptr::from_ref::<Bs>(bs);
+        unsafe { &*(bs as *const SeqSlice<A>) }
     }
 }
 
 impl<A: Codec, const K: usize> AsRef<SeqSlice<A>> for Kmer<A, K> {
     fn as_ref(&self) -> &SeqSlice<A> {
-        let bs: &Bs = &self.bs.view_bits()[0..(K * A::BITS as usize)];
-        let bs = bs as *const Bs as *const SeqSlice<A>;
-        unsafe { &*bs }
+        self
     }
 }
 
@@ -290,6 +289,15 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
             return false;
         }
         &Kmer::<A, K>::unsafe_from(seq.as_ref()) == self
+    }
+}
+
+impl<A: Codec, const K: usize> PartialEq<SeqSlice<A>> for Kmer<A, K> {
+    fn eq(&self, seq: &SeqSlice<A>) -> bool {
+        if seq.len() != K {
+            return false;
+        }
+        &Kmer::<A, K>::unsafe_from(seq) == self
     }
 }
 
@@ -452,6 +460,7 @@ mod tests {
         let kmer: Kmer<Dna, 3> = kmer!("ACG");
         let seq: &SeqSlice<Dna> = &kmer;
 
+        assert_eq!(*seq, *kmer);
         assert_eq!(seq.to_string(), "ACG");
 
         let kmer: Kmer<Dna, 8> = kmer!("AAAAAAAA");

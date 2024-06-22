@@ -42,6 +42,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::Deref;
+use core::ptr;
 use core::str;
 use core::str::FromStr;
 
@@ -247,11 +248,13 @@ impl<A: Codec> From<&SeqSlice<A>> for String {
     }
 }
 
+/*
 impl<A: Codec> From<&Seq<A>> for String {
     fn from(seq: &Seq<A>) -> Self {
         seq.into_iter().map(Codec::to_char).collect()
     }
 }
+    */
 
 impl<A: Codec> PartialEq for SeqSlice<A> {
     fn eq(&self, other: &Self) -> bool {
@@ -259,40 +262,45 @@ impl<A: Codec> PartialEq for SeqSlice<A> {
     }
 }
 
+impl<A: Codec> PartialEq<str> for Seq<A> {
+    fn eq(&self, other: &str) -> bool {
+        self.as_ref() == other
+    }
+}
+
 impl<A: Codec> PartialEq<&str> for Seq<A> {
     fn eq(&self, other: &&str) -> bool {
-        let s: String = self.into();
-        s == *other
+        self.as_ref() == *other
+    }
+}
+
+impl<A: Codec> PartialEq<str> for SeqSlice<A> {
+    fn eq(&self, other: &str) -> bool {
+        self.iter().map(A::to_char).eq(other.chars())
     }
 }
 
 impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
     fn eq(&self, other: &Seq<A>) -> bool {
-        self.bs == other.bv[..]
-    }
-}
-
-impl<A: Codec> PartialEq<&SeqSlice<A>> for Seq<A> {
-    fn eq(&self, other: &&SeqSlice<A>) -> bool {
-        self.bv[..] == other.bs
-    }
-}
-
-impl<A: Codec> PartialEq<Seq<A>> for &SeqSlice<A> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        self.bs == other.bv[..]
-    }
-}
-
-impl<A: Codec> PartialEq<&Seq<A>> for SeqSlice<A> {
-    fn eq(&self, other: &&Seq<A>) -> bool {
-        self.bs == other.bv[..]
+        other.bv.as_ref() == self.bs
     }
 }
 
 impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
-        self.bv[..] == other.bs
+        self.bv.as_ref() == other.bs
+    }
+}
+
+impl<A: Codec> PartialEq<&SeqSlice<A>> for Seq<A> {
+    fn eq(&self, other: &&SeqSlice<A>) -> bool {
+        self.bv.as_ref() == other.bs
+    }
+}
+
+impl<A: Codec> PartialEq<Seq<A>> for &SeqSlice<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self.bs == other.bv.as_ref()
     }
 }
 
@@ -308,14 +316,14 @@ impl<A: Codec> PartialEq<&SeqSlice<A>> for SeqSlice<A> {
     }
 }
 
-impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
-    fn eq(&self, other: &&Seq<A>) -> bool {
+impl<A: Codec> PartialEq<Seq<A>> for &Seq<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
         self.bv == other.bv
     }
 }
 
-impl<A: Codec> PartialEq<Seq<A>> for &Seq<A> {
-    fn eq(&self, other: &Seq<A>) -> bool {
+impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
+    fn eq(&self, other: &&Seq<A>) -> bool {
         self.bv == other.bv
     }
 }
@@ -342,7 +350,7 @@ impl<A: Codec> Hash for SeqSlice<A> {
 ///
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
     fn borrow(&self) -> &SeqSlice<A> {
-        &self[..]
+        self
     }
 }
 
@@ -363,7 +371,8 @@ impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
 impl<A: Codec> Deref for Seq<A> {
     type Target = SeqSlice<A>;
     fn deref(&self) -> &Self::Target {
-        &self[..]
+        let bs: *const Bs = ptr::from_ref::<Bs>(&self.bv);
+        unsafe { &*(bs as *const SeqSlice<A>) }
     }
 }
 
@@ -383,7 +392,7 @@ impl<A: Codec> Deref for Seq<A> {
 ///
 impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
     fn as_ref(&self) -> &SeqSlice<A> {
-        &self[..]
+        self
     }
 }
 
@@ -454,6 +463,14 @@ impl<A: Codec> TryFrom<&str> for Seq<A> {
     }
 }
 
+impl<A: Codec> TryFrom<String> for Seq<A> {
+    type Error = ParseBioError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Seq::<A>::try_from(s.as_str())
+    }
+}
+
 impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
     type Error = ParseBioError;
 
@@ -474,7 +491,7 @@ impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
 
 impl<A: Codec> fmt::Display for Seq<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&String::from(self), f)
+        fmt::Display::fmt(&String::from(self.as_ref()), f)
     }
 }
 
@@ -561,6 +578,18 @@ mod tests {
         assert_eq!(&s1[2..4], &s2[2..4]);
         assert_eq!(&s1[15..21], &s2[19..25]);
         assert_ne!(&s1[2..20], &s2[2..20]);
+    }
+
+    #[test]
+    fn slice_index_owned() {
+        let seq = dna!("GCTCGATCACT");
+
+        assert_eq!(seq[..], dna!("GCTCGATCACT"));
+        assert_eq!(seq[..=4], dna!("GCTCG"));
+        assert_eq!(seq[1..=4], dna!("CTCG"));
+        assert_eq!(seq[1..4], dna!("CTC"));
+        assert_eq!(seq[..4], dna!("GCTC"));
+        assert_eq!(seq[1..], dna!("CTCGATCACT"));
     }
 
     #[test]
@@ -713,6 +742,21 @@ mod tests {
         assert_eq!(seq2, slice);
         assert_eq!(slice, slice2);
         assert_eq!(seq, seq2);
+    }
+
+    #[test]
+    fn test_str_eqs() {
+        let string: String = "ACTAGCATCGA".into();
+        let slice: &str = "GCTGCATCGATC";
+
+        let seq1: Seq<Dna> = Seq::<Dna>::try_from(slice).unwrap();
+        let seq2: Seq<Dna> = Seq::<Dna>::try_from(string.clone()).unwrap();
+
+        assert_eq!(seq2.to_string(), string);
+        assert_eq!(seq1.to_string(), slice);
+
+        assert_ne!(seq2.to_string(), slice);
+        assert_ne!(seq1.to_string(), string);
     }
 
     #[test]

@@ -141,22 +141,7 @@ impl<'a, A: Codec> IntoIterator for &'a Seq<A> {
     type IntoIter = SeqIter<'a, A>;
 
     fn into_iter(self) -> Self::IntoIter {
-        SeqIter {
-            slice: self,
-            index: 0,
-        }
-    }
-}
-
-impl<'a, A: Codec> IntoIterator for &'a &Seq<A> {
-    type Item = A;
-    type IntoIter = SeqIter<'a, A>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        SeqIter {
-            slice: self,
-            index: 0,
-        }
+        self.as_ref().into_iter()
     }
 }
 
