@@ -11,12 +11,6 @@ pub enum Dna {
     T = 0b11,
 }
 
-impl From<Dna> for u8 {
-    fn from(b: Dna) -> u8 {
-        b as u8
-    }
-}
-
 impl Codec for Dna {
     const BITS: u8 = 2;
 
@@ -59,6 +53,10 @@ impl Codec for Dna {
             Dna::G => 'G',
             Dna::T => 'T',
         }
+    }
+
+    fn to_bits(self) -> u8 {
+        self as u8
     }
 
     fn items() -> impl Iterator<Item = Self> {

@@ -102,6 +102,10 @@
 //!         }
 //!     }
 //!
+//!     fn to_bits(self) -> u8 {
+//!         self as u8
+//!     }
+//!
 //!     fn items() -> impl Iterator<Item = Self> {
 //!         vec![Dna::A, Dna::C, Dna::G, Dna::T].into_iter()
 //!     }
@@ -128,7 +132,7 @@ pub use bio_seq_derive::Codec;
 /// the `Codec` trait.  
 ///
 /// The intended representation is an `Enum`, transparently represented as a `u8`.
-pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
+pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
     /// The number of bits used to encode the characters. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
     const BITS: u8;
 
@@ -149,6 +153,9 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq + Into<u8> {
 
     /// Decode enum item as a UTF-8 character
     fn to_char(self) -> char;
+
+    /// Encode as raw bits
+    fn to_bits(self) -> u8;
 
     /// Iterator over the characters of the codec
     fn items() -> impl Iterator<Item = Self>;

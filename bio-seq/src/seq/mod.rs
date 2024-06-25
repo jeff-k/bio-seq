@@ -195,7 +195,7 @@ impl<A: Codec> Seq<A> {
     }
 
     pub fn push(&mut self, item: A) {
-        let byte: u8 = item.into();
+        let byte: u8 = item.to_bits();
         self.bv
             .extend_from_bitslice(&byte.view_bits::<Order>()[..A::BITS as usize]);
     }

@@ -97,6 +97,10 @@ pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 }.into()
             }
 
+            fn to_bits(self) -> u8 {
+                self as u8
+            }
+
             fn items() -> impl Iterator<Item = Self> {
                 vec![ #(Self::#idents,)* ].into_iter()
             }

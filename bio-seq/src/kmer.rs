@@ -73,7 +73,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
     /// ```
     pub fn pushr(self, base: A) -> Kmer<A, K> {
-        let bs = &Ba::from(base.into() as usize)[..A::BITS as usize];
+        let bs = &Ba::from(base.to_bits() as usize)[..A::BITS as usize];
         let ba = &Ba::from(self.bs);
 
         let mut x: Bv = Bv::new();
@@ -87,7 +87,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
 
     /// Push a base from the left
     pub fn pushl(self, base: A) -> Kmer<A, K> {
-        let bs = &Ba::from(base.into() as usize)[..A::BITS as usize];
+        let bs = &Ba::from(base.to_bits() as usize)[..A::BITS as usize];
         let ba = &Ba::from(self.bs);
 
         let mut x: Bv = Bv::new();

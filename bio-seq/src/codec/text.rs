@@ -35,6 +35,10 @@ impl Codec for Dna {
         self.0.into()
     }
 
+    fn to_bits(self) -> u8 {
+        self.0
+    }
+
     fn items() -> impl Iterator<Item = Self> {
         vec![Dna(b'A'), Dna(b'C'), Dna(b'G'), Dna(b'T'), Dna(b'N')].into_iter()
     }
