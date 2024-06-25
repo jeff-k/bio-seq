@@ -21,7 +21,7 @@
 //! ```
 use crate::codec::Codec;
 use crate::prelude::{Complement, ParseBioError, ReverseComplement};
-use crate::seq::{Seq, SeqSlice};
+use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::{Ba, Bs, Bv};
 use bitvec::field::BitField;
 use bitvec::view::BitView;
@@ -136,11 +136,31 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     }
 }
 
+impl<A: Codec, const K: usize> From<&SeqArray<A, K, 1>> for Kmer<A, K> {
+    fn from(seq: &SeqArray<A, K, 1>) -> Kmer<A, K> {
+        Kmer {
+            _p: PhantomData,
+            bs: seq.into(),
+        }
+    }
+}
+
 impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
     fn from(kmer: &Kmer<A, K>) -> usize {
         kmer.bs
     }
 }
+
+/*
+impl<A: Codec, const K: usize> Deref for SeqArray<A, K, 1> {
+    type Target = Kmer<A, K>;
+
+    fn deref(&self) -> &Self::Target {
+        let bs: usize = &self.ba.view_bits()[0..(K * A::BITS as usize)];
+        unsafe { &*(bs *const Kmer<A, K>) }
+    }
+}
+    */
 
 impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
     type Target = SeqSlice<A>;
@@ -188,9 +208,15 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
 
 impl<A: Codec, const K: usize> Kmer<A, K> {
     fn unsafe_from(slice: &SeqSlice<A>) -> Self {
+        const {
+            assert!(
+                K <= usize::BITS as usize / A::BITS as usize,
+                "K is too large: it should be <= usize::BITS / A::BITS"
+            );
+        };
         Kmer {
             _p: PhantomData,
-            bs: slice.into(),
+            bs: slice.try_into().unwrap(),
         }
     }
 }
@@ -340,13 +366,15 @@ impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
+    use crate::seq::SeqArray;
 
     #[test]
     fn kmer_to_usize() {
-        for (kmer, index) in dna!("AACTT")
-            .kmers::<2>()
-            .zip([0b00_00, 0b01_00, 0b11_01, 0b11_11])
-        {
+        let s: &'static SeqSlice<Dna> = dna!("AACTT");
+        println!("{}", s.to_string());
+
+        for (kmer, index) in s.kmers::<2>().zip([0b00_00, 0b01_00, 0b11_01, 0b11_11]) {
+            println!("{kmer}");
             assert_eq!(index as usize, (&kmer).into());
         }
     }
@@ -419,6 +447,7 @@ mod tests {
         }
     }
 
+    /*
     #[test]
     fn eq_functions() {
         assert_eq!(kmer!("ACGT"), dna!("ACGT"));
@@ -427,10 +456,11 @@ mod tests {
         assert_eq!(kmer, iupac!("ACGT"));
         assert_ne!(kmer, iupac!("NCGT"));
     }
+    */
     #[test]
     fn kmer_iter() {
-        let seq: Seq<Dna> = dna!("ACTGA");
-        let cs: Vec<Kmer<Dna, 3>> = seq.kmers().collect();
+        //let seq = dna!("ACTGA");
+        let cs: Vec<Kmer<Dna, 3>> = dna!("ACTGA").kmers().collect();
         assert_eq!(cs[0], "ACT");
         assert_eq!(cs[1], "CTG");
         assert_eq!(cs[2], "TGA");

@@ -76,6 +76,7 @@ impl Complement for Dna {
     }
 }
 
+/*
 #[macro_export]
 macro_rules! dna {
     ($seq:expr) => {
@@ -85,6 +86,7 @@ macro_rules! dna {
         }
     };
 }
+*/
 
 #[macro_export]
 macro_rules! kmer {
@@ -150,10 +152,8 @@ mod tests {
         );
 
         assert_eq!(
-            Kmer::<Dna, 16>::try_from(dna!("AAAATGCACATGTTTT"))
-                .unwrap()
-                .comp(),
-            Kmer::<Dna, 16>::try_from(dna!("TTTTACGTGTACAAAA")).unwrap()
+            Kmer::<Dna, 16>::from(dna!("AAAATGCACATGTTTT")).comp(),
+            Kmer::<Dna, 16>::from(dna!("TTTTACGTGTACAAAA"))
         );
     }
     */

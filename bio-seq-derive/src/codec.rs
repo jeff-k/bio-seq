@@ -15,7 +15,7 @@ pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Resul
     // minimum width is the log2 of the max_variant
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
-    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant))) as u8;
+    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant + 1))) as u8;
 
     for attr in attrs {
         if attr.path().is_ident("bits") {

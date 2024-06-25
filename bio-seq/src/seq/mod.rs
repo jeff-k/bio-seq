@@ -10,12 +10,13 @@
 //! ```
 //! use std::collections::HashMap;
 //! use bio_seq::prelude::*;
+//! use bio_seq::seq;
 //!
-//! let reference: Seq<Dna> = dna!("ACGTTCGCATGCTACGACGATC");
+//! let reference: Seq<Dna> = dna!("ACGTTCGCATGCTACGACGATC").into();
 //!
 //! let mut table: HashMap<Seq<Dna>, &SeqSlice<Dna>> = HashMap::new();
-//! table.insert(dna!("ACGTT"), &reference[2..5]);
-//! table.insert(dna!("ACACCCCC"), &reference[6..]);
+//! table.insert(dna!("ACGTT").into(), &reference[2..5]);
+//! table.insert(dna!("ACACCCCC").into(), &reference[6..]);
 //!
 //! // The query is a short window in the reference `Seq`
 //! let query: &SeqSlice<Dna> = &reference[..5];
@@ -35,6 +36,7 @@ use crate::error::ParseBioError;
 
 use crate::{Bs, Bv, Order};
 use bitvec::field::BitField;
+use bitvec::prelude::*;
 use bitvec::view::BitView;
 
 use core::borrow::Borrow;
@@ -50,6 +52,7 @@ use core::str::FromStr;
 ///
 /// Stored on the heap
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Seq<A: Codec> {
     _p: PhantomData<A>,
     bv: Bv,
@@ -60,7 +63,21 @@ pub struct Seq<A: Codec> {
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     _p: PhantomData<A>,
-    bs: Bs,
+    bs: BitSlice<usize, Order>,
+}
+
+#[derive(Debug, PartialOrd)]
+pub struct SeqArray<A: Codec, const N: usize, const W: usize> {
+    pub _p: PhantomData<A>,
+    pub ba: BitArray<[usize; W], Order>,
+}
+
+impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
+    type Target = SeqSlice<A>;
+    fn deref(&self) -> &Self::Target {
+        let bs: *const Bs = ptr::from_ref::<Bs>(&self.ba[..N * 2]);
+        unsafe { &*(bs as *const SeqSlice<A>) }
+    }
 }
 
 impl<A: Codec> From<Seq<A>> for usize {
@@ -71,11 +88,23 @@ impl<A: Codec> From<Seq<A>> for usize {
     }
 }
 
-impl<A: Codec> From<&SeqSlice<A>> for usize {
-    fn from(slice: &SeqSlice<A>) -> usize {
-        assert!(slice.bs.len() <= usize::BITS as usize);
-        //let shift = usize::BITS - slice.bs.len() as u32;
-        slice.bs.load_le::<usize>() //.wrapping_shr(shift)
+impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
+    type Error = ParseBioError;
+
+    fn try_from(slice: &SeqSlice<A>) -> Result<usize, Self::Error> {
+        if slice.bs.len() <= usize::BITS as usize {
+            Ok(slice.bs.load_le::<usize>())
+        } else {
+            let len: usize = slice.bs.len() / A::BITS as usize;
+            let expected: usize = usize::BITS as usize / A::BITS as usize;
+            Err(ParseBioError::SequenceTooLong(len, expected))
+        }
+    }
+}
+
+impl<A: Codec, const N: usize> From<&SeqArray<A, N, 1>> for usize {
+    fn from(slice: &SeqArray<A, N, 1>) -> usize {
+        slice.bs.load_le::<usize>()
     }
 }
 
@@ -274,6 +303,25 @@ impl<A: Codec> PartialEq<&str> for Seq<A> {
     }
 }
 
+impl<A: Codec, const N: usize, const W: usize> PartialEq<str> for SeqArray<A, N, W> {
+    fn eq(&self, other: &str) -> bool {
+        self.as_ref() == other
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize, const M: usize, const V: usize>
+    PartialEq<SeqArray<A, N, W>> for SeqArray<A, M, V>
+{
+    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
+        if N == M {
+            self.ba == other.ba
+        } else {
+            false
+        }
+    }
+}
+
+// TODO: should convert input string into Seq instead
 impl<A: Codec> PartialEq<str> for SeqSlice<A> {
     fn eq(&self, other: &str) -> bool {
         self.iter().map(A::to_char).eq(other.chars())
@@ -282,7 +330,42 @@ impl<A: Codec> PartialEq<str> for SeqSlice<A> {
 
 impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
     fn eq(&self, other: &Seq<A>) -> bool {
-        other.bv.as_ref() == self.bs
+        other.bv == self.bs
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for SeqSlice<A> {
+    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
+        other.as_ref()[..] == self
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<&SeqArray<A, N, W>> for SeqSlice<A> {
+    fn eq(&self, other: &&SeqArray<A, N, W>) -> bool {
+        other.as_ref()[..] == self
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for Seq<A> {
+    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
+        other.as_ref()[..] == self.as_ref()[..]
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<&SeqArray<A, N, W>> for Seq<A> {
+    fn eq(&self, other: &&SeqArray<A, N, W>) -> bool {
+        other.as_ref()[..] == self.as_ref()[..]
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for &SeqArray<A, N, W> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        other.bv == self.ba
+    }
+}
+impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for SeqArray<A, N, W> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        other.bv == self.ba
     }
 }
 
@@ -344,7 +427,7 @@ impl<A: Codec> Hash for SeqSlice<A> {
 /// use bio_seq::prelude::*;
 /// use std::borrow::Borrow;
 ///
-/// let seq: Seq<Dna> = dna!("CTACGTACGATCATCG");
+/// let seq: Seq<Dna> = dna!("CTACGTACGATCATCG").into();
 /// let slice: &SeqSlice<Dna> = seq.borrow();
 /// ```
 ///
@@ -363,7 +446,7 @@ impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
 ///    s.len()
 /// }
 ///
-/// let seq: Seq<Dna> = dna!("CATCGATCGATC");
+/// let seq: Seq<Dna> = dna!("CATCGATCGATC").into();
 /// let count = count_bases(&seq);
 /// assert_eq!(count, 12);
 /// ```
@@ -385,12 +468,18 @@ impl<A: Codec> Deref for Seq<A> {
 ///    s.as_ref().len()
 /// }
 ///
-/// let seq: Seq<Dna> = dna!("CATCGATCGATC");
+/// let seq: Seq<Dna> = dna!("CATCGATCGATC").into();
 /// let count = count_bases(seq); // the AsRef implementation allows us to directly pass a Seq
 /// assert_eq!(count, 12);
 /// ```
 ///
 impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
+    fn as_ref(&self) -> &SeqSlice<A> {
+        self
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A>> for SeqArray<A, N, W> {
     fn as_ref(&self) -> &SeqSlice<A> {
         self
     }
@@ -422,9 +511,10 @@ impl<A: Codec> ToOwned for SeqSlice<A> {
 /// Creates a deep copy of the sequence.
 ///
 /// ```
+/// #[macro_use]
 /// use bio_seq::prelude::*;
 ///
-/// let mut seq1: Seq<Dna> = dna!("CATCGATCGATC");
+/// let mut seq1: Seq<Dna> = dna!("CATCGATCGATC").into();
 /// let seq2: Seq<Dna> = seq1.clone();
 ///
 /// seq1.push(Dna::A);
@@ -446,12 +536,30 @@ impl<A: Codec> From<&Vec<A>> for Seq<A> {
     }
 }
 
+/*
 impl<A: Codec> From<&SeqSlice<A>> for Seq<A> {
     fn from(slice: &SeqSlice<A>) -> Self {
         Seq {
             _p: PhantomData,
             bv: slice.bs.into(),
         }
+    }
+}
+    */
+
+impl<A: Codec, B: Codec> From<&SeqSlice<A>> for Seq<B>
+where
+    A: Into<B>,
+{
+    fn from(slice: &SeqSlice<A>) -> Self {
+        slice.iter().map(Into::into).collect()
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> From<&SeqArray<A, N, W>> for Seq<A> {
+    fn from(slice: &SeqArray<A, N, W>) -> Self {
+        let s: &SeqSlice<A> = slice;
+        s.to_owned()
     }
 }
 
@@ -490,6 +598,12 @@ impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
 }
 
 impl<A: Codec> fmt::Display for Seq<A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&String::from(self.as_ref()), f)
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> fmt::Display for SeqArray<A, N, W> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&String::from(self.as_ref()), f)
     }
@@ -545,8 +659,8 @@ mod tests {
 
     #[test]
     fn test_revcomp() {
-        let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA");
-        let s2: Seq<Dna> = dna!("TCAGTCGCACACAT");
+        let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA").into();
+        let s2: Seq<Dna> = dna!("TCAGTCGCACACAT").into();
         let s3: &SeqSlice<Dna> = &s1;
         assert_eq!(s3.revcomp(), s2.revcomp().revcomp());
         assert_eq!(s3.revcomp(), s2);
@@ -613,8 +727,8 @@ mod tests {
 
     #[test]
     fn slice_index_ranges() {
-        let s1 = dna!("ACGACTGATCGA");
-        let s2 = dna!("TCGAACGACTGA");
+        let s1: &'static SeqSlice<Dna> = dna!("ACGACTGATCGA");
+        let s2: &'static SeqSlice<Dna> = dna!("TCGAACGACTGA");
 
         assert_eq!(&s1[..8], &s2[4..]);
         assert_eq!(&s1[8..], &s2[..4]);
@@ -784,7 +898,7 @@ mod tests {
 
     #[test]
     fn test_borrow() {
-        let seq: Seq<Dna> = dna!("ACGACCCCCATAGATGGGCTG");
+        let seq: Seq<Dna> = dna!("ACGACCCCCATAGATGGGCTG").into();
         let slice: &SeqSlice<Dna> = seq.borrow();
         assert_eq!(slice, &seq[..]);
         assert_ne!(slice, &seq[1..]);
@@ -792,7 +906,7 @@ mod tests {
 
     #[test]
     fn test_deref() {
-        let seq: Seq<Dna> = dna!("AGAATGATCG");
+        let seq: Seq<Dna> = dna!("AGAATGATCG").into();
         let slice: &SeqSlice<Dna> = &*seq;
 
         assert_eq!(slice, &seq[..]);
@@ -801,7 +915,7 @@ mod tests {
 
     #[test]
     fn test_asref() {
-        let seq: Seq<Dna> = dna!("AGAATGATCAAAATATATATAAAG");
+        let seq: Seq<Dna> = dna!("AGAATGATCAAAATATATATAAAG").into();
         let slice: &SeqSlice<Dna> = seq.as_ref();
         assert_ne!(slice, &seq[2..5]);
         assert_eq!(slice, &seq[..]);
@@ -809,7 +923,7 @@ mod tests {
 
     #[test]
     fn test_to_owned() {
-        let seq: Seq<Dna> = dna!("AGAATGAATCG");
+        let seq: Seq<Dna> = dna!("AGAATGAATCG").into();
         let slice: &SeqSlice<Dna> = &seq;
         let owned: Seq<Dna> = slice[2..5].to_owned();
         assert_eq!(&owned, &seq[2..5]);
@@ -819,7 +933,7 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let seq: Seq<Dna> = dna!("AGAATGATGGGGGGGGGGGCG");
+        let seq: Seq<Dna> = dna!("AGAATGATGGGGGGGGGGGCG").into();
         let cloned = seq.clone();
         assert_eq!(seq, cloned);
     }
@@ -947,6 +1061,43 @@ mod tests {
         let seq: Result<Seq<Dna>, ParseBioError> =
             "ACGATGAGTAGBCGCCATCGTATCTTTGACTGCCGATGCTA".parse();
         assert_eq!(seq, Err(ParseBioError::UnrecognisedBase(b'B')));
+    }
+
+    #[test]
+    fn test_unique_bitarray_ident() {
+        let s1 = dna!("ATCGACTACGATCGCTACGATCGATCGATCGATCGAATCTCCCGCGCGATCATCGATCATCGCTACGTACGTCGAAAAATATAATGGG");
+        let s2 = dna!("ATCGACTACGATCGCTACGATCGATCGATCGATCGAATCTCCCGCGCGATCATCGATCATCGCTACGTACGTCGAAAAATATAATGGG");
+
+        // Changed first base
+        let s3 = dna!("CTCGACTACGATCGCTACGATCGATCGATCGATCGAATCTCCCGCGCGATCATCGATCATCGCTACGTACGTCGAAAAATATAATGGG");
+
+        // Added `00` to end
+        let s4 = dna!("ATCGACTACGATCGCTACGATCGATCGATCGATCGAATCTCCCGCGCGATCATCGATCATCGCTACGTACGTCGAAAAATATAATGGGA");
+
+        // Changed last base
+        let s5 = dna!("ATCGACTACGATCGCTACGATCGATCGATCGATCGAATCTCCCGCGCGATCATCGATCATCGCTACGTACGTCGAAAAATATAATGGC");
+
+        assert_eq!(s1, s2);
+        assert_ne!(s1, s3);
+        assert_ne!(s1, s4);
+        assert_ne!(s4, s1);
+        assert_ne!(s5, s1);
+    }
+
+    #[test]
+    fn test_static() {
+        use crate::seq::SeqArray;
+
+        static B: SeqArray<Dna, 5, 1> = SeqArray {
+            _p: PhantomData,
+            ba: bitarr![const usize, Lsb0; 1,1,0,1,0,0,1,0,1,1],
+        };
+
+        let s: &'static SeqSlice<Dna> = &B;
+
+        let x: &'static str = "TGACT";
+
+        assert_eq!(s.to_string(), x);
     }
     /*
         #[test]

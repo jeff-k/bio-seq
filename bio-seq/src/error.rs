@@ -4,6 +4,7 @@ use core::fmt;
 pub enum ParseBioError {
     UnrecognisedBase(u8),
     MismatchedLength(usize, usize),
+    SequenceTooLong(usize, usize),
 }
 
 impl fmt::Display for ParseBioError {
@@ -23,6 +24,10 @@ impl fmt::Display for ParseBioError {
 
             ParseBioError::MismatchedLength(got, expected) => {
                 write!(f, "Expected length {expected}, got {got}")
+            }
+
+            ParseBioError::SequenceTooLong(got, expected) => {
+                write!(f, "Expected length <= {expected}, got {got}")
             }
         }
     }

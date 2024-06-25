@@ -177,13 +177,12 @@ impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::dna::{Dna, Dna::*};
-    use crate::codec::Complement;
-    use crate::seq::{FromStr, Seq};
+    use crate::codec::dna::Dna::*;
+    use crate::prelude::*;
 
     #[test]
     fn seq_iter() {
-        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC").into();
         let elements: Vec<Dna> = seq.into_iter().collect();
         assert_eq!(elements, vec![A, C, T, G, A, T, C, G, A, T, A, C]);
         assert_ne!(elements, vec![A, C, T, G, A, T, C, G, A, T, A, C, A]);
@@ -192,7 +191,7 @@ mod tests {
 
     #[test]
     fn rev_iter() {
-        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC").into();
         let rev_elements: Vec<Dna> = seq.rev().collect();
         assert_ne!(rev_elements, vec![A, C, T, G, A, T, C, G, A, T, A, C]);
         assert_eq!(rev_elements, vec![C, A, T, A, G, C, T, A, G, T, C, A]);
@@ -200,7 +199,7 @@ mod tests {
 
     #[test]
     fn iterators() {
-        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC").into();
         let slice = &seq[2..9];
         let elements: Vec<Dna> = slice.into_iter().collect();
         assert_eq!(elements, vec![T, G, A, T, C, G, A]);
@@ -208,7 +207,7 @@ mod tests {
 
     #[test]
     fn chunks() {
-        let seq: Seq<Dna> = dna!("ACTGATCGATAC");
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC").into();
         let cs: Vec<Seq<Dna>> = seq.chunks(5).collect();
         assert_eq!(cs[0], dna!("ACTGA"));
         assert_eq!(cs[1], dna!("TCGAT"));
@@ -235,7 +234,7 @@ mod tests {
 
     #[test]
     fn windows() {
-        let seq: Seq<Dna> = dna!("ACTGATACG");
+        let seq: Seq<Dna> = dna!("ACTGATACG").into();
         let windows: Vec<Seq<Dna>> = seq.windows(5).collect();
         assert_eq!(windows, vec!["ACTGA", "CTGAT", "TGATA", "GATAC", "ATACG"]);
     }
