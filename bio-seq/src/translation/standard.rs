@@ -64,9 +64,7 @@ fn initialise_amino_to_iupac() -> HashMap<Amino, Option<Seq<Iupac>>> {
 
 impl TranslationTable<Dna, Amino> for Standard {
     fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
-        if codon.len() != 3 {
-            panic!("Invalid codon of length {}", codon.len());
-        }
+        assert!(codon.len() == 3, "Invalid codon length {}", codon.len());
         // It should be possible to assert that this is safe at compile time
         Amino::unsafe_from_bits(Into::<u8>::into(codon))
     }
@@ -98,9 +96,8 @@ impl PartialTranslationTable<Iupac, Amino> for Standard {
         let amino_to_iupac = AMINO_TO_IUPAC.get_or_init(initialise_amino_to_iupac);
 
         match amino_to_iupac.get(&amino) {
-            Some(None) => Err(TranslationError::AmbiguousCodon(amino)),
             Some(Some(codon)) => Ok(codon.clone()),
-            None => Err(TranslationError::AmbiguousCodon(amino)),
+            None | Some(None) => Err(TranslationError::AmbiguousCodon(amino)),
         }
     }
 }
@@ -115,7 +112,8 @@ mod tests {
 
     #[test]
     fn dna_to_amino() {
-        let seq: Seq<Dna> = dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA");
+        let seq: Seq<Dna> =
+            dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA").into();
         let aminos: Seq<Amino> = seq
             .chunks(3)
             .map(|codon| STANDARD.to_amino(codon.into()))
@@ -127,7 +125,7 @@ mod tests {
 
     #[test]
     fn alternate_codons() {
-        let seq: Seq<Dna> = dna!("AGCTCGTCATCCTCTAGTTGATAATAG");
+        let seq: Seq<Dna> = dna!("AGCTCGTCATCCTCTAGTTGATAATAG").into();
         let aminos: Seq<Amino> = seq
             .chunks(3)
             .map(|codon| STANDARD.to_amino(codon.into()))
@@ -138,7 +136,7 @@ mod tests {
     #[test]
     fn test_debruin_sequence() {
         let seq: Seq<Dna> =
-            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
         let aminos: Seq<Amino> = seq
             .windows(3)
             .map(|codon| STANDARD.to_amino(&codon))

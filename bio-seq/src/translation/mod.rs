@@ -29,14 +29,14 @@ impl<A: Codec, B: Codec + fmt::Display> fmt::Display for TranslationError<A, B> 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TranslationError::AmbiguousCodon(amino) => {
-                write!(f, "Multiple codon sequences: {}", amino)
+                write!(f, "Multiple codon sequences: {amino}")
             }
             TranslationError::AmbiguousTranslation(codon) => {
-                write!(f, "Ambiguous translations for codon: {}", codon)
+                write!(f, "Ambiguous translations for codon: {codon}")
             }
-            TranslationError::InvalidCodon(codon) => write!(f, "Invalid codon sequence: {}", codon),
+            TranslationError::InvalidCodon(codon) => write!(f, "Invalid codon sequence: {codon}"),
             TranslationError::InvalidAmino(amino) => {
-                write!(f, "Invalid amino acid character: {:?}", amino)
+                write!(f, "Invalid amino acid character: {amino:?}")
             }
         }
     }
@@ -46,14 +46,27 @@ impl<A: Codec, B: Codec + fmt::Display> fmt::Display for TranslationError<A, B> 
 impl<A: Codec, B: Codec + fmt::Display + fmt::Debug> std::error::Error for TranslationError<A, B> {}
 
 /// A codon translation table where all codons map to amino acids
+///
+
 pub trait TranslationTable<A: Codec, B: Codec + fmt::Display> {
     fn to_amino(&self, codon: &SeqSlice<A>) -> B;
+
+    /// # Errors
+    ///
+    /// Will return `Err` when an amino acid has multiple codons (most cases)
     fn to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>>;
 }
 
 /// A partial translation table where not all triples of characters map to amino acids
 pub trait PartialTranslationTable<A: Codec, B: Codec + fmt::Display> {
+    /// # Errors
+    ///
+    /// Will return an `Err` if a codon does not map to an amino acid. This would be
+    /// the case for a translation table from codons with ambiguous nucleotide codes such as `ANC`, `SWS`, `NNN`, etc.
     fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError<A, B>>;
+    /// # Errors
+    ///
+    /// Will return an `Err` if the amino acid can be translated from different codons
     fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>>;
 }
 
@@ -87,9 +100,9 @@ impl<A: Codec, B: Codec + fmt::Display> CodonTable<A, B> {
 
 impl<A: Codec, B: Codec + fmt::Display> PartialTranslationTable<A, B> for CodonTable<A, B> {
     fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError<A, B>> {
-        match self.table.get(&Seq::from(codon)) {
+        match self.table.get(codon) {
             Some(amino) => Ok(*amino),
-            None => Err(TranslationError::InvalidCodon(Seq::from(codon))),
+            None => Err(TranslationError::InvalidCodon(codon.into())),
         }
     }
 
@@ -115,25 +128,25 @@ mod tests {
     #[test]
     fn custom_codon_table() {
         let mito: [(Seq<Dna>, Amino); 6] = [
-            (dna!("AAA"), Amino::A),
-            (dna!("ATG"), Amino::A),
-            (dna!("CCC"), Amino::C),
-            (dna!("GGG"), Amino::E),
-            (dna!("TTT"), Amino::D),
-            (dna!("TTA"), Amino::F),
+            (dna!("AAA").into(), Amino::A),
+            (dna!("ATG").into(), Amino::A),
+            (dna!("CCC").into(), Amino::C),
+            (dna!("GGG").into(), Amino::E),
+            (dna!("TTT").into(), Amino::D),
+            (dna!("TTA").into(), Amino::F),
         ];
 
         let table = CodonTable::from_map(mito);
 
-        let seq: Seq<Dna> = dna!("AAACCCGGGTTTTTATTAATG");
+        let seq: Seq<Dna> = dna!("AAACCCGGGTTTTTATTAATG").into();
         let mut amino_seq: Seq<Amino> = Seq::new();
         for codon in seq.chunks(3) {
             amino_seq.push(table.try_to_amino(codon).unwrap());
         }
         assert_eq!(amino_seq, amino!("ACEDFFA"));
 
-        assert_ne!(table.try_to_codon(Amino::E), Ok(dna!("CCC")));
-        assert_eq!(table.try_to_codon(Amino::C), Ok(dna!("CCC")));
+        assert_ne!(table.try_to_codon(Amino::E), Ok(dna!("CCC").into()));
+        assert_eq!(table.try_to_codon(Amino::C), Ok(dna!("CCC").into()));
         assert_eq!(
             table.try_to_codon(Amino::A),
             Err(TranslationError::AmbiguousCodon(Amino::A))
@@ -169,7 +182,7 @@ mod tests {
         }
 
         let seq: Seq<Dna> =
-            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
         let aminos: Seq<Amino> = seq
             .windows(3)
             .map(|codon| Mitochondria.to_amino(&codon))
