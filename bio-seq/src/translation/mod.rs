@@ -163,13 +163,13 @@ mod tests {
 
         impl TranslationTable<Dna, Amino> for Mitochondria {
             fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
-                if *codon == dna!("AGA") {
+                if codon == dna!("AGA") {
                     Amino::X
-                } else if *codon == dna!("AGG") {
+                } else if codon == dna!("AGG") {
                     Amino::X
-                } else if *codon == dna!("ATA") {
+                } else if codon == dna!("ATA") {
                     Amino::M
-                } else if *codon == dna!("TGA") {
+                } else if codon == dna!("TGA") {
                     Amino::W
                 } else {
                     Amino::unsafe_from_bits(Into::<u8>::into(codon))

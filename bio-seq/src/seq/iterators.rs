@@ -65,7 +65,7 @@ impl<A: Codec> SeqSlice<A> {
     /// use bio_seq::prelude::*;
     ///
     /// let seq: Seq<Dna> = "ACTGATCG".try_into().unwrap();
-    /// let windows: Vec<Seq<Dna>> = seq.windows(3).collect();
+    /// let windows: Vec<String> = seq.windows(3).map(String::from).collect();
     /// assert_eq!(windows, vec!["ACT", "CTG", "TGA", "GAT", "ATC", "TCG"]);
     /// ```
     pub fn windows(&self, width: usize) -> SeqChunks<A> {
@@ -89,7 +89,7 @@ impl<A: Codec> SeqSlice<A> {
     ///
     /// let seq: Seq<Dna> = "ACTGATCG".try_into().unwrap();
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
-    /// assert_eq!(chunks, vec!["ACT", "GAT"]);
+    /// assert_eq!(chunks, vec![dna!("ACT"), dna!("GAT")]);
     /// ```
     pub fn chunks(&self, width: usize) -> SeqChunks<A> {
         SeqChunks {
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn windows() {
         let seq: Seq<Dna> = dna!("ACTGATACG").into();
-        let windows: Vec<Seq<Dna>> = seq.windows(5).collect();
+        let windows: Vec<String> = seq.windows(5).map(String::from).collect();
         assert_eq!(windows, vec!["ACTGA", "CTGAT", "TGATA", "GATAC", "ATACG"]);
     }
 }

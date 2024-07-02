@@ -303,11 +303,13 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
     }
 }
 
+/*
 impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
     fn from(kmer: Kmer<A, K>) -> Self {
         kmer.to_string()
     }
 }
+*/
 
 impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     fn eq(&self, seq: &Seq<A>) -> bool {
