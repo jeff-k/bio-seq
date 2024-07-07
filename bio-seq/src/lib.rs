@@ -46,6 +46,8 @@
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::return_self_not_must_use)]
 #![allow(clippy::module_name_repetitions)]
+// the lint doesn't seem to recognise our implementations
+#![allow(clippy::into_iter_without_iter)]
 
 use bitvec::prelude::*;
 
@@ -54,14 +56,14 @@ type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
 type Ba = BitArray<usize, Order>;
 
-#[macro_use]
 pub mod codec;
 pub mod error;
+#[macro_use]
 pub mod kmer;
 pub mod seq;
 
 //#[macro_use]
-pub use bio_seq_derive::dna;
+pub use bio_seq_derive::{dna, iupac};
 
 pub use bitvec::bitarr;
 pub use bitvec::prelude::Lsb0;
@@ -77,7 +79,6 @@ pub mod prelude {
 
     pub use crate::kmer::Kmer;
     pub use crate::seq::{ReverseComplement, Seq, SeqArray, SeqSlice};
-    pub use crate::{amino, iupac, kmer};
 
     #[cfg(feature = "translation")]
     pub use crate::translation;
@@ -86,7 +87,7 @@ pub mod prelude {
 
     pub use crate::error::ParseBioError;
 
-    pub use crate::dna;
+    pub use crate::{dna, iupac, kmer};
 
     pub use crate::bitarr as __bio_seq_bitarr;
     pub use crate::Lsb0 as __bio_seq_Lsb0;
@@ -169,7 +170,10 @@ mod tests {
         );
 
         assert_eq!(
-            amino!("DCMNLKGHI").rev().collect::<Vec<Amino>>(),
+            Seq::<Amino>::try_from("DCMNLKGHI")
+                .unwrap()
+                .rev()
+                .collect::<Vec<Amino>>(),
             vec![
                 Amino::I,
                 Amino::H,
@@ -218,8 +222,14 @@ mod tests {
 
     #[test]
     fn iupac_bitwise_ops() {
-        assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-        assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
+        let s1: &SeqSlice<Iupac> = iupac!("AS-GYTNA");
+        let s2: &SeqSlice<Iupac> = iupac!("ANTGCAT-");
+
+        let s3: &SeqSlice<Iupac> = iupac!("ACGTSWKM");
+        let s4: &SeqSlice<Iupac> = iupac!("WKMSTNNA");
+
+        assert_eq!(s1 | s2, iupac!("ANTGYWNA"));
+        assert_eq!(s3 & s4, iupac!("A----WKA"));
     }
 
     #[test]
@@ -230,8 +240,14 @@ mod tests {
         assert_eq!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::T));
         assert_ne!(iupac!("ACGTRYSWKMBDHVN-").nth(3), Iupac::from(Dna::G));
 
-        assert_eq!(amino!("DCMNLKGHI").nth(1), Amino::C);
-        assert_ne!(amino!("DCMNLKGHI").nth(7), Amino::I);
+        assert_eq!(
+            Seq::<Amino>::try_from("DCMNLKGHI").unwrap().nth(1),
+            Amino::C
+        );
+        assert_ne!(
+            Seq::<Amino>::try_from("DCMNLKGHI").unwrap().nth(7),
+            Amino::I
+        );
     }
 
     #[test]

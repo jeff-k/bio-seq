@@ -58,8 +58,8 @@ use core::str::FromStr;
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct Seq<A: Codec> {
-    _p: PhantomData<A>,
-    bv: Bv,
+    pub(crate) _p: PhantomData<A>,
+    pub(crate) bv: Bv,
 }
 
 impl<A: Codec> From<Seq<A>> for usize {
@@ -855,6 +855,11 @@ mod tests {
         let seq: Result<Seq<Dna>, ParseBioError> =
             "ACGATGAGTAGBCGCCATCGTATCTTTGACTGCCGATGCTA".parse();
         assert_eq!(seq, Err(ParseBioError::UnrecognisedBase(b'B')));
+    }
+
+    #[test]
+    fn test_lens() {
+        assert_eq!(iupac!("AWANWATNA---SKAGTCAA").len(), 20)
     }
 
     #[test]

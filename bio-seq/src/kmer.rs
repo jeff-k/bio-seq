@@ -12,7 +12,7 @@
 //! ```
 //! use bio_seq::prelude::*;
 //!
-//! for (amino_kmer, amino_string) in amino!("SSLMNHKKL")
+//! for (amino_kmer, amino_string) in Seq::<Amino>::try_from("SSLMNHKKL").unwrap()
 //!         .kmers::<3>()
 //!         .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
 //!     {
@@ -365,6 +365,13 @@ impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
     }
 }
 
+#[macro_export]
+macro_rules! kmer {
+    ($seq:expr) => {
+        Kmer::<Dna, { $seq.len() }>::from(dna!($seq))
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -415,11 +422,12 @@ mod tests {
 
     #[test]
     fn amino_kmer_to_usize() {
-        for (kmer, index) in amino!("SRY")
+        for (kmer, index) in Seq::<Amino>::try_from("SRY")
+            .unwrap()
             .kmers::<2>()
             .zip([0b001000_011000, 0b010011_001000])
         {
-            assert_eq!(index as usize, (&kmer).into());
+            assert_eq!(index as usize, usize::from(&kmer));
         }
     }
     #[test]
@@ -441,7 +449,8 @@ mod tests {
     }
     #[test]
     fn amino_kmer_iter() {
-        for (kmer, target) in amino!("SSLMNHKKL")
+        for (kmer, target) in Seq::<Amino>::try_from("SSLMNHKKL")
+            .unwrap()
             .kmers::<3>()
             .zip(["SSL", "SLM", "LMN", "MNH", "NHK", "HKK", "KKL"])
         {

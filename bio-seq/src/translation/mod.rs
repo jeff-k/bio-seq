@@ -143,7 +143,7 @@ mod tests {
         for codon in seq.chunks(3) {
             amino_seq.push(table.try_to_amino(codon).unwrap());
         }
-        assert_eq!(amino_seq, amino!("ACEDFFA"));
+        assert_eq!(amino_seq, Seq::<Amino>::try_from("ACEDFFA").unwrap());
 
         assert_ne!(table.try_to_codon(Amino::E), Ok(dna!("CCC").into()));
         assert_eq!(table.try_to_codon(Amino::C), Ok(dna!("CCC").into()));
@@ -190,7 +190,11 @@ mod tests {
         assert_eq!(seq.len() - 2, aminos.len());
 
         for (x, y) in aminos.into_iter().zip(
-            amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK").into_iter(),
+            Seq::<Amino>::try_from(
+                "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK",
+            )
+            .unwrap()
+            .into_iter(),
         ) {
             assert_eq!(x, y)
         }

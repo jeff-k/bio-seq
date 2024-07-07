@@ -116,11 +116,8 @@
 use core::fmt;
 use core::hash::Hash;
 
-#[macro_use]
 pub mod amino;
-#[macro_use]
 pub mod dna;
-#[macro_use]
 pub mod iupac;
 
 pub mod text;

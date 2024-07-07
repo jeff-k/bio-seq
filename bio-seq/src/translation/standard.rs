@@ -1,12 +1,13 @@
 //! Standard amino acid translation table
 
-use core::str::FromStr;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use crate::codec::Codec;
 use crate::codec::{amino::Amino, dna::Dna, iupac::Iupac};
-use crate::prelude::{Seq, SeqSlice};
+use crate::iupac;
+use crate::prelude::{Seq, SeqArray, SeqSlice};
+use crate::prelude::{__bio_seq_Lsb0, __bio_seq_bitarr};
 use crate::translation::{PartialTranslationTable, TranslationError, TranslationTable};
 
 pub struct Standard;
@@ -17,35 +18,35 @@ static IUPAC_TO_AMINO: OnceLock<[(Seq<Iupac>, Amino); 29]> = OnceLock::new();
 
 fn initialise_iupac_to_amino() -> [(Seq<Iupac>, Amino); 29] {
     [
-        (iupac!("GCN"), Amino::A),
-        (iupac!("TGY"), Amino::C),
-        (iupac!("GAY"), Amino::D),
-        (iupac!("GAR"), Amino::E),
-        (iupac!("TTY"), Amino::F),
-        (iupac!("GGN"), Amino::G),
-        (iupac!("CAY"), Amino::H),
-        (iupac!("ATH"), Amino::I),
-        (iupac!("AAR"), Amino::K),
-        (iupac!("CTN"), Amino::L),
-        (iupac!("TTR"), Amino::L),
-        (iupac!("CTY"), Amino::L),
-        (iupac!("YTR"), Amino::L),
-        (iupac!("ATG"), Amino::M),
-        (iupac!("AAY"), Amino::N),
-        (iupac!("CCN"), Amino::P),
-        (iupac!("CAR"), Amino::Q),
-        (iupac!("CGN"), Amino::R),
-        (iupac!("AGR"), Amino::R),
-        (iupac!("CGY"), Amino::R),
-        (iupac!("MGR"), Amino::R),
-        (iupac!("TCN"), Amino::S),
-        (iupac!("AGY"), Amino::S),
-        (iupac!("ACN"), Amino::T),
-        (iupac!("GTN"), Amino::V),
-        (iupac!("TGG"), Amino::W),
-        (iupac!("TAY"), Amino::Y),
-        (iupac!("TAR"), Amino::X),
-        (iupac!("TRA"), Amino::X),
+        (iupac!("GCN").into(), Amino::A),
+        (iupac!("TGY").into(), Amino::C),
+        (iupac!("GAY").into(), Amino::D),
+        (iupac!("GAR").into(), Amino::E),
+        (iupac!("TTY").into(), Amino::F),
+        (iupac!("GGN").into(), Amino::G),
+        (iupac!("CAY").into(), Amino::H),
+        (iupac!("ATH").into(), Amino::I),
+        (iupac!("AAR").into(), Amino::K),
+        (iupac!("CTN").into(), Amino::L),
+        (iupac!("TTR").into(), Amino::L),
+        (iupac!("CTY").into(), Amino::L),
+        (iupac!("YTR").into(), Amino::L),
+        (iupac!("ATG").into(), Amino::M),
+        (iupac!("AAY").into(), Amino::N),
+        (iupac!("CCN").into(), Amino::P),
+        (iupac!("CAR").into(), Amino::Q),
+        (iupac!("CGN").into(), Amino::R),
+        (iupac!("AGR").into(), Amino::R),
+        (iupac!("CGY").into(), Amino::R),
+        (iupac!("MGR").into(), Amino::R),
+        (iupac!("TCN").into(), Amino::S),
+        (iupac!("AGY").into(), Amino::S),
+        (iupac!("ACN").into(), Amino::T),
+        (iupac!("GTN").into(), Amino::V),
+        (iupac!("TGG").into(), Amino::W),
+        (iupac!("TAY").into(), Amino::Y),
+        (iupac!("TAR").into(), Amino::X),
+        (iupac!("TRA").into(), Amino::X),
     ]
 }
 
@@ -118,9 +119,18 @@ mod tests {
             .chunks(3)
             .map(|codon| STANDARD.to_amino(codon.into()))
             .collect::<Seq<Amino>>();
-        assert_eq!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*"));
-        assert_ne!(aminos, amino!("ACDEFGHIKLMNPQRSTVWY*A"));
-        assert_ne!(aminos, amino!("CDEFGHIKLMNPQRSTVWY*A"));
+        assert_eq!(
+            aminos,
+            Seq::<Amino>::try_from("ACDEFGHIKLMNPQRSTVWY*").unwrap()
+        );
+        assert_ne!(
+            aminos,
+            Seq::<Amino>::try_from("ACDEFGHIKLMNPQRSTVWY*A").unwrap()
+        );
+        assert_ne!(
+            aminos,
+            Seq::<Amino>::try_from("CDEFGHIKLMNPQRSTVWY*A").unwrap()
+        );
     }
 
     #[test]
@@ -130,7 +140,7 @@ mod tests {
             .chunks(3)
             .map(|codon| STANDARD.to_amino(codon.into()))
             .collect::<Seq<Amino>>();
-        assert_eq!(aminos, amino!("SSSSSS***"));
+        assert_eq!(aminos, Seq::<Amino>::try_from("SSSSSS***").unwrap());
     }
 
     #[test]
@@ -144,28 +154,35 @@ mod tests {
         assert_eq!(seq.len() - 2, aminos.len());
         assert_eq!(
             aminos,
-            amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+            Seq::<Amino>::try_from(
+                "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK"
+            )
+            .unwrap()
         );
     }
 
     #[test]
     fn test_iupac_codons() {
-        let seq: Seq<Iupac> =
-            iupac!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+        let seq = iupac!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
         let aminos: Seq<Amino> = seq
             .windows(3)
             .map(|codon| STANDARD.try_to_amino(&codon).unwrap())
             .collect::<Seq<Amino>>();
         assert_eq!(
             aminos,
-            amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+            Seq::<Amino>::try_from(
+                "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK"
+            )
+            .unwrap()
         );
     }
 
     #[test]
     fn test_iupac_aminos() {
-        let seq: Seq<Amino> =
-            amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK");
+        let seq: Seq<Amino> = Seq::<Amino>::try_from(
+            "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK",
+        )
+        .unwrap();
         let mut iupacs: Seq<Iupac> = Seq::new();
         let mut ambs: Seq<Amino> = Seq::new();
 
@@ -177,19 +194,22 @@ mod tests {
             }
         }
         assert_eq!(iupacs, iupac!("AAYATHTTYTGYGTNTGGGGNGGNGTNTTYGTNTGYGCNGGNGCNCCNGCNCCNCCNGTNTAYACNTAYATGGARGGNGAYACNGAYATHCARGCNCAYACNCCNCAYATHAARGARAAYACNCARAAR"));
-        assert_eq!(ambs, amino!("LSRSLRLSRLL*SL*RRSS*R"));
+        assert_eq!(
+            ambs,
+            Seq::<Amino>::try_from("LSRSLRLSRLL*SL*RRSS*R").unwrap()
+        );
     }
 
     #[test]
     fn test_iupac_ambiguous_codons() {
-        let seq: Seq<Iupac> = iupac!("AAYATHTTYTGYGTNTGGGGNGGNGTNTTYGTNTGYGCNGGNGCNCCNGCNCCNCCNGTNTAYACNTAYATGGARGGNGAYACNGAYATHCARGCNCAYACNCCNCAYATHAARGARAAYACNCARAAR");
+        let seq: Seq<Iupac> = iupac!("AAYATHTTYTGYGTNTGGGGNGGNGTNTTYGTNTGYGCNGGNGCNCCNGCNCCNCCNGTNTAYACNTAYATGGARGGNGAYACNGAYATHCARGCNCAYACNCCNCAYATHAARGARAAYACNCARAAR").into();
         let aminos: Seq<Amino> = seq
             .chunks(3)
             .map(|codon| STANDARD.try_to_amino(&codon).unwrap())
             .collect::<Seq<Amino>>();
         assert_eq!(
             aminos,
-            amino!("NIFCVWGGVFVCAGAPAPPVYTYMEGDTDIQAHTPHIKENTQK")
+            Seq::<Amino>::try_from("NIFCVWGGVFVCAGAPAPPVYTYMEGDTDIQAHTPHIKENTQK").unwrap()
         );
     }
 
