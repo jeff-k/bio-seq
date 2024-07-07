@@ -10,8 +10,10 @@
 #![warn(clippy::pedantic)]
 
 mod codec;
+mod seqarray;
 
 use crate::codec::{parse_variants, parse_width, test_repr, CodecVariants};
+use crate::seqarray::{dna_seq, gen_seqarray, iupac_seq};
 use quote::quote;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use syn::parse_macro_input;
@@ -112,57 +114,50 @@ pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 #[proc_macro]
 pub fn dna(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let dna_str: LitStr = parse_macro_input!(input as LitStr);
+    let seq: LitStr = parse_macro_input!(input as LitStr);
 
-    if !dna_str.value().is_ascii() {
-        return syn::Error::new_spanned(dna_str, "Non-ASCII characters in DNA string")
+    if !seq.value().is_ascii() {
+        return syn::Error::new_spanned(seq, "Non-ASCII characters in DNA string")
             .to_compile_error()
             .into();
     }
 
     let seq_name = {
         let mut hasher = DefaultHasher::new();
-        dna_str.value().hash(&mut hasher);
+        seq.value().hash(&mut hasher);
         format!("DNA_SEQ_{:0X}", hasher.finish())
     };
 
-    let mut bits: Vec<u8> = Vec::new();
-    let mut bases: usize = 0;
-
-    //    let dna_bound = dna_str.value();
-    //    let mut iter = dna_bound.char_indices().peekable();
-
-    for (i, c) in dna_str.value().char_indices() {
-        match c {
-            'A' => bits.extend([0, 0]),
-            'C' => bits.extend([1, 0]),
-            'G' => bits.extend([0, 1]),
-            'T' => bits.extend([1, 1]),
-            _ => {
-                return syn::Error::new_spanned(
-                    dna_str.value(),
-                    format!("Invalid DNA base a position {i}: {c}"),
-                )
-                .to_compile_error()
-                .into();
-            }
+    match dna_seq(&seq) {
+        Ok((len, bits)) => {
+            let encoding: syn::Ident = syn::Ident::new("Dna", proc_macro2::Span::call_site());
+            gen_seqarray(&encoding, &seq_name, len, &bits).into()
         }
-        bases += 1;
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+#[proc_macro]
+pub fn iupac(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let seq: LitStr = parse_macro_input!(input as LitStr);
+
+    if !seq.value().is_ascii() {
+        return syn::Error::new_spanned(seq, "Non-ASCII characters in IUPAC string")
+            .to_compile_error()
+            .into();
     }
 
-    let num_words: usize = (bits.len() + (usize::BITS as usize - 1)) / usize::BITS as usize;
-
-    let seq_name_ident = syn::Ident::new(&seq_name, proc_macro2::Span::call_site());
-    let seqarr = quote! {
-    {
-    type Lsb0 = __bio_seq_Lsb0;
-    static #seq_name_ident: SeqArray<Dna, #bases, #num_words> = SeqArray {
-        _p: core::marker::PhantomData,
-        ba: __bio_seq_bitarr![const usize, Lsb0; #(#bits),*]
+    let seq_name = {
+        let mut hasher = DefaultHasher::new();
+        seq.value().hash(&mut hasher);
+        format!("IUPAC_SEQ_{:0X}", hasher.finish())
     };
-    & #seq_name_ident
+
+    match iupac_seq(&seq) {
+        Ok((len, bits)) => {
+            let encoding: syn::Ident = syn::Ident::new("Iupac", proc_macro2::Span::call_site());
+            gen_seqarray(&encoding, &seq_name, len, &bits).into()
+        }
+        Err(e) => e.to_compile_error().into(),
     }
-    };
-
-    seqarr.into()
 }
