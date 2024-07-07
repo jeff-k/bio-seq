@@ -21,16 +21,18 @@
 //! | N | 1 | 1 | 1 | 1 |
 //! | X/- | 0 | 0 | 0 | 0 |
 //!
-//! This naturally supports set membership operations:
+//! This means that we can treat each symbol as a set and we get meaningful bitwise operations:
 //!
 //! ```rust
 //! use bio_seq::prelude::*;
 //!
 //! // Set union:
-//! assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+//! let union = iupac!("AS-GYTNAN") | iupac!("ANTGCAT-N");
+//! assert_eq!(union, iupac!("ANTGYWNAN"));
 //!
 //! // Set intersection:
-//! assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
+//! let intersection = iupac!("ACGTSWKMN") & iupac!("WKMSTNNAN");
+//! assert_eq!(intersection, iupac!("A----WKAN"));
 //! ```
 //!
 //! Which can be used to implement pattern matching:
@@ -51,9 +53,7 @@
 //! // ATG matches pattern
 //! ```
 use crate::codec::{dna::Dna, Codec};
-use crate::seq::{Seq, SeqSlice};
-
-use core::ops::{BitAnd, BitOr};
+use crate::seq::{Seq, SeqArray, SeqSlice};
 
 /*
 const LTABLE: [u8; 256] = {
@@ -120,55 +120,48 @@ impl From<Dna> for Iupac {
     }
 }
 
-impl BitAnd for Seq<Iupac> {
-    type Output = Self;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        self.bit_and(rhs)
-    }
-}
-
-impl BitOr for Seq<Iupac> {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        self.bit_or(rhs)
-    }
-}
-
-impl BitAnd for &SeqSlice<Iupac> {
-    type Output = Seq<Iupac>;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        self.bit_and(rhs)
-    }
-}
-
-impl BitOr for &SeqSlice<Iupac> {
-    type Output = Seq<Iupac>;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        self.bit_or(rhs)
-    }
-}
-
 impl Seq<Iupac> {
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
             return false;
         }
-        let slice: &SeqSlice<Iupac> = self;
-        let intersection: &SeqSlice<Iupac> = &(slice & rhs);
-        intersection == rhs
+
+        self.as_ref() & rhs == rhs
     }
 }
 
-#[macro_export]
-macro_rules! iupac {
-    ($seq:expr) => {
-        match Seq::<Iupac>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
+impl<const N: usize, const W: usize> SeqArray<Iupac, N, W> {
+    pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
+        if N != rhs.len() {
+            return false;
         }
-    };
+        self.as_ref() & rhs == rhs
+    }
+}
+
+impl SeqSlice<Iupac> {
+    pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
+        if self.len() != rhs.len() {
+            return false;
+        }
+        self & rhs == rhs
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn iupac_ops() {
+        let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+        let pattern = iupac!("AYG");
+
+        let matches: Vec<Seq<Iupac>> = seq
+            .windows(pattern.len())
+            .filter(|w| pattern.contains(w))
+            .collect();
+
+        assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")])
+    }
 }

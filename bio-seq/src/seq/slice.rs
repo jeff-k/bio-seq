@@ -10,7 +10,7 @@ use crate::error::ParseBioError;
 use crate::seq::ReverseComplement;
 use crate::seq::Seq;
 
-use crate::{Bv, Order};
+use crate::Order;
 use bitvec::field::BitField;
 use bitvec::prelude::*;
 
@@ -19,11 +19,13 @@ use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::str;
 
+use core::ops::{BitAnd, BitOr};
+
 /// A lightweight, read-only window into part of a sequence
 #[derive(Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
-    _p: PhantomData<A>,
+    pub(crate) _p: PhantomData<A>,
     pub(crate) bs: BitSlice<usize, Order>,
 }
 
@@ -70,32 +72,6 @@ impl<A: Codec> SeqSlice<A> {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    pub fn contains(&self, _other: &SeqSlice<A>) -> bool {
-        unimplemented!()
-    }
-
-    #[must_use]
-    pub fn bit_and(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: Bv = Bv::from_bitslice(&self.bs);
-        bv &= Bv::from_bitslice(&rhs.bs);
-
-        Seq::<A> {
-            _p: PhantomData,
-            bv,
-        }
-    }
-
-    #[must_use]
-    pub fn bit_or(&self, rhs: &SeqSlice<A>) -> Seq<A> {
-        let mut bv: Bv = Bv::from_bitslice(&self.bs);
-        bv |= Bv::from_bitslice(&rhs.bs);
-
-        Seq::<A> {
-            _p: PhantomData,
-            bv,
-        }
     }
 }
 
@@ -165,5 +141,32 @@ impl<A: Codec> AsRef<SeqSlice<A>> for SeqSlice<A> {
 impl<A: Codec> fmt::Display for SeqSlice<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", String::from(self))
+    }
+}
+
+impl<A: Codec> BitAnd for &SeqSlice<A> {
+    type Output = Seq<A>;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        let mut bv = self.bs.to_bitvec();
+        bv &= &rhs.bs;
+        Seq::<A> {
+            bv,
+            _p: PhantomData,
+        }
+    }
+}
+
+impl<A: Codec> BitOr for &SeqSlice<A> {
+    type Output = Seq<A>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let mut bv = self.bs.to_bitvec();
+        bv |= &rhs.bs;
+
+        Seq::<A> {
+            bv,
+            _p: PhantomData,
+        }
     }
 }

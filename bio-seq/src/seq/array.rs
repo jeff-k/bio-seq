@@ -6,8 +6,10 @@
 use crate::codec::Codec;
 
 use crate::seq::slice::SeqSlice;
+use crate::seq::Seq;
 
 use crate::{Bs, Order};
+
 use bitvec::field::BitField;
 use bitvec::prelude::*;
 
@@ -15,6 +17,8 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;
+
+use core::ops::{BitAnd, BitOr};
 
 #[derive(Debug)]
 #[repr(transparent)]
@@ -83,5 +87,35 @@ impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A>> for SeqArray<A
 impl<A: Codec, const N: usize, const W: usize> fmt::Display for SeqArray<A, N, W> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.as_ref(), f)
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> BitAnd for &SeqArray<A, N, W> {
+    type Output = Seq<A>;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        let mut bv = self.ba.to_bitvec();
+        bv &= &rhs.ba;
+        bv.truncate(N * A::BITS as usize);
+
+        Seq::<A> {
+            bv,
+            _p: PhantomData,
+        }
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> BitOr for &SeqArray<A, N, W> {
+    type Output = Seq<A>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let mut bv = self.ba.to_bitvec();
+        bv |= &rhs.ba;
+        bv.truncate(N * A::BITS as usize);
+
+        Seq::<A> {
+            bv,
+            _p: PhantomData,
+        }
     }
 }
