@@ -74,31 +74,6 @@ impl Complement for Dna {
     }
 }
 
-/*
-#[macro_export]
-macro_rules! dna {
-    ($seq:expr) => {
-        match Seq::<Dna>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
-        }
-    };
-}
-*/
-
-#[macro_export]
-macro_rules! kmer {
-    ($seq:expr) => {
-        match Seq::<Dna>::from_str($seq) {
-            Ok(s) => match Kmer::<Dna, { $seq.len() }>::try_from(s) {
-                Ok(s) => s,
-                Err(_) => panic!(),
-            },
-            Err(_) => panic!(),
-        }
-    };
-}
-
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

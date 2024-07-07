@@ -62,13 +62,3 @@ impl core::fmt::Display for Amino {
         write!(f, "{}", self.to_char())
     }
 }
-
-#[macro_export]
-macro_rules! amino {
-    ($seq:expr) => {
-        match Seq::<Amino>::from_str($seq) {
-            Ok(s) => s,
-            Err(_) => panic!(),
-        }
-    };
-}
