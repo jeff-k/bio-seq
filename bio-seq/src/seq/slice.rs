@@ -62,6 +62,7 @@ impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
 }
 
 impl<A: Codec> SeqSlice<A> {
+    /// unsafely index into the `i`th position of a sequence
     pub fn nth(&self, i: usize) -> A {
         A::unsafe_from_bits(self[i].into())
     }

@@ -1,6 +1,10 @@
 # bio-seq-derive
 
-`bio-seq-derive` is a procedural macro crate that provides the `Codec` derive macro for the `bio-seq` library. It allows users to define custom bit-packed alphabets from an enum. The bit representation of the enum is derived from the discriminants.
+`bio-seq-derive` is a procedural macro crate that provides the `Codec` derive macro for the `bio-seq` library. It allows users to define custom bit-packed alphabets from an enum. The bit representation of the symbols is derived from the enum discriminants.
+
+This crate also provides the `dna!()` and `iupac!()` macros that are reexported by `bio-seq` for declaring static sequences at compile time.
+
+You probably don't want to directly include this crate as a dependency.
 
 Please refer to the `bio-seq` [documentation](https://github.com/jeff-k/bio-seq) for a complete guide on defining custom alphabets.
 
@@ -12,25 +16,17 @@ Please refer to the `bio-seq` [documentation](https://github.com/jeff-k/bio-seq)
 
 ## Usage
 
-To use `bio-seq-derive`, add it as a dependency in your `Cargo.toml` file:
-
-```toml
-[dependencies]
-bio-seq-derive = "3.9"
-```
-
-Then, import the `bio_seq_derive::Codec` macro in your Rust code:
+To derive a custom encoding, use the `Codec` derive macro as reexported in the `bio-seq` prelude:
 
 ```rust
-use bio_seq_derive::Codec;
+use bio_seq::prelude::*;
 ```
 
-Note that codec enums require a `#[repr(u8)]` annotation.
+Codecs can be annotated with `#[repr(u8)]` for convenient casting.
 
 ```rust
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[width(6)]
-#[repr(u8)]
 pub enum Amino {
     #[alt(0b110110, 0b010110, 0b100110)]
     A = 0b000110, // GCA
@@ -75,4 +71,3 @@ pub enum Amino {
     X = 0b000011, // TAA (stop)
 }
 ```
-

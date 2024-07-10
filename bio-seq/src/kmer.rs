@@ -19,6 +19,13 @@
 //!         assert_eq!(amino_kmer, amino_string);
 //!     }
 //! ```
+//!
+//! Kmers can be copied from other sequence types:
+//!
+//! ```
+//! # use bio_seq::prelude::*;
+//! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").into();
+//! ```
 use crate::codec::Codec;
 use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqArray, SeqSlice};
@@ -160,7 +167,7 @@ impl<A: Codec, const K: usize> Deref for SeqArray<A, K, 1> {
         unsafe { &*(bs *const Kmer<A, K>) }
     }
 }
-    */
+*/
 
 impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
     type Target = SeqSlice<A>;

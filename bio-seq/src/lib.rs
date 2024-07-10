@@ -5,23 +5,17 @@
 
 //! Bit-packed and well-typed biological sequences
 //!
-//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of variable length that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`.
+//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`fixed length sequences`](seq::SeqArray) can be declared with the `dna!()` and `iupac!()` macros. Generally these should be dereferenced as `&'static SeqSlice`s or kmers.
 //!
-//! [`Kmer`](mod@kmer)s are short, fixed-length sequences. They generally implement `Copy` and are used for optimised algorithms on sequences. The default implementation uses a `usize` for storage.
+//! [`Kmer`](mod@kmer)s are shorter, fixed-length sequences. They generally implement `Copy` and are used for optimised algorithms on sequences. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding this kmer can store up to 32 bases: `Kmer<Dna, 32>`.
 //!
-//! Binary encodings of genomic data types are implemented as "[`codec`]s." Custom codecs can be defined, and this crate has four built in:
-//!   - [`codec::dna`]: 2-bit encoding of the four nucleotides
-//!   - [`codec::text`]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
-//!   - [`codec::iupac`]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
-//!   - [`codec::amino`]: 6-bit encoding of amino acids
-//!
-//! Each of these encodings is designed to facilitate common bioinformatics tasks, such as minimising k-mers and implementing succinct datastructures. The [translation] module provides traits and methods for translating between nucleotide and amino acid sequences.
+//! These sequence types are parameterised with encodings (e.g. `Seq<Dna>`, `Seq<Amino>`, etc.) the define how symbols are encoded into strings of bits.
 //!
 //! Add `bio-seq` to `Cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
-//! bio-seq = "0.12"
+//! bio-seq = "0.13"
 //! ```
 //!
 //! ```rust
@@ -42,6 +36,41 @@
 //! // ...
 //! ```
 //!
+//! Sequences are analogous to rust's string types and follow similar dereferencing conventions.
+//!
+//! ```rust
+//! # use bio_seq::prelude::*;
+//! // The `dna!` macro packs a static sequence with 2-bits per symbol at compile time.
+//! // This is analogous to rust's string literals:
+//! let s: &'static str = "hello!";
+//! let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
+//!
+//! // Static sequences can also be copied as kmers
+//! let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
+//!
+//! // `Seq`s can be allocated on the heap like `String`s are:
+//! let s: String = "hello!".into();
+//! let seq: Seq<Dna> = dna!("CGCTAGCTACGATCGCAT").into();
+//!
+//! // Alternatively, a `Seq` can be fallibly encoded at runtime:
+//! let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
+//!
+//! // &SeqSlices are analogous to &str, String slices:
+//! let slice: &str = &s[1..3];
+//! let seqslice: &SeqSlice<Dna> = &seq[2..4];
+//! ```
+//!
+//! Encodings of genomic symbols are implemented as "[`codec`]s." This crate provides four common ones:
+//!   - [`codec::dna`]: 2-bit encoding of the four nucleotides
+//!   - [`codec::text`]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
+//!   - [`codec::iupac`]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
+//!   - [`codec::amino`]: 6-bit encoding of amino acids
+//!
+//! Each of these encodings is designed to facilitate common bioinformatics tasks, such as minimising k-mers and implementing succinct datastructures. The [translation] module provides traits and methods for translating between nucleotide and amino acid sequences.
+//!
+//! Custom codecs can also be implemented with the `Codec` trait and derived on well crafted enums.
+//!
+
 #![warn(clippy::pedantic)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::return_self_not_must_use)]

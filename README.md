@@ -12,7 +12,7 @@ Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 
 ```toml
 [dependencies]
-bio-seq = "0.12"
+bio-seq = "0.13"
 ```
 
 Example: Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s for a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
@@ -76,7 +76,7 @@ assert_eq!(
 
 ## Codecs
 
-The `Codec` trait describes the coding/decoding process for the characters of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
+The `Codec` trait describes the coding/decoding process for the symbols of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
 
 ### `codec::Dna`
 Using the lexicographically ordered 2-bit representation
@@ -102,7 +102,7 @@ Amino acid sequences are represented with 6 bits. The representation of amino ac
 
 ## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
-Strings of encoded characters are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. [`Kmer`](https://docs.rs/bio-seq/latest/bio_seq/kmer)s are generally stored on the stack, implementing `Copy`.
+Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. [`Kmer`](https://docs.rs/bio-seq/latest/bio_seq/kmer)s are generally stored on the stack, implementing `Copy`.
 All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
 
 ```rust
@@ -134,11 +134,13 @@ for i in 0..=15 {
 
 kmers are short sequences of length `k` that can fit into a register (e.g. `usize`, or SIMD vector) and generally implement `Copy`. these are implemented with const generics and `k` is fixed at compile time.
 
-### Efficient encodings
+### Succinct encodings
 
-For encodings with a dense mapping between characters and integers a lookup table can be indexed in constant time by treating kmers directly as `usize`:
+A lookup table can be indexed in constant time by treating kmers directly as `usize`:
 
 ```rust
+// This example builds a histogram of kmer occurences
+
 fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
     // For dna::Dna our histogram will need 4^4
     // bins to count every possible 4-mer.
@@ -152,8 +154,6 @@ fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
 }
 ```
 
-This example builds a histogram of kmer occurences.
-
 ## Sketching
 
 ### Hashing
@@ -165,13 +165,13 @@ The `Hash` trait is implemented for Kmers
 Depending on the application, it may be permissible to superimpose the forward and reverse complements of a kmer:
 
 ```rust
-k = kmer!("ACGTGACGT");
-let canonical = k ^ k.revcomp(); // TODO: implement ReverseComplement for Kmer
+k: Kmer = dna!("ACGTGACGT");
+let canonical = k ^ k.revcomp();
 ```
 
 ### Kmer minimisers
 
-The [2-bit representation](https://docs.rs/bio-seq/latest/bio_seq/codec/dna) of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`
+The [2-bit representation](https://docs.rs/bio-seq/latest/bio_seq/codec/dna) of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`:
 
 ```rust
 fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
@@ -188,7 +188,7 @@ for ckmer in seq.window(8).map(|kmer| hash(kmer ^ kmer.revcomp())) {
 }
 ```
 
-## Derivable codecs
+## Deriving new codecs
 
 Sequence coding/decoding is derived from the variant names and discriminants of enum types:
 
@@ -206,6 +206,8 @@ pub enum Dna {
 }
 ```
 
+Note that you need to explicitly provide a "discriminant" (e.g. `0b00`) in the enum.
+
 A `#[width(n)]` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
 
 `#[alt(...,)]` and `#[display('x')]` attributes can be used to define alternative representations or display the item with a special character. Here is the definition for the stop codon in `codec::Amino`:
@@ -221,7 +223,15 @@ pub enum Amino {
 
 ### Translation table traits 
 
-[Translation tables](https://docs.rs/bio-seq/latest/bio_seq/translation) provide methods for translating codons into amino acids:
+[Translation tables](https://docs.rs/bio-seq/latest/bio_seq/translation) provide methods for translating codons into amino acids.
+
+Enable the translation feature in `Cargo.toml`:
+
+```
+[dependencies]
+bio-seq = { version="0.13", features=["translation"] }
+```
+
 
 ```rust
 pub trait TranslationTable<A: Codec, B: Codec> {
@@ -243,8 +253,7 @@ use crate::prelude::*;
 use crate::translation::STANDARD;
 use crate::translation::TranslationTable;
 
-let seq: Seq<Dna> =
-    dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+let seq = dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
 
 let aminos: Seq<Amino> = seq
     .windows(3)

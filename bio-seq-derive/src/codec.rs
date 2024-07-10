@@ -41,6 +41,8 @@ pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Resul
     Ok(min_width)
 }
 
+/// We can test whether the user's enum is also `#[repr(u8)]`
+/// I can't decide whether or not to enforce that Codecs are repr(u8). Currently not.
 pub(crate) fn test_repr(enum_ast: &syn::ItemEnum) -> Result<(), syn::Error> {
     // Test that enum is repr(u8)
     for attr in &enum_ast.attrs {
@@ -66,12 +68,19 @@ pub(crate) fn test_repr(enum_ast: &syn::ItemEnum) -> Result<(), syn::Error> {
     ))
 }
 
+/// The derived implementation will be constructed from these values
 pub(crate) struct CodecVariants {
+    /// the idents of the enum members, e.g. `MyCodec::A` etc.
     pub(crate) idents: Vec<syn::Ident>,
+    /// the ASCII bytes that symbols are printed to
     pub(crate) to_chars: Vec<TokenStream>,
+    /// ASCII bytes that symbols are read from
     pub(crate) from_chars: Vec<TokenStream>,
+    /// Alternative ASCII bytes that symbols are read from that would be invalid idents (e.g. `*`)
     pub(crate) alts: Vec<TokenStream>,
     pub(crate) unsafe_alts: Vec<TokenStream>,
+    /// The maximum value represented by the bit encodings. This determines the number of
+    /// bits required for the encoding (`Codec::BITS`).
     pub(crate) max_discriminant: u8,
 }
 
