@@ -103,38 +103,23 @@ impl<A: Codec> Seq<A> {
     ///
     /// # Errors
     ///
-    /// Will return an `UnrecognisedBase` error for non-leading end bases, just as
+    /// Will return an `UnrecognisedBase` error for non-leading or tailing end bases, just as
     /// `TryFrom<&[u8]>` would.
     pub fn trim_u8(v: &[u8]) -> Result<Self, ParseBioError> {
-        let mut vn: Seq<A> = Seq::new();
-        let mut start: bool = true;
-        let mut end: bool = false;
-        let mut prev: u8 = 0;
+        let start = v
+            .iter()
+            .position(|&byte| A::try_from_ascii(byte).is_some())
+            .unwrap_or(v.len());
 
-        for byte in v {
-            if let Some(c) = A::try_from_ascii(*byte) {
-                if end {
-                    return Err(ParseBioError::UnrecognisedBase(prev));
-                }
+        let end = v[start..]
+            .iter()
+            .rposition(|&byte| A::try_from_ascii(byte).is_some())
+            .map_or(start, |pos| start + pos + 1);
 
-                if start {
-                    start = false;
-                }
-
-                vn.push(c);
-            } else {
-                prev = *byte;
-                if !start {
-                    end = true;
-                }
-
-                if !start && !end {
-                    return Err(ParseBioError::UnrecognisedBase(*byte));
-                }
-            }
-        }
-
-        Ok(vn)
+        v[start..end]
+            .iter()
+            .map(|&byte| A::try_from_ascii(byte).ok_or(ParseBioError::UnrecognisedBase(byte)))
+            .collect()
     }
 
     pub fn with_capacity(len: usize) -> Self {
