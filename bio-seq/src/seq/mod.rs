@@ -93,6 +93,50 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    /// Trim leading and trailing characters that don't match bases/symbols
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let seq = b"NNNNAGAATGATGGGGGGGGGGGCGNNNNNNNNNNN";
+    /// let trimmed: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+    /// assert_eq!(trimmed, dna!("AGAATGATGGGGGGGGGGGCG"));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Will return an `UnrecognisedBase` error for non-leading end bases, just as
+    /// `TryFrom<&[u8]>` would.
+    pub fn trim_u8(v: &[u8]) -> Result<Self, ParseBioError> {
+        let mut vn: Seq<A> = Seq::new();
+        let mut start: bool = true;
+        let mut end: bool = false;
+        let mut prev: u8 = 0;
+
+        for byte in v {
+            if let Some(c) = A::try_from_ascii(*byte) {
+                if end {
+                    return Err(ParseBioError::UnrecognisedBase(prev));
+                }
+
+                if start {
+                    start = false;
+                }
+
+                vn.push(c);
+            } else {
+                prev = *byte;
+                if !start {
+                    end = true;
+                }
+
+                if !start && !end {
+                    return Err(ParseBioError::UnrecognisedBase(*byte));
+                }
+            }
+        }
+
+        Ok(vn)
+    }
+
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
@@ -232,7 +276,7 @@ impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
 /// The `Borrow` trait to is used to obtain a reference to a `SeqSlice` from a `Seq`, allowing it to be used wherever a `SeqSlice` is expected.
 ///
 /// ```
-/// use bio_seq::prelude::*;
+/// # use bio_seq::prelude::*;
 /// use std::borrow::Borrow;
 ///
 /// let seq: Seq<Dna> = dna!("CTACGTACGATCATCG").into();
@@ -248,8 +292,7 @@ impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
 /// Automatic dereferencing of `Seq<A>` to `SeqSlice<A>`.
 ///
 /// ```
-/// use bio_seq::prelude::*;
-///
+/// # use bio_seq::prelude::*;
 /// fn count_bases(s: &SeqSlice<Dna>) -> usize {
 ///    s.len()
 /// }
@@ -271,8 +314,7 @@ impl<A: Codec> Deref for Seq<A> {
 /// A Seq can be borrowed as a `SeqSlice` through generic constraints.
 ///
 /// ```
-/// use bio_seq::prelude::*;
-///
+/// # use bio_seq::prelude::*;
 /// fn count_bases<S: AsRef<SeqSlice<Dna>>>(s: S) -> usize {
 ///    s.as_ref().len()
 /// }
@@ -292,8 +334,7 @@ impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
 ///
 /// ```
 /// #[macro_use]
-/// use bio_seq::prelude::*;
-///
+/// # use bio_seq::prelude::*;
 /// let mut seq1: Seq<Dna> = dna!("CATCGATCGATC").into();
 /// let seq2: Seq<Dna> = seq1.clone();
 ///
@@ -733,6 +774,82 @@ mod tests {
         let cloned = seq.clone();
         assert_eq!(seq, cloned);
     }
+    #[test]
+    fn test_trim() {
+        let seq = b"AGAATGATGGGGGGGGGGGCG";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("AGAATGATGGGGGGGGGGGCG"));
+
+        let seq = b"NNNNAGAATGATGGGGGGGGGGGCGNNNNNNNNNNN";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("AGAATGATGGGGGGGGGGGCG"));
+
+        let seq = b"NNNNAGAATGATGGGGNGGGGGGGCGNNNNNNNNNNN";
+        let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+        assert_eq!(s, Err(ParseBioError::UnrecognisedBase(b'N')));
+
+        let seq = b"AGAATGATGGGGGGGGGGGCG";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("AGAATGATGGGGGGGGGGGCG"));
+
+        let seq = b"NNNNAGAATGATGGGGGGGGGGGCGNNNNNNNNNNN";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("AGAATGATGGGGGGGGGGGCG"));
+
+        let seq = b"NNNNAGAATGATGGGGNGGGGGGGCGNNNNNNNNNNN";
+        let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+        assert_eq!(s, Err(ParseBioError::UnrecognisedBase(b'N')));
+
+        let seq = b"";
+        let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+        assert!(s.is_ok());
+        assert_eq!(s.unwrap(), dna!(""));
+
+        let seq = b"XXXX";
+        let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+        assert!(s.is_ok());
+        assert_eq!(s.unwrap(), dna!(""));
+
+        let seq = b"XXACGT";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("ACGT"));
+
+        let seq = b"ACGTXX";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("ACGT"));
+
+        let seq = b"ACGTACGTACGTACGTACGTACGT";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("ACGTACGTACGTACGTACGTACGT"));
+
+        let seq = b"XXACGTXXACGTXX";
+        let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+        assert_eq!(s, Err(ParseBioError::UnrecognisedBase(b'X')));
+
+        let seq = b"A";
+        let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+        assert_eq!(s, dna!("A"));
+
+        let seq = b"X";
+        let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+        assert!(s.is_ok());
+        assert_eq!(s.unwrap(), dna!(""));
+
+        /*
+                let seq = b"acgtACGT";
+                let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+                assert_eq!(s, dna!("ACGTACGT"));
+
+                let seq = b"AcGtAcGt";
+                let s: Seq<Dna> = Seq::trim_u8(seq).unwrap();
+                assert_eq!(s, dna!("ACGTACGT"));
+
+                let seq = b"AXCXGXTXaXcXgXt";
+                let s: Result<Seq<Dna>, ParseBioError> = Seq::trim_u8(seq);
+                assert_eq!(s, Err(ParseBioError::UnrecognisedBase(b'X')));
+        */
+    }
+
     #[test]
     fn test_seq_eq_and_hash() {
         let seq1: Seq<Dna> = "ACGT".try_into().unwrap();
