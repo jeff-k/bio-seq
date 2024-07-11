@@ -15,14 +15,14 @@ use bitvec::field::BitField;
 use bitvec::prelude::*;
 
 use core::fmt;
-use core::hash::{Hash, Hasher};
+//use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::str;
 
 use core::ops::{BitAnd, BitOr};
 
 /// A lightweight, read-only window into part of a sequence
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     pub(crate) _p: PhantomData<A>,
@@ -102,13 +102,16 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
     }
 }
 
+/*
 impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
-        // theory: this is prevent Hash(AAAA) from equaling Hash(AAAAA)
+        // prepend length to make robust against matching prefixes
+        // (automatic in nightly?)
         //self.len().hash(state);
     }
 }
+*/
 
 /// Clone a borrowed slice of a sequence into an owned version.
 ///

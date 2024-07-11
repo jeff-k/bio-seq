@@ -45,7 +45,7 @@ use bitvec::view::BitView;
 
 use core::borrow::Borrow;
 use core::fmt;
-use core::hash::Hash;
+//use core::hash::Hash;
 use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;

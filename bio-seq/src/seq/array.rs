@@ -19,12 +19,20 @@ use core::ops::Deref;
 use core::ptr;
 
 use core::ops::{BitAnd, BitOr};
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct SeqArray<A: Codec, const N: usize, const W: usize> {
     pub _p: PhantomData<A>,
     pub ba: BitArray<[usize; W], Order>,
+}
+
+impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let bs: &SeqSlice<A> = self.as_ref();
+        bs.hash(state);
+    }
 }
 
 impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {

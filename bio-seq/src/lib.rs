@@ -126,6 +126,7 @@ pub mod prelude {
 mod tests {
     use crate::codec::dna::Dna::{A, C, G, T};
     use crate::prelude::*;
+    use std::hash::{DefaultHasher, Hash, Hasher};
 
     #[test]
     fn alt_repr() {
@@ -259,6 +260,60 @@ mod tests {
 
         assert_eq!(s1 | s2, iupac!("ANTGYWNA"));
         assert_eq!(s3 & s4, iupac!("A----WKA"));
+    }
+
+    #[test]
+    fn hash_characteristics() {
+        fn hash<T: Hash>(chunk: &T) -> u64 {
+            let mut hasher = DefaultHasher::new();
+            chunk.hash(&mut hasher);
+            hasher.finish()
+        }
+
+        let s1 = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
+        let s2 = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCTA");
+
+        let q1: Seq<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT").into();
+        let q2: Seq<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCTA").into();
+
+        let s3 = dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        let s4 = dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+        let q3 = dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        let q4 = dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+        let l3: &SeqSlice<Dna> = &q3;
+        let l3_a: &SeqSlice<Dna> = &q4[1..];
+        let l3_b: &SeqSlice<Dna> = &q4[..32];
+        let l4: &SeqSlice<Dna> = &q4;
+
+        let k1: Kmer<Dna, 32> = s1.into();
+        let k1_a: Kmer<Dna, 32> = s1.into();
+
+        let k3: Kmer<Dna, 32> = s3.into();
+
+        assert_eq!(hash(&l3), hash(q3));
+        assert_eq!(hash(&l3), hash(&l3_a));
+        assert_eq!(hash(&l3_a), hash(&l3_b));
+
+        assert_eq!(hash(&s2), hash(&q2));
+
+        assert_eq!(hash(&s1), hash(s1));
+        assert_eq!(hash(s2), hash(&s2));
+        assert_ne!(hash(&s4), hash(&s3));
+
+        assert_ne!(hash(&l3), hash(&l4));
+        assert_ne!(hash(&l3_a), hash(&l4));
+
+        assert_ne!(hash(&q2), hash(&q1));
+
+        assert_eq!(hash(q3), hash(s3));
+        assert_eq!(hash(s1), hash(&q1));
+        assert_ne!(hash(s3), hash(s4));
+
+        assert_ne!(hash(&k3), hash(&k1));
+        assert_eq!(hash(&k1_a), hash(&k1));
+        assert_eq!(hash(s1), hash(&k1));
     }
 
     #[test]

@@ -264,8 +264,7 @@ impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
 
 /// ```
 /// use bio_seq::prelude::*;
-/// use std::collections::hash_map::DefaultHasher;
-/// use std::hash::{Hash, Hasher};
+/// use std::hash::{Hash, Hasher, DefaultHasher};
 ///
 /// let mut hasher1 = DefaultHasher::new();
 /// kmer!("AAA").hash(&mut hasher1);
@@ -279,8 +278,9 @@ impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
 /// ```
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bs.hash(state);
-        K.hash(state);
+        let bs: &SeqSlice<A> = self.as_ref();
+        bs.hash(state);
+        //K.hash(state);
     }
 }
 
