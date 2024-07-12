@@ -1,4 +1,4 @@
-//! Coding/Decoding trait for bit-packable enums representing biological alphabets
+//! Coding/Decoding trait for bit-packable enums representing sets of genomic symbols
 //!
 //! The [dna], [iupac], [text], and [amino] alphabets are built in.
 //!
@@ -124,13 +124,13 @@ pub mod text;
 
 pub use bio_seq_derive::Codec;
 
-/// The bit encodings of an alphabet's characters can be represented with any type.
+/// The bit encodings of an alphabet's symbols can be represented with any type.
 /// Encoding from ASCII bytes and decoding the representation is implemented through
 /// the `Codec` trait.  
 ///
 /// The intended representation is an `Enum`, transparently represented as a `u8`.
 pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
-    /// The number of bits used to encode the characters. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
+    /// The number of bits used to encode the symbols. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
     const BITS: u8;
 
     /// Convert raw bits of binary encoding into enum item. Binary values
@@ -154,7 +154,7 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
     /// Encode as raw bits
     fn to_bits(self) -> u8;
 
-    /// Iterator over the characters of the codec
+    /// Iterator over the symbols of the codec
     fn items() -> impl Iterator<Item = Self>;
 }
 

@@ -1,5 +1,4 @@
 //! Standard amino acid translation table
-
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -14,6 +13,23 @@ pub struct Standard;
 
 static AMINO_TO_IUPAC: OnceLock<HashMap<Amino, Option<Seq<Iupac>>>> = OnceLock::new();
 
+/// We can also translate from degenerate nucleotide symbols to amino acids where the coding isn't ambiguous
+///
+/// ```
+/// use bio_seq::prelude::*;
+/// use bio_seq::translation::PartialTranslationTable;
+/// use bio_seq::translation::STANDARD;
+///
+/// let seq: Seq<Iupac> = iupac!("AAYATHTTYTGYGTNTGGGGNGGNGTNTTYGTNTGYGCNGGNGCNCCNGCNCCNCCNGTNTAYACNTAYATGGARGGNGAYACNGAYATHCARGCNCAYACNCCNCAYATHAARGARAAYACNCARAAR").into();
+///     let aminos: Seq<Amino> = seq
+///     .chunks(3)
+///     .map(|codon| STANDARD.try_to_amino(&codon).unwrap())
+///     .collect::<Seq<Amino>>();
+/// assert_eq!(
+///     aminos,
+///     Seq::<Amino>::try_from("NIFCVWGGVFVCAGAPAPPVYTYMEGDTDIQAHTPHIKENTQK").unwrap()
+/// );
+/// ```
 static IUPAC_TO_AMINO: OnceLock<[(Seq<Iupac>, Amino); 29]> = OnceLock::new();
 
 fn initialise_iupac_to_amino() -> [(Seq<Iupac>, Amino); 29] {

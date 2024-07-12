@@ -372,6 +372,13 @@ impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
     }
 }
 
+/// Convenient compile time kmer constructor
+///
+/// This is a wrapper for the `dna!` macro that returns a `Kmer`:
+/// ```
+/// # use bio_seq::prelude::*;
+/// let kmer: Kmer<Dna, 8> = dna!("ACGTACGT").into();
+/// ```
 #[macro_export]
 macro_rules! kmer {
     ($seq:expr) => {

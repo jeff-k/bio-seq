@@ -5,11 +5,19 @@
 
 //! Bit-packed and well-typed biological sequences
 //!
-//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`fixed length sequences`](seq::SeqArray) can be declared with the `dna!()` and `iupac!()` macros. Generally these should be dereferenced as `&'static SeqSlice`s or kmers.
+//! The strength of rust is that we can safely separate the science (well-typed) and the engineering (bit-packed) of bioinformatics. An incremental benchmark improvement in the reverse complement algorithm should benefit the user of a succinct datastructure without anyone unwillingly learning about endianess.
 //!
-//! [`Kmer`](mod@kmer)s are shorter, fixed-length sequences. They generally implement `Copy` and are used for optimised algorithms on sequences. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding this kmer can store up to 32 bases: `Kmer<Dna, 32>`.
+//! Contributions are very welcome. There's lots of low hanging fruit for optimisation and ideally we should only have to write them once!
 //!
-//! These sequence types are parameterised with encodings (e.g. `Seq<Dna>`, `Seq<Amino>`, etc.) the define how symbols are encoded into strings of bits.
+//! ## Sequences
+//!
+//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`fixed length sequences`](seq::SeqArray) can be declared with the [`dna!`](macro@dna) and [`iupac!`](macro@iupac) macros. Generally these should be dereferenced as `&'static SeqSlice`s or kmers.
+//!
+//! [`Kmer`](mod@kmer)s are shorter, fixed-length sequences. They generally fit in a single register and implement `Copy`. They are used for optimised algorithms on sequences and succinct datastructures. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding a `Kmer<Dna, 32>` occupies 64 bits.
+//!
+//! These sequence types are parameterised with [encodings](`codec`) (e.g. `Seq<Dna>`, `Seq<Amino>`, etc.) that define how symbols are encoded into strings of bits and decoded as readable strings.
+//!
+//! ## Quick start
 //!
 //! Add `bio-seq` to `Cargo.toml`:
 //!
@@ -60,7 +68,9 @@
 //! let seqslice: &SeqSlice<Dna> = &seq[2..4];
 //! ```
 //!
-//! Encodings of genomic symbols are implemented as "[`codec`]s." This crate provides four common ones:
+//! ## Bit-packed encodings
+//!
+//! Encodings of genomic symbols are implemented as "[`Codecs`](codec)." This crate provides four common ones:
 //!   - [`codec::dna`]: 2-bit encoding of the four nucleotides
 //!   - [`codec::text`]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
 //!   - [`codec::iupac`]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
@@ -261,6 +271,57 @@ mod tests {
         assert_eq!(s1 | s2, iupac!("ANTGYWNA"));
         assert_eq!(s3 & s4, iupac!("A----WKA"));
     }
+    #[test]
+    fn min_sequence() {
+        let seq = dna!("GCTCGATCGTAAAAAATCGTATT");
+
+        let minimised = seq.kmers::<8>().min().unwrap();
+        assert_eq!(minimised, Kmer::from(dna!("GTAAAAAA")));
+    }
+
+    #[test]
+    fn hash_minimiser() {
+        use core::cmp::min;
+
+        fn hash<T: Hash>(seq: T) -> u64 {
+            let mut hasher = DefaultHasher::new();
+            seq.hash(&mut hasher);
+            hasher.finish()
+        }
+
+        let seq =
+            dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCTAAAAAAAAAAAAAAAAGGGGTGTGTGGGTTGTGGAGGAGAGAGAGCC");
+
+        //        let minimised = seq.kmers::<16>().map(hash).min().unwrap();
+
+        let (minimiser_rc, min_hash_rc) = seq
+            .revcomp()
+            .kmers::<16>()
+            .map(|kmer| (kmer, hash(&kmer)))
+            .min_by_key(|&(_, hash)| hash)
+            .unwrap();
+
+        let (minimiser, min_hash) = seq
+            .kmers::<16>()
+            .map(|kmer| (kmer, hash(&kmer)))
+            .min_by_key(|&(_, hash)| hash)
+            .unwrap();
+
+        //        let x = min(min_hash, min_hash_rc);
+
+        let (canonical_minimiser, canonical_hash) = seq
+            .kmers::<16>()
+            .map(|kmer| {
+                let canonical_hash = min(hash(&kmer), hash(&kmer.revcomp()));
+                (kmer, canonical_hash)
+            })
+            .min_by_key(|&(_, hash)| hash)
+            .unwrap();
+
+        println!("{minimiser_rc} {min_hash_rc}\n{minimiser} {min_hash}\n{canonical_minimiser} {canonical_hash}");
+        assert_eq!(min_hash_rc, canonical_hash);
+        assert_eq!(minimiser_rc, canonical_minimiser.revcomp());
+    }
 
     #[test]
     fn hash_characteristics() {
@@ -314,6 +375,24 @@ mod tests {
         assert_ne!(hash(&k3), hash(&k1));
         assert_eq!(hash(&k1_a), hash(&k1));
         assert_eq!(hash(s1), hash(&k1));
+    }
+
+    #[test]
+    fn sequence_type_hashes() {
+        fn hash<T: Hash>(chunk: &T) -> u64 {
+            let mut hasher = DefaultHasher::new();
+            chunk.hash(&mut hasher);
+            hasher.finish()
+        }
+
+        let seq_arr: &SeqArray<Dna, 32, 1> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
+        let seq: Seq<Dna> = seq_arr.into();
+        let seq_slice: &SeqSlice<Dna> = &seq;
+        let kmer: Kmer<Dna, 32> = seq_arr.into();
+
+        assert_eq!(hash(seq_arr), hash(&seq));
+        assert_eq!(hash(&seq), hash(&seq_slice));
+        assert_eq!(hash(&seq_slice), hash(&kmer));
     }
 
     #[test]

@@ -30,4 +30,5 @@ translation = []
 #name = "aminokmers"
 
 [package.metadata.docs.rs]
-features = ["translation"]
+all-features = true
+#features = ["translation"]

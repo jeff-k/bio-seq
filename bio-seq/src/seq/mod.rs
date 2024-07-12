@@ -52,7 +52,7 @@ use core::ptr;
 use core::str;
 use core::str::FromStr;
 
-/// A sequence of bit-packed characters of arbitrary length
+/// A arbitrary length sequence of bit-packed symbols
 ///
 /// Stored on the heap
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
@@ -103,7 +103,7 @@ impl<A: Codec> Seq<A> {
     ///
     /// # Errors
     ///
-    /// Will return an `UnrecognisedBase` error for non-leading or tailing end bases, just as
+    /// Will return an `UnrecognisedBase` error for non-leading or non-trailing end bases, just as
     /// `TryFrom<&[u8]>` would.
     pub fn trim_u8(v: &[u8]) -> Result<Self, ParseBioError> {
         let start = v

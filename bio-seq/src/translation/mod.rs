@@ -1,10 +1,86 @@
-//! # Genetic Code Translation
+//! # Amino acid translation tables
 //!
-//! This module provides traits
+//! This module provides traits for implementing amino acid translation tables.
+//!
+//! Enable the translation feature in `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! bio-seq = { version="0.13", features=["translation"] }
+//! ```
 //!
 //! ## Examples
 //!
+//! The standard genetic code is provided as a `translation::STANDARD` constant:
+//!
+//! ```rust
+//! use bio_seq::prelude::*;
+//! use bio_seq::translation::STANDARD;
+//! use bio_seq::translation::TranslationTable;
+//!
+//! let seq = dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
+//!
+//! let aminos: Seq<Amino> = seq
+//!     .windows(3)
+//!     .map(|codon| STANDARD.to_amino(&codon))
+//!     .collect::<Seq<Amino>>();
+//!
+//! assert_eq!(
+//!     aminos,
+//!     Seq::<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
+//! );
+//!
+//! ```
+//!
+//! Custom translation tables can be implemented from associative datastructures:
+//!
+//! ```
+//! use bio_seq::prelude::*;
+//! use bio_seq::translation::{TranslationTable, TranslationError};
+//!
+//! struct Mitochondria;
+//! impl TranslationTable<Dna, Amino> for Mitochondria {
+//!     fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
+//!         if codon == dna!("AGA") {
+//!             Amino::X
+//!         } else if codon == dna!("AGG") {
+//!             Amino::X
+//!         } else if codon == dna!("ATA") {
+//!             Amino::M
+//!        } else if codon == dna!("TGA") {
+//!             Amino::W
+//!         } else {
+//!                 Amino::unsafe_from_bits(Into::<u8>::into(codon))
+//!               }
+//!           }
+//!
+//!          fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
+//!               unimplemented!()
+//!           }
+//!       }
+//!
+//!        let seq: Seq<Dna> =
+//!            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
+//!        let aminos: Seq<Amino> = seq
+//!            .windows(3)
+//!            .map(|codon| Mitochondria.to_amino(&codon))
+//!            .collect::<Seq<Amino>>();
+//!        assert_eq!(seq.len() - 2, aminos.len());
+//!
+//!        for (x, y) in aminos.into_iter().zip(
+//!            Seq::<Amino>::try_from(
+//!                "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK",
+//!            )
+//!            .unwrap()
+//!            .into_iter(),
+//!        ) {
+//!            assert_eq!(x, y)
+//!        }
+//! ```
+//!
 //! ## Errors
+//!
+//! Translation tables may not be complete or they may be ambiguous
 //!
 use core::fmt;
 use std::collections::HashMap;
@@ -19,9 +95,13 @@ pub use crate::translation::standard::STANDARD;
 /// Error conditions for codon/amino acid translation
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TranslationError<A: Codec = Dna, B: Codec + fmt::Display + fmt::Debug = Amino> {
+    /// Amino acid can be translation from multiple codons
     AmbiguousCodon(B),
+    /// Codon sequence maps to multiple amino acids
     AmbiguousTranslation(Seq<A>),
+    /// Codon sequence does not map to an amino acid
     InvalidCodon(Seq<A>),
+    /// Amino acid symbol is not valid (i.e. `X`)
     InvalidAmino(B),
 }
 
@@ -46,8 +126,6 @@ impl<A: Codec, B: Codec + fmt::Display> fmt::Display for TranslationError<A, B> 
 impl<A: Codec, B: Codec + fmt::Display + fmt::Debug> std::error::Error for TranslationError<A, B> {}
 
 /// A codon translation table where all codons map to amino acids
-///
-
 pub trait TranslationTable<A: Codec, B: Codec + fmt::Display> {
     fn to_amino(&self, codon: &SeqSlice<A>) -> B;
 

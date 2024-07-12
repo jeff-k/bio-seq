@@ -20,6 +20,7 @@ Example: Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s
 ```rust
 use bio_seq::prelude::*;
 
+// The `dna!` macro packs a static sequence with 2-bits per symbol at compile time
 let seq = dna!("ATACGATCGATCGATCGATCCGT");
 
 // iterate over the 8-mers of the reverse complement
@@ -33,6 +34,29 @@ for kmer in seq.revcomp().kmers::<8>() {
 // GATCGATC
 // ATCGATCG
 // ...
+```
+
+Sequences are analogous to rust's string types and follow similar dereferencing conventions.
+
+```rust
+use bio_seq::prelude::*;
+// This is analogous to rust's string literals:
+let s: &'static str = "hello!";
+let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
+
+// Static sequences can also be copied as kmers
+let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
+
+// `Seq`s can be allocated on the heap like `String`s are:
+let s: String = "hello!".into();
+let seq: Seq<Dna> = dna!("CGCTAGCTACGATCGCAT").into();
+
+// Alternatively, a `Seq` can be fallibly encoded at runtime:
+let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
+
+// &SeqSlices are analogous to &str, String slices:
+let slice: &str = &s[1..3];
+let seqslice: &SeqSlice<Dna> = &seq[2..4];
 ```
 
 Example: The [4-bit encoding of IUPAC](https://docs.rs/bio-seq/latest/bio_seq/codec/iupac) nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
@@ -62,43 +86,25 @@ let seq: Seq<Dna> =
 let aminos: Seq<Amino> = Seq::from_iter(seq.windows(3).map(|codon| translation::STANDARD.to_amino(codon)));
 assert_eq!(
     aminos,
-    amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+    Seq<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
 );
 ```
 
+## Philosophy
+
+Many bioinformatics crates implement their own kmer packing logic. This project began as a way to reuse kmer construction code and make it compatible between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general data type for sequences. The scope of the crate will be restricted to representing sequences.
+
+Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely contain the science and the engineering to work towards both objectives cooperatively.
+
+Contributions are very welcome. There's lots of low hanging fruit for optimisation and ideally we should only have to write them once!
+
 ## Contents
 
-* [Codec](#codecs): Coding/Decoding schemes for the characters of a biological sequence
-* [Seq](#sequences): A sequence of encoded characters
+* [Codec](#codecs): Coding/Decoding schemes for the symbols of a biological sequence
+* [Seq](#sequences): A sequence of encoded symbols
 * [Kmer](#kmers): A fixed size sequence of length `K`
 * [Derivable codecs](#derivable-codecs): This crate offers utilities for defining your own bit-level encodings
 * [Safe conversion](#sequence-conversion) between sequences
-
-## Codecs
-
-The `Codec` trait describes the coding/decoding process for the symbols of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
-
-### `codec::Dna`
-Using the lexicographically ordered 2-bit representation
-
-### `codec::Iupac`
-IUPAC  nucleotide ambiguity codes are represented with 4 bits. This supports membership resolution with bitwise operations. Logical `or` is the union:
-
-```rust
-assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-```
-
-Logical `and` is the intersection of two iupac sequences:
-
-```rust
-assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
-```
-
-### `codec::Text`
-utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
-
-### `codec::Amino`
-Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
 ## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
@@ -143,7 +149,7 @@ A lookup table can be indexed in constant time by treating kmers directly as `us
 
 fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
     // For dna::Dna our histogram will need 4^4
-    // bins to count every possible 4-mer.
+    // bins to count every possible 4-mer
     let mut histo = vec![0; 1 << (C::WIDTH * K as u8)];
 
     for kmer in seq.kmers::<K>() {
@@ -156,41 +162,98 @@ fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
 
 ## Sketching
 
-### Hashing
-
-The `Hash` trait is implemented for Kmers
-
-### Canonical Kmers
-
-Depending on the application, it may be permissible to superimpose the forward and reverse complements of a kmer:
-
-```rust
-k: Kmer = dna!("ACGTGACGT");
-let canonical = k ^ k.revcomp();
-```
-
-### Kmer minimisers
+### Minimising
 
 The [2-bit representation](https://docs.rs/bio-seq/latest/bio_seq/codec/dna) of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`:
 
 ```rust
-fn minimise(seq: Seq<Dna>) -> Option<Kmer::<Dna, 8>> {
-    seq.kmers().min()
-}
+let seq = dna!("GCTCGATCGTAAAAAATCGTATT");
+let minimiser = seq.kmers::<8>().min().unwrap();
+
+assert_eq!(minimiser, Kmer::from(dna!("GTAAAAAA")));
 ```
 
-### Example: Hashing minimiser of canonical Kmers
+### Hashing
+
+`Hash` is implemented for sequence and kmer types so equal values of these types with hash identically:
 
 ```rust
-for ckmer in seq.window(8).map(|kmer| hash(kmer ^ kmer.revcomp())) {
-    // TODO: example
-    ...
-}
+let seq_arr: &SeqArray<Dna, 32, 1> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
+let seq: Seq<Dna> = seq_arr.into();
+let seq_slice: &SeqSlice<Dna> = &seq;
+let kmer: Kmer<Dna, 32> = seq_arr.into();
+
+assert_eq!(hash(seq_arr), hash(&seq));
+assert_eq!(hash(&seq), hash(&seq_slice));
+assert_eq!(hash(&seq_slice), hash(&kmer));
 ```
 
-## Deriving new codecs
+### Hashing minimisers
 
-Sequence coding/decoding is derived from the variant names and discriminants of enum types:
+In practice we want to hash sequences that we minimise:
+
+```rust
+fn hash<T: Hash>(seq: T) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    seq.hash(&mut hasher);
+    hasher.finish()
+}
+
+let (minimiser, min_hash) = seq
+    .kmers::<16>()
+    .map(|kmer| (kmer, hash(&kmer)))
+    .min_by_key(|&(_, hash)| hash)
+    .unwrap();
+```
+
+### Canonical kmers:
+
+To consider both the forward and reverse complement of kmers when minimising:
+
+```rust
+let (canonical_minimiser, canonical_hash) = seq
+    .kmers::<16>()
+    .map(|kmer| {
+        let canonical_hash = min(hash(&kmer), hash(&kmer.revcomp()));
+        (kmer, canonical_hash)
+    })
+    .min_by_key(|&(_, hash)| hash)
+    .unwrap();
+```
+
+Although it's probably more efficient to minimise `seq` and `seq.revcomp()` separately.
+
+## Codecs
+
+The `Codec` trait describes the coding/decoding process for the symbols of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
+
+### codec::Dna
+Using the lexicographically ordered 2-bit representation
+
+### codec::Iupac
+IUPAC  nucleotide ambiguity codes are represented with 4 bits. This supports membership resolution with bitwise operations. Logical `or` is the union:
+
+```rust
+assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+```
+
+Logical `and` is the intersection of two iupac sequences:
+
+```rust
+assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
+```
+
+### codec::Text
+utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
+
+### codec::Amino
+Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
+
+## Defining new codecs
+
+Custom codecs can be defined by implementing the `Codec` trait.
+
+Codecs can also be derived from the variant names and discriminants of enum types:
 
 ```rust
 use bio_seq_derive::Codec;
@@ -232,7 +295,6 @@ Enable the translation feature in `Cargo.toml`:
 bio-seq = { version="0.13", features=["translation"] }
 ```
 
-
 ```rust
 pub trait TranslationTable<A: Codec, B: Codec> {
     fn to_amino(&self, codon: &SeqSlice<A>) -> B;
@@ -262,7 +324,7 @@ let aminos: Seq<Amino> = seq
 
 assert_eq!(
     aminos,
-    amino!("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK")
+    Seq<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
 );
 ```
 
@@ -288,8 +350,6 @@ let mut amino_seq: Seq<Amino> = Seq::new();
 for codon in seq.chunks(3) {
     amino_seq.push(table.try_to_amino(codon).unwrap());
 }
-
-assert_eq!(amino_seq, amino!("ACEDFFA"));
 ```
 
 Implementing the `TranslationTable` trait directly:
@@ -317,3 +377,7 @@ impl TranslationTable<Dna, Amino> for Mitochondria {
     }
 }
 ```
+
+## Contributing
+
+Contributions and suggestions are very much welcome. The easiest way to begin contributing is through github issues.

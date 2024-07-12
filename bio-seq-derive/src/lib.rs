@@ -112,6 +112,13 @@ pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     output.into()
 }
 
+/// Static DNA sequences encoded at compile time
+///
+/// Invalid symbols (non-`A C G T`) will result in compiler error
+///
+/// ```ignore
+/// let seq: &'static SeqSlice<Dna> = dna!("CGTACATCAGT");
+/// ```
 #[proc_macro]
 pub fn dna(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let seq: LitStr = parse_macro_input!(input as LitStr);
@@ -137,6 +144,13 @@ pub fn dna(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     }
 }
 
+/// Static degenerate nucleotide codes encoded at compile time
+///
+/// Invalid symbols will result in compiler error
+///
+/// ```ignore
+/// let seq: &'static SeqSlice<Iupac> = iupac!("NTAGYSW");
+/// ```
 #[proc_macro]
 pub fn iupac(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let seq: LitStr = parse_macro_input!(input as LitStr);
