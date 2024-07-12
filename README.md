@@ -8,13 +8,13 @@
 ### Bit-packed and well-typed biological sequences
 </div>
 
-This crate provides types for representing and operating on sequences of genomic data. Efficient encodings are provided for nucleotdies and amino acids and can be extended with the `Codec` trait.
+This crate provides types for representing and operating on sequences of genomic data. Efficient encodings are provided for nucleotides and amino acids and can be extended with the `Codec` trait.
 
 Short sequences of fixed length (kmers) are given special attention.
 
-Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
-
 ### Quick start
+
+Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -31,7 +31,7 @@ let seq = dna!("ATACGATCGATCGATCGATCCGT");
 
 // iterate over the 8-mers of the reverse complement
 for kmer in seq.revcomp().kmers::<8>() {
-    println!("{}", kmer);
+    println!("{kmer}");
 }
 
 // ACGGATCG
@@ -46,6 +46,7 @@ Sequences are analogous to rust's string types and follow similar dereferencing 
 
 ```rust
 use bio_seq::prelude::*;
+
 // The `dna!` macro packs a static sequence with 2-bits per symbol at compile time.
 // This is analogous to rust's string literals:
 let s: &'static str = "hello!";
@@ -72,7 +73,7 @@ let seqslice: &SeqSlice<Dna> = &seq[2..4];
 
 Many bioinformatics crates implement their own kmer packing logic. This project began as a way to reuse kmer construction code and make it compatible between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general data type for sequences. The scope of the crate will be restricted to representing sequences.
 
-Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely contain the science and the engineering to work towards both objectives cooperatively.
+Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives cooperatively.
 
 Contributions are very welcome. There's lots of low hanging fruit for optimisation and ideally we should only have to write them once!
 
