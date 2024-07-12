@@ -8,14 +8,20 @@
 ### Bit-packed and well-typed biological sequences
 </div>
 
+This crate provides types for representing and operating on sequences of genomic data. Efficient encodings are provided for nucleotdies and amino acids and can be extended with the `Codec` trait.
+
+Short sequences of fixed length (kmers) are given special attention.
+
 Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
+
+### Quick start
 
 ```toml
 [dependencies]
 bio-seq = "0.13"
 ```
 
-Example: Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s for a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
+Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s for a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
 
 ```rust
 use bio_seq::prelude::*;
@@ -36,16 +42,19 @@ for kmer in seq.revcomp().kmers::<8>() {
 // ...
 ```
 
-Sequences are analogous to rust's string types and follow similar dereferencing conventions.
+Sequences are analogous to rust's string types and follow similar dereferencing conventions:
 
 ```rust
 use bio_seq::prelude::*;
+// The `dna!` macro packs a static sequence with 2-bits per symbol at compile time.
 // This is analogous to rust's string literals:
 let s: &'static str = "hello!";
 let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
 
 // Static sequences can also be copied as kmers
 let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
+// or with the kmer! macro:
+let kmer = kmer!("CGCTAGCTACGATCGCAT")
 
 // `Seq`s can be allocated on the heap like `String`s are:
 let s: String = "hello!".into();
@@ -57,37 +66,6 @@ let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
 // &SeqSlices are analogous to &str, String slices:
 let slice: &str = &s[1..3];
 let seqslice: &SeqSlice<Dna> = &seq[2..4];
-```
-
-Example: The [4-bit encoding of IUPAC](https://docs.rs/bio-seq/latest/bio_seq/codec/iupac) nucleotide ambiguity codes naturally represent a set of bases for each position (`0001`: `A`, `1111`: `N`, `0000`: `*`, ...):
-
-```rust
-use bio_seq::prelude::*;
-
-let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
-let pattern = iupac!("AYG");
-
-for slice in seq.windows(pattern.len()) {
-    if pattern.contains(slice) {
-        println!("{} matches pattern", slice);
-    }
-}
-
-// ACG matches pattern
-// ATG matches pattern
-```
-
-The goal of this crate is to make handling biological sequence data safe and convenient. The [`TranslationTable`](https://docs.rs/bio-seq/latest/bio_seq/translation/trait.TranslationTable.html) trait implements genetic coding:
-
-```rust
-// This is a debruijn sequence of all possible 3-mers:
-let seq: Seq<Dna> =
-    dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-let aminos: Seq<Amino> = Seq::from_iter(seq.windows(3).map(|codon| translation::STANDARD.to_amino(codon)));
-assert_eq!(
-    aminos,
-    Seq<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
-);
 ```
 
 ## Philosophy
@@ -109,7 +87,12 @@ Contributions are very welcome. There's lots of low hanging fruit for optimisati
 ## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
 Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. [`Kmer`](https://docs.rs/bio-seq/latest/bio_seq/kmer)s are generally stored on the stack, implementing `Copy`.
-All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order):
+
+## [Kmers](https://docs.rs/bio-seq/latest/bio_seq/kmer)
+
+kmers are short sequences of length `k` that can fit into a register (e.g. `usize`, or SIMD vector) and generally implement `Copy`. These are implemented with const generics and `k` is fixed at compile time.
+
+All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order).
 
 ```rust
 for i in 0..=15 {
@@ -135,10 +118,6 @@ for i in 0..=15 {
 14: GTAAA
 15: TTAAA
 ```
-
-## [Kmers](https://docs.rs/bio-seq/latest/bio_seq/kmer)
-
-kmers are short sequences of length `k` that can fit into a register (e.g. `usize`, or SIMD vector) and generally implement `Copy`. these are implemented with const generics and `k` is fixed at compile time.
 
 ### Succinct encodings
 

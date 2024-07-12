@@ -55,6 +55,8 @@
 //!
 //! // Static sequences can also be copied as kmers
 //! let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
+//! // or with the kmer! macro:
+//! let kmer = kmer!("CGCTAGCTACGATCGCAT")
 //!
 //! // `Seq`s can be allocated on the heap like `String`s are:
 //! let s: String = "hello!".into();

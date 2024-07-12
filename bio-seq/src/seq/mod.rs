@@ -3,7 +3,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Arbitrary length sequences of bit-packed genomic data, stored on the heap.
+//! Arbitrary length sequences of bit-packed genomic data, stored on the heap
 //!
 //! `Seq` and `SeqSlice` are analogous to `String` and `str`. A `Seq` owns its data and a `SeqSlice` is a read-only window into a `Seq`.
 //!

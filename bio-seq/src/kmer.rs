@@ -3,7 +3,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Short sequences of fixed length.
+//! Short sequences of fixed length
 //!
 //! Encoded sequences of length `k`, fixed at compile time. Generally, the underlying storage type of `Kmer` should lend itself to optimisation. For example, the default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
 //!
