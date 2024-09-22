@@ -119,6 +119,7 @@ use core::hash::Hash;
 pub mod amino;
 pub mod dna;
 pub mod iupac;
+pub mod masked;
 
 pub mod text;
 

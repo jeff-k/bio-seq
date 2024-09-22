@@ -466,6 +466,15 @@ impl From<Vec<usize>> for Seq<text::Dna> {
     }
 }
 
+impl<A: Codec> From<Bv> for Seq<A> {
+    fn from(bv: Bv) -> Self {
+        Seq {
+            _p: PhantomData,
+            bv,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
