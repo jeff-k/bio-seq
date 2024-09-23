@@ -40,8 +40,12 @@ use crate::codec::{text, Codec};
 use crate::error::ParseBioError;
 
 use crate::{Bs, Bv, Order};
+
 use bitvec::field::BitField;
 use bitvec::view::BitView;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 use core::borrow::Borrow;
 use core::fmt;
@@ -56,6 +60,7 @@ use core::str::FromStr;
 ///
 /// Stored on the heap
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Seq<A: Codec> {
     pub(crate) _p: PhantomData<A>,

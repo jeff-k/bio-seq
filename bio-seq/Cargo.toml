@@ -23,7 +23,7 @@ serde = { version = "1", optional = true, features=["derive"] }
 serde_derive = { version = "1", optional = true }
 
 [features]
-serde = ["dep:serde",  "dep:serde_derive"]
+serde = ["dep:serde",  "dep:serde_derive", "bitvec/serde"]
 translation = []
 
 #[[example]]
