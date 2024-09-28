@@ -39,6 +39,9 @@ use core::ops::Deref;
 use core::ptr;
 use core::str::FromStr;
 
+#[cfg(feature = "simd")]
+pub mod simd;
+
 //use bitvec::prelude::*;
 
 #[cfg(feature = "serde")]

@@ -89,6 +89,7 @@
 #![allow(clippy::module_name_repetitions)]
 // the lint doesn't seem to recognise our implementations
 #![allow(clippy::into_iter_without_iter)]
+#![cfg_attr(feature = "simd", feature(portable_simd))]
 
 use bitvec::prelude::*;
 

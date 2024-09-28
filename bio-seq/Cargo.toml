@@ -18,17 +18,17 @@ rust-version = "1.79"
 
 [dependencies]
 bitvec = "1"
-bio-seq-derive = { path = "../bio-seq-derive", version="4.0.0" }
+bio-seq-derive = { path = "../bio-seq-derive", version="4.0" }
 serde = { version = "1", optional = true, features=["derive"] }
 serde_derive = { version = "1", optional = true }
 
 [features]
 serde = ["dep:serde",  "dep:serde_derive", "bitvec/serde"]
 translation = []
+simd = []
 
 #[[example]]
 #name = "aminokmers"
 
 [package.metadata.docs.rs]
 all-features = true
-#features = ["translation"]
