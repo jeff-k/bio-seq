@@ -16,7 +16,7 @@ pub(crate) fn gen_seqarray(
     len: usize,
     bits: &[u8],
 ) -> proc_macro2::TokenStream {
-    let num_words: usize = (bits.len() + (usize::BITS as usize - 1)) / usize::BITS as usize;
+    let num_words: usize = bits.len().div_ceil(usize::BITS as usize);
 
     let seq_name_ident = syn::Ident::new(seq_name, proc_macro2::Span::call_site());
 
