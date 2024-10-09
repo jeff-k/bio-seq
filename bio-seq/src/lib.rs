@@ -110,7 +110,10 @@ pub mod seq;
 //#[macro_use]
 pub use bio_seq_derive::{dna, iupac};
 
+#[doc(hidden)]
 pub use bitvec::bitarr as __bio_seq_bitarr;
+
+#[doc(hidden)]
 pub use bitvec::prelude::Lsb0 as __bio_seq_Lsb0;
 
 #[cfg(feature = "translation")]
@@ -134,7 +137,9 @@ pub mod prelude {
 
     pub use crate::{dna, iupac, kmer};
 
+    #[doc(hidden)]
     pub use crate::__bio_seq_Lsb0;
+    #[doc(hidden)]
     pub use crate::__bio_seq_bitarr;
 }
 
