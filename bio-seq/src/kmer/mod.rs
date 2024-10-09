@@ -197,44 +197,42 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         }
     }
 
-    /*
-            /// Push a base from the right:
-            ///
-            /// ```
-            /// use bio_seq::prelude::*;
-            /// use bio_seq::codec::dna::Dna;
-            ///
-            /// let k = kmer!("ACGAT");
-            /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
-            /// ```
-            pub fn pushr(self, base: A) -> Kmer<A, K> {
-                let bs: usize = base.to_bits().into();
-                let ba = S::to_bitarray(self.bs);
+    /// Shift bases to the right and push a base onto the end.
+    ///
+    /// ```
+    /// use bio_seq::prelude::*;
+    /// use bio_seq::codec::dna::Dna;
+    ///
+    /// let k = kmer!("ACGAT");
+    /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
+    /// ```
+    pub fn pushr(self, base: A) -> Self {
+        let mut ba = self.rotated_left(1).bs.to_bitarray();
+        let bs: &mut Bs = ba.as_mut();
 
-                let mut x: Bv = Bv::new();
-                x.extend_from_bitslice(&ba[A::BITS as usize..A::BITS as usize * K]);
-                x.extend_from_bitslice(&bs);
-                Kmer {
-                    _p: PhantomData,
-                    bs: S::from_bitslice(&x),
-                }
-            }
-    */
-    /*
-        /// Push a base from the left
-        pub fn pushl(self, base: A) -> Kmer<A, K> {
-            let bs = &Ba::from(base.to_bits() as usize)[..A::BITS as usize];
-            let ba = &Ba::from(self.bs);
+        let start = Self::BITS - A::BITS as usize;
+        let end = start + A::BITS as usize;
 
-            let mut x: Bv = Bv::new();
-            x.extend_from_bitslice(bs);
-            x.extend_from_bitslice(&ba[..A::BITS as usize * K - A::BITS as usize]);
-            Kmer {
-                _p: PhantomData,
-                bs: x.load_le::<usize>(),
-            }
+        bs[start..end].store(base.to_bits());
+
+        Kmer {
+            _p: PhantomData,
+            bs: S::from_bitslice(bs),
         }
-    */
+    }
+
+    /// Push a base from the left
+    pub fn pushl(self, base: A) -> Self {
+        let mut ba = self.rotated_right(1).bs.to_bitarray();
+        let bs: &mut Bs = ba.as_mut();
+
+        bs[..A::BITS as usize].store(base.to_bits());
+
+        Kmer {
+            _p: PhantomData,
+            bs: S::from_bitslice(bs),
+        }
+    }
 
     /*
         /// Iterate through all bases of a Kmer
@@ -509,39 +507,38 @@ mod tests {
             assert_eq!(index as usize, (&kmer).into());
         }
     }
-    /*
-        #[test]
-        fn pushl_test() {
-            let k = kmer!("ACGT");
-            let k1 = k.pushl(Dna::G);
-            let k2 = k1.pushl(Dna::A);
-            let k3 = k2.pushl(Dna::T);
-            let k4 = k3.pushl(Dna::C);
-            let k5 = k4.pushl(Dna::C);
+    #[test]
+    fn pushl_test() {
+        let k = kmer!("ACGT");
+        let k1 = k.pushl(Dna::G);
+        let k2 = k1.pushl(Dna::A);
+        let k3 = k2.pushl(Dna::T);
+        let k4 = k3.pushl(Dna::C);
+        let k5 = k4.pushl(Dna::C);
 
-            assert_eq!(k1, kmer!("GACG"));
-            assert_eq!(k2, kmer!("AGAC"));
-            assert_eq!(k3, kmer!("TAGA"));
-            assert_eq!(k4, kmer!("CTAG"));
-            assert_eq!(k5, kmer!("CCTA"));
-        }
+        assert_eq!(k1, kmer!("GACG"));
+        assert_eq!(k2, kmer!("AGAC"));
+        assert_eq!(k3, kmer!("TAGA"));
+        assert_eq!(k4, kmer!("CTAG"));
+        assert_eq!(k5, kmer!("CCTA"));
+    }
+    #[test]
+    fn pushr_test() {
+        let k = kmer!("ACGT");
+        let k1 = k.pushr(Dna::G);
+        let k2 = k1.pushr(Dna::A);
+        let k3 = k2.pushr(Dna::T);
+        let k4 = k3.pushr(Dna::C);
+        let k5 = k4.pushr(Dna::C);
 
-        #[test]
-        fn pushr_test() {
-            let k = kmer!("ACGT");
-            let k1 = k.pushr(Dna::G);
-            let k2 = k1.pushr(Dna::A);
-            let k3 = k2.pushr(Dna::T);
-            let k4 = k3.pushr(Dna::C);
-            let k5 = k4.pushr(Dna::C);
+        println!("{}", k1);
+        assert_eq!(k1, kmer!("CGTG"));
+        assert_eq!(k2, kmer!("GTGA"));
+        assert_eq!(k3, kmer!("TGAT"));
+        assert_eq!(k4, kmer!("GATC"));
+        assert_eq!(k5, kmer!("ATCC"));
+    }
 
-            assert_eq!(k1, kmer!("CGTG"));
-            assert_eq!(k2, kmer!("GTGA"));
-            assert_eq!(k3, kmer!("TGAT"));
-            assert_eq!(k4, kmer!("GATC"));
-            assert_eq!(k5, kmer!("ATCC"));
-        }
-    */
     #[test]
     fn amino_kmer_to_usize() {
         for (kmer, index) in Seq::<Amino>::try_from("SRY")
@@ -552,7 +549,6 @@ mod tests {
             assert_eq!(index as usize, usize::from(&kmer));
         }
     }
-    /*
     #[test]
     fn big_kmer_shiftr() {
         let mut kmer: Kmer<Dna, 32> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA");
@@ -570,7 +566,6 @@ mod tests {
         }
         assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA"), kmer);
     }
-    */
     #[test]
     fn amino_kmer_iter() {
         for (kmer, target) in Seq::<Amino>::try_from("SSLMNHKKL")
