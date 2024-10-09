@@ -1,4 +1,4 @@
-// Copyright 2021, 2022, 2023 Jeff Knaggs
+// Copyright 2021-2024 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -26,10 +26,14 @@
 //! # use bio_seq::prelude::*;
 //! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").into();
 //! ```
+
+// permit truncations that may happen on 32-bit platforms (unsupported)
+#![allow(clippy::cast_possible_truncation)]
+
 use crate::codec::Codec;
 use crate::prelude::{Complement, ParseBioError, ReverseComplement};
 use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::{Ba, Bs, Bv};
+use crate::{Ba, Bs};
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 use core::fmt;
@@ -42,82 +46,206 @@ use core::str::FromStr;
 #[cfg(feature = "simd")]
 pub mod simd;
 
-//use bitvec::prelude::*;
-
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
-// TODO
-pub trait KmerStorage {
-    const BITS: usize;
-    fn new() -> Self;
-}
+mod sealed {
+    use crate::Bs;
 
-// TODO
-impl KmerStorage for usize {
-    const BITS: usize = usize::BITS as usize;
+    pub trait KmerStorage: Copy + Clone {
+        const BITS: usize;
+        type BaN: AsRef<Bs> + AsMut<Bs>;
 
-    fn new() -> Self {
-        0
+        fn to_bitarray(self) -> Self::BaN;
+        fn from_bitslice(bs: &Bs) -> Self;
+
+        //        fn rotate_left(self, n: u32) -> Self;
+        //        fn rotate_right(self, n: u32) -> Self;
+
+        fn mask(&mut self, bits: usize);
     }
 }
 
-/// By default k-mers are backed by `usize`, `Codec::BITS` * K must be <= 64
+pub trait KmerStorage: sealed::KmerStorage {}
+
+impl sealed::KmerStorage for u32 {
+    const BITS: usize = u32::BITS as usize;
+    type BaN = Ba<1>;
+
+    fn to_bitarray(self) -> Ba<1> {
+        Self::BaN::new([self as usize])
+    }
+
+    fn from_bitslice(bs: &Bs) -> Self {
+        debug_assert!(bs.len() >= 32, "Target SeqSlice data less than 32 bits");
+        bs[..32].load_le()
+    }
+
+    fn mask(&mut self, bits: usize) {
+        *self &= (1 << bits) - 1;
+    }
+}
+
+impl KmerStorage for u32 {}
+
+impl sealed::KmerStorage for usize {
+    const BITS: usize = usize::BITS as usize;
+    type BaN = Ba<1>;
+
+    fn to_bitarray(self) -> Ba<1> {
+        Self::BaN::new([self])
+    }
+
+    fn from_bitslice(bs: &Bs) -> Self {
+        bs.load_le()
+    }
+
+    /*
+        fn rotate_right(self, n: u32) -> Self {
+            self.rotate_right(n)
+        }
+        fn rotate_left(self, n: u32) -> Self {
+            self.rotate_left(n)
+        }
+    */
+
+    fn mask(&mut self, bits: usize) {
+        *self &= (1 << bits) - 1;
+    }
+}
+
+impl KmerStorage for usize {}
+
+impl sealed::KmerStorage for u64 {
+    const BITS: usize = u64::BITS as usize;
+    type BaN = Ba<1>;
+
+    fn to_bitarray(self) -> Ba<1> {
+        // depends on global assertion that usize::BITS == 64
+        Self::BaN::new([self.try_into().unwrap()])
+    }
+
+    fn from_bitslice(bs: &Bs) -> Self {
+        bs.load_le::<Self>()
+    }
+
+    fn mask(&mut self, bits: usize) {
+        *self &= (1 << bits) - 1;
+    }
+}
+
+impl KmerStorage for u64 {}
+
+impl sealed::KmerStorage for u128 {
+    const BITS: usize = u128::BITS as usize;
+    type BaN = Ba<2>;
+
+    fn to_bitarray(self) -> Ba<2> {
+        Self::BaN::new([self as usize, (self >> 64) as usize])
+    }
+
+    fn from_bitslice(bs: &Bs) -> Self {
+        bs.load_le::<Self>()
+    }
+
+    fn mask(&mut self, bits: usize) {
+        *self &= (1 << bits) - 1;
+    }
+}
+
+impl KmerStorage for u128 {}
+
+/// By default k-mers are backed by `usize` and `Codec::BITS` * `K` must be <= 64 on 64-bit platforms
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
-    #[cfg_attr(feature = "serde", serde(skip))]
     pub _p: PhantomData<C>,
     pub bs: S,
 }
 
-impl<A: Codec, const K: usize> Kmer<A, K> {
-    /// Push a base from the right:
-    ///
-    /// ```
-    /// use bio_seq::prelude::*;
-    /// use bio_seq::codec::dna::Dna;
-    ///
-    /// let k = kmer!("ACGAT");
-    /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
-    /// ```
-    pub fn pushr(self, base: A) -> Kmer<A, K> {
-        let bs = &Ba::from(base.to_bits() as usize)[..A::BITS as usize];
-        let ba = &Ba::from(self.bs);
+impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
+    // This error message can be formatted with constants in nightly (const_format)
+    const _ASSERT_K: () = assert!(
+        K * A::BITS as usize <= S::BITS,
+        "`KmerStorage` not large enough for `Kmer`",
+    );
 
-        let mut x: Bv = Bv::new();
-        x.extend_from_bitslice(&ba[A::BITS as usize..A::BITS as usize * K]);
-        x.extend_from_bitslice(bs);
+    const BITS: usize = K * A::BITS as usize;
+
+    pub fn rotated_left(&self, n: u32) -> Self {
+        let n: usize = (n as usize % K) * A::BITS as usize;
+        let mut ba = self.bs.to_bitarray();
+        let bs: &mut Bs = ba.as_mut();
+        bs[..Self::BITS].rotate_left(n);
+
         Kmer {
             _p: PhantomData,
-            bs: x.load_le::<usize>(),
+            bs: S::from_bitslice(&bs[..Self::BITS]),
         }
     }
 
-    /// Push a base from the left
-    pub fn pushl(self, base: A) -> Kmer<A, K> {
-        let bs = &Ba::from(base.to_bits() as usize)[..A::BITS as usize];
-        let ba = &Ba::from(self.bs);
+    pub fn rotated_right(&self, n: u32) -> Self {
+        let n: usize = (n as usize % K) * A::BITS as usize;
+        let mut ba = self.bs.to_bitarray();
+        let bs: &mut Bs = ba.as_mut();
+        bs[..Self::BITS].rotate_right(n);
 
-        let mut x: Bv = Bv::new();
-        x.extend_from_bitslice(bs);
-        x.extend_from_bitslice(&ba[..A::BITS as usize * K - A::BITS as usize]);
         Kmer {
             _p: PhantomData,
-            bs: x.load_le::<usize>(),
+            bs: S::from_bitslice(&bs[..Self::BITS]),
         }
     }
 
-    /// Iterate through all bases of a Kmer
-    pub fn iter(self) -> KmerBases<A, K> {
-        KmerBases {
-            _p: PhantomData,
-            bits: Ba::from(self.bs),
-            index: 0,
-        }
-    }
+    /*
+            /// Push a base from the right:
+            ///
+            /// ```
+            /// use bio_seq::prelude::*;
+            /// use bio_seq::codec::dna::Dna;
+            ///
+            /// let k = kmer!("ACGAT");
+            /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
+            /// ```
+            pub fn pushr(self, base: A) -> Kmer<A, K> {
+                let bs: usize = base.to_bits().into();
+                let ba = S::to_bitarray(self.bs);
 
+                let mut x: Bv = Bv::new();
+                x.extend_from_bitslice(&ba[A::BITS as usize..A::BITS as usize * K]);
+                x.extend_from_bitslice(&bs);
+                Kmer {
+                    _p: PhantomData,
+                    bs: S::from_bitslice(&x),
+                }
+            }
+    */
+    /*
+        /// Push a base from the left
+        pub fn pushl(self, base: A) -> Kmer<A, K> {
+            let bs = &Ba::from(base.to_bits() as usize)[..A::BITS as usize];
+            let ba = &Ba::from(self.bs);
+
+            let mut x: Bv = Bv::new();
+            x.extend_from_bitslice(bs);
+            x.extend_from_bitslice(&ba[..A::BITS as usize * K - A::BITS as usize]);
+            Kmer {
+                _p: PhantomData,
+                bs: x.load_le::<usize>(),
+            }
+        }
+    */
+
+    /*
+        /// Iterate through all bases of a Kmer
+        pub fn iter(self) -> KmerBases<A, K> {
+            KmerBases {
+                _p: PhantomData,
+                bits: Ba::from(self.bs),
+                index: 0,
+            }
+        }
+    */
     /*
     /// tail
     pub fn tail(self, base: A) -> Seq<A> {
@@ -131,14 +259,8 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     */
 }
 
-impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
+impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
     fn from(i: usize) -> Kmer<A, K> {
-        const {
-            assert!(
-                K <= usize::BITS as usize / A::BITS as usize,
-                "K is too large: it should be <= usize::BITS / A::BITS"
-            );
-        };
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -146,17 +268,17 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> From<&SeqArray<A, K, 1>> for Kmer<A, K> {
-    fn from(seq: &SeqArray<A, K, 1>) -> Kmer<A, K> {
+impl<A: Codec, const K: usize, S: KmerStorage> From<&SeqArray<A, K, 1>> for Kmer<A, K, S> {
+    fn from(seq: &SeqArray<A, K, 1>) -> Self {
         Kmer {
             _p: PhantomData,
-            bs: seq.into(),
+            bs: S::from_bitslice(&seq.bs),
         }
     }
 }
 
-impl<A: Codec, const K: usize> From<&Kmer<A, K>> for usize {
-    fn from(kmer: &Kmer<A, K>) -> usize {
+impl<A: Codec, const K: usize> From<&Kmer<A, K, usize>> for usize {
+    fn from(kmer: &Kmer<A, K, usize>) -> usize {
         kmer.bs
     }
 }
@@ -188,22 +310,15 @@ impl<A: Codec, const K: usize> AsRef<SeqSlice<A>> for Kmer<A, K> {
     }
 }
 
-/*
-impl<A: Codec, const K: usize> From<Kmer<A, K>> for usize {
-    fn from(kmer: Kmer<A, K>) -> usize {
-        kmer.bs
-    }
-}
-*/
-
-impl<A: Codec, const K: usize> fmt::Display for Kmer<A, K> {
+impl<A: Codec, const K: usize, S: KmerStorage> fmt::Display for Kmer<A, K, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::new();
-        Ba::from(self.bs)[..K * A::BITS as usize]
-            .chunks(A::BITS as usize)
-            .for_each(|chunk| {
-                s.push(A::unsafe_from_bits(chunk.load_le::<u8>()).to_char());
-            });
+        let ba = self.bs.to_bitarray();
+        let bs: &Bs = &ba.as_ref()[0..(K * A::BITS as usize)];
+
+        bs.chunks(A::BITS as usize).for_each(|chunk| {
+            s.push(A::unsafe_from_bits(chunk.load_le::<u8>()).to_char());
+        });
         write!(f, "{s}")
     }
 }
@@ -218,12 +333,6 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
 
 impl<A: Codec, const K: usize> Kmer<A, K> {
     fn unsafe_from(slice: &SeqSlice<A>) -> Self {
-        const {
-            assert!(
-                K <= usize::BITS as usize / A::BITS as usize,
-                "K is too large: it should be <= usize::BITS / A::BITS"
-            );
-        };
         Kmer {
             _p: PhantomData,
             bs: slice.try_into().unwrap(),
@@ -231,7 +340,7 @@ impl<A: Codec, const K: usize> Kmer<A, K> {
     }
 }
 
-impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
+impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
         let i = self.index;
@@ -243,10 +352,11 @@ impl<'a, A: Codec, const K: usize> Iterator for KmerIter<'a, A, K> {
     }
 }
 
+/*
 /// An iterator over the bases of a kmer
-pub struct KmerBases<A: Codec, const K: usize> {
+pub struct KmerBases<A: Codec, const K: usize, S: KmerStorage> {
     pub _p: PhantomData<A>,
-    pub bits: Ba,
+    pub bits: S::BaN,
     pub index: usize,
 }
 
@@ -264,6 +374,7 @@ impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
         Some(A::unsafe_from_bits(chunk.load_le::<u8>()))
     }
 }
+*/
 
 /// ```
 /// use bio_seq::prelude::*;
@@ -291,12 +402,6 @@ impl<A: Codec, const K: usize> TryFrom<&SeqSlice<A>> for Kmer<A, K> {
     type Error = ParseBioError;
 
     fn try_from(seq: &SeqSlice<A>) -> Result<Self, Self::Error> {
-        const {
-            assert!(
-                K <= usize::BITS as usize / A::BITS as usize,
-                "K is too large: it should be <= usize::BITS / A::BITS"
-            );
-        };
         if seq.len() == K {
             Ok(Kmer::<A, K>::unsafe_from(&seq[0..K]))
         } else {
@@ -404,39 +509,39 @@ mod tests {
             assert_eq!(index as usize, (&kmer).into());
         }
     }
+    /*
+        #[test]
+        fn pushl_test() {
+            let k = kmer!("ACGT");
+            let k1 = k.pushl(Dna::G);
+            let k2 = k1.pushl(Dna::A);
+            let k3 = k2.pushl(Dna::T);
+            let k4 = k3.pushl(Dna::C);
+            let k5 = k4.pushl(Dna::C);
 
-    #[test]
-    fn pushl_test() {
-        let k = kmer!("ACGT");
-        let k1 = k.pushl(Dna::G);
-        let k2 = k1.pushl(Dna::A);
-        let k3 = k2.pushl(Dna::T);
-        let k4 = k3.pushl(Dna::C);
-        let k5 = k4.pushl(Dna::C);
+            assert_eq!(k1, kmer!("GACG"));
+            assert_eq!(k2, kmer!("AGAC"));
+            assert_eq!(k3, kmer!("TAGA"));
+            assert_eq!(k4, kmer!("CTAG"));
+            assert_eq!(k5, kmer!("CCTA"));
+        }
 
-        assert_eq!(k1, kmer!("GACG"));
-        assert_eq!(k2, kmer!("AGAC"));
-        assert_eq!(k3, kmer!("TAGA"));
-        assert_eq!(k4, kmer!("CTAG"));
-        assert_eq!(k5, kmer!("CCTA"));
-    }
+        #[test]
+        fn pushr_test() {
+            let k = kmer!("ACGT");
+            let k1 = k.pushr(Dna::G);
+            let k2 = k1.pushr(Dna::A);
+            let k3 = k2.pushr(Dna::T);
+            let k4 = k3.pushr(Dna::C);
+            let k5 = k4.pushr(Dna::C);
 
-    #[test]
-    fn pushr_test() {
-        let k = kmer!("ACGT");
-        let k1 = k.pushr(Dna::G);
-        let k2 = k1.pushr(Dna::A);
-        let k3 = k2.pushr(Dna::T);
-        let k4 = k3.pushr(Dna::C);
-        let k5 = k4.pushr(Dna::C);
-
-        assert_eq!(k1, kmer!("CGTG"));
-        assert_eq!(k2, kmer!("GTGA"));
-        assert_eq!(k3, kmer!("TGAT"));
-        assert_eq!(k4, kmer!("GATC"));
-        assert_eq!(k5, kmer!("ATCC"));
-    }
-
+            assert_eq!(k1, kmer!("CGTG"));
+            assert_eq!(k2, kmer!("GTGA"));
+            assert_eq!(k3, kmer!("TGAT"));
+            assert_eq!(k4, kmer!("GATC"));
+            assert_eq!(k5, kmer!("ATCC"));
+        }
+    */
     #[test]
     fn amino_kmer_to_usize() {
         for (kmer, index) in Seq::<Amino>::try_from("SRY")
@@ -447,6 +552,7 @@ mod tests {
             assert_eq!(index as usize, usize::from(&kmer));
         }
     }
+    /*
     #[test]
     fn big_kmer_shiftr() {
         let mut kmer: Kmer<Dna, 32> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA");
@@ -464,6 +570,7 @@ mod tests {
         }
         assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA"), kmer);
     }
+    */
     #[test]
     fn amino_kmer_iter() {
         for (kmer, target) in Seq::<Amino>::try_from("SSLMNHKKL")
@@ -473,6 +580,82 @@ mod tests {
         {
             assert_eq!(kmer, target);
         }
+    }
+
+    #[test]
+    fn test_rotations() {
+        let kmer = Kmer::from(dna!("ACTGCGATG"));
+
+        for (shift, rotation) in vec![
+            "ACTGCGATG",
+            "CTGCGATGA",
+            "TGCGATGAC",
+            "GCGATGACT",
+            "CGATGACTG",
+            "GATGACTGC",
+            "ATGACTGCG",
+            "TGACTGCGA",
+            "GACTGCGAT",
+            "ACTGCGATG",
+            "CTGCGATGA",
+            "TGCGATGAC",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            //            println!("{} {} {}", shift, kmer.rotated_left(shift as u32), rotation);
+            assert_eq!(kmer.rotated_left(shift as u32), rotation);
+        }
+
+        for (shift, rotation) in vec![
+            "ACTGCGATG",
+            "GACTGCGAT",
+            "TGACTGCGA",
+            "ATGACTGCG",
+            "GATGACTGC",
+            "CGATGACTG",
+            "GCGATGACT",
+            "TGCGATGAC",
+            "CTGCGATGA",
+            "ACTGCGATG",
+            "GACTGCGAT",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            //            println!("{} {} {}", shift, kmer.rotated_right(shift as u32), rotation);
+            assert_eq!(kmer.rotated_right(shift as u32), rotation);
+        }
+
+        let kmer: Kmer<Dna, 8> = Kmer::from(dna!("ACTGCGAT")).rotated_left(1);
+
+        assert_ne!(kmer.to_string(), "ACTGCGAT");
+        assert_eq!(kmer.to_string(), "CTGCGATA");
+
+        let kmer: Kmer<Dna, 8> = Kmer::from(dna!("ACTGCGAT")).rotated_right(1);
+
+        assert_ne!(kmer.to_string(), "ACTGCGAT");
+        assert_eq!(kmer.to_string(), "TACTGCGA");
+
+        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_left(0);
+
+        assert_eq!(kmer.to_string(), "ACTGCGATG");
+        assert_ne!(kmer.to_string(), "ACTGCGATGA");
+
+        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_right(0);
+
+        assert_eq!(kmer.to_string(), "ACTGCGATG");
+        assert_ne!(kmer.to_string(), "ACTGCGATGA");
+
+        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_left(9 * 3307);
+
+        assert_eq!(kmer.to_string(), "ACTGCGATG");
+        assert_ne!(kmer.to_string(), "ACTGCGATGA");
+
+        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_right(9 * 3307);
+
+        assert_eq!(kmer.to_string(), "ACTGCGATG");
+        assert_ne!(kmer.to_string(), "ACTGCGATGA");
     }
 
     /*
