@@ -8,7 +8,7 @@
 ### Bit-packed and well-typed biological sequences
 </div>
 
-This crate provides types for representing and operating on sequences of genomic data. Efficient encodings are provided for nucleotides and amino acids and can be extended with the `Codec` trait.
+This crate provides types and traits for sequences of genomic data. Common encodings are provided and can be extended with the `Codec` trait.
 
 Short sequences of fixed length (kmers) are given special attention.
 
@@ -45,53 +45,51 @@ for kmer in seq.revcomp().kmers::<8>() {
 Sequences are analogous to rust's string types and follow similar dereferencing conventions:
 
 ```rust
-use bio_seq::prelude::*;
-
-// The `dna!` macro packs a static sequence with 2-bits per symbol at compile time.
-// This is analogous to rust's string literals:
+// Static sequences behave like static string literals:
 let s: &'static str = "hello!";
 let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
 
-// Static sequences can also be copied as kmers
+// Sequences can also be copied as `Kmer`s:
 let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
 // or with the kmer! macro:
 let kmer = kmer!("CGCTAGCTACGATCGCAT");
 
-// `Seq`s can be allocated on the heap like `String`s are:
+// `Seq`s are allocated on the heap like `String`s are:
 let s: String = "hello!".into();
 let seq: Seq<Dna> = dna!("CGCTAGCTACGATCGCAT").into();
 
 // Alternatively, a `Seq` can be fallibly encoded at runtime:
 let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
 
-// &SeqSlices are analogous to &str, String slices:
+// `&SeqSlice`s are analogous to `&str`, `String` slices:
 let slice: &str = &s[1..3];
 let seqslice: &SeqSlice<Dna> = &seq[2..4];
 ```
 
 ## Philosophy
 
-Many bioinformatics crates implement their own kmer packing logic. This project began as a way to reuse kmer construction code and make it compatible between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general data type for sequences. The scope of the crate will be restricted to representing sequences.
+Many bioinformatics crates implement their own kmer packing logic. This effort began as a way to define types and traits that allow kmer code to be shared between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general type for sequences. The scope of this crate will be limited to operating on fixed and arbitrary length sequences with an emphasis on safety.
 
 Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives cooperatively.
 
-Contributions are very welcome. There's lots of low hanging fruit for optimisation and ideally we should only have to write them once!
+Benchmarking is a useful tool for tracking assumptions about program behaviour and keeping fun hacks realistic (the "trees") but the primary design goal for this crate is to define traits that allow us to reason about these datastructures safely and consistently (the "forest".) We should be able to incrementally introduce optimisations without breaking the API.
+
+Contributions are very welcome. There's lots of low hanging fruit for optimisations and ideally we should only have to write them once!
 
 ## Contents
 
 * [Codec](#codecs): Coding/Decoding schemes for the symbols of a biological sequence
 * [Seq](#sequences): A sequence of encoded symbols
 * [Kmer](#kmers): A fixed size sequence of length `K`
-* [Derivable codecs](#derivable-codecs): This crate offers utilities for defining your own bit-level encodings
-* [Safe conversion](#sequence-conversion) between sequences
+* [Derivable codecs](#defining-new-codecs): This crate offers utilities for defining your own bit-level encodings
 
 ## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
-Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap. [`Kmer`](https://docs.rs/bio-seq/latest/bio_seq/kmer)s are generally stored on the stack, implementing `Copy`.
+Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap and implement `Clone`.
 
 ## [Kmers](https://docs.rs/bio-seq/latest/bio_seq/kmer)
 
-kmers are short sequences of length `k` that can fit into a register (e.g. `usize`, or SIMD vector) and generally implement `Copy`. These are implemented with const generics and `k` is fixed at compile time.
+kmers are short sequences of length `k` that generally fit into a register (e.g. `usize`, or SIMD vector) and implement `Copy`. `k` is a compile-time constant.
 
 All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order).
 
@@ -125,7 +123,7 @@ for i in 0..=15 {
 A lookup table can be indexed in constant time by treating kmers directly as `usize`:
 
 ```rust
-// This example builds a histogram of kmer occurences
+// This example builds a histogram of kmer occurences (on the stack!)
 
 fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
     // For dna::Dna our histogram will need 4^4
@@ -155,7 +153,7 @@ assert_eq!(minimiser, Kmer::from(dna!("GTAAAAAA")));
 
 ### Hashing
 
-`Hash` is implemented for sequence and kmer types so equal values of these types with hash identically:
+`Hash` is implemented for sequence and kmer types so equal values of these types will hash identically:
 
 ```rust
 let seq_arr: &SeqArray<Dna, 32, 1> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
@@ -201,39 +199,35 @@ let (canonical_minimiser, canonical_hash) = seq
     .unwrap();
 ```
 
-Although it's probably more efficient to minimise `seq` and `seq.revcomp()` separately.
+Although it's more efficient to minimise `seq` and `seq.revcomp()` separately.
 
 ## Codecs
 
 The `Codec` trait describes the coding/decoding process for the symbols of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
 
-### codec::Dna
-Using the lexicographically ordered 2-bit representation
+* `codec::Dna`, Using the lexicographically ordered 2-bit representation
 
-### codec::Iupac
-IUPAC  nucleotide ambiguity codes are represented with 4 bits. This supports membership resolution with bitwise operations. Logical `or` is the union:
+* `codec::Iupac`, IUPAC nucleotide ambiguity codes are represented with 4 bits. This automatically gives us membership semantics for bitwise operations. Logical `or` is the union:
 
-```rust
-assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
-```
+    ```rust
+    assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
+    ```
 
-Logical `and` is the intersection of two iupac sequences:
+    Logical `and` is the intersection of two iupac sequences:
 
-```rust
-assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
-```
+    ```rust
+    assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
+    ```
 
-### codec::Text
-utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
+* `codec::Text`, utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
 
-### codec::Amino
-Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
+* `codec::Amino`, Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
 
 ## Defining new codecs
 
 Custom codecs can be defined by implementing the `Codec` trait.
 
-Codecs can also be derived from the variant names and discriminants of enum types:
+In simple cases the `Codec` trait can be derived from the variant names and discriminants of enum types:
 
 ```rust
 use bio_seq_derive::Codec;
