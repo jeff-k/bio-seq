@@ -11,7 +11,7 @@
 //!
 //! ## Sequences
 //!
-//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`fixed length sequences`](seq::SeqArray) can be declared with the [`dna!`](macro@dna) and [`iupac!`](macro@iupac) macros. Generally these should be dereferenced as `&'static SeqSlice`s or kmers.
+//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`SeqArray`s](seq::SeqArray) can be declared with the [`dna!`](macro@dna) and [`iupac!`](macro@iupac) macros. Generally these should be dereferenced as `&'static SeqSlice`s or kmers.
 //!
 //! [`Kmer`](mod@kmer)s are shorter, fixed-length sequences. They generally fit in a single register and implement `Copy`. They are used for optimised algorithms on sequences and succinct datastructures. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding a `Kmer<Dna, 32>` occupies 64 bits.
 //!
@@ -91,12 +91,15 @@
 #![allow(clippy::into_iter_without_iter)]
 #![cfg_attr(feature = "simd", feature(portable_simd))]
 
+#[cfg(not(target_pointer_width = "64"))]
+compile_error!("bio-seq currently only supports 64-bit platforms");
+
 use bitvec::prelude::*;
 
 type Order = Lsb0;
 type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
-type Ba = BitArray<usize, Order>;
+type Ba<const W: usize> = BitArray<[usize; W], Order>;
 
 pub mod codec;
 pub mod error;

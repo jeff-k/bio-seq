@@ -8,10 +8,10 @@ use crate::codec::Codec;
 use crate::seq::slice::SeqSlice;
 use crate::seq::Seq;
 
-use crate::{Bs, Order};
+use crate::{Ba, Bs};
 
 use bitvec::field::BitField;
-use bitvec::prelude::*;
+//use bitvec::prelude::*;
 
 use core::fmt;
 use core::marker::PhantomData;
@@ -25,7 +25,7 @@ use std::hash::{Hash, Hasher};
 #[repr(transparent)]
 pub struct SeqArray<A: Codec, const N: usize, const W: usize> {
     pub _p: PhantomData<A>,
-    pub ba: BitArray<[usize; W], Order>,
+    pub ba: Ba<W>,
 }
 
 impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {

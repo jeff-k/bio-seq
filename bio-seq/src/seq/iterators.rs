@@ -107,7 +107,7 @@ pub struct RevIter<'a, A: Codec> {
     pub index: usize,
 }
 
-impl<'a, A: Codec> Iterator for RevIter<'a, A> {
+impl<A: Codec> Iterator for RevIter<'_, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let i = self.index;
@@ -163,7 +163,7 @@ impl<'a, A: Codec> FromIterator<&'a SeqSlice<A>> for Vec<Seq<A>> {
     }
 }
 
-impl<'a, A: Codec> Iterator for SeqIter<'a, A> {
+impl<A: Codec> Iterator for SeqIter<'_, A> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let i = self.index;
