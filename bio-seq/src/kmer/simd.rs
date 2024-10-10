@@ -6,48 +6,41 @@
 //! SIMD kmers
 //!
 
-#![feature(portable_simd)]
-
 use crate::codec::Codec;
-use crate::kmer::{Kmer, KmerStorage};
-use crate::prelude::{Complement, ParseBioError, ReverseComplement};
-use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::{Ba, Bs, Bv};
+use crate::kmer::{sealed, Kmer, KmerStorage};
+//use crate::seq::{SeqSlice};
+use crate::{Ba, Bs};
 
-use bitvec::field::BitField;
-use bitvec::view::BitView;
-use core::fmt;
 use core::hash::{Hash, Hasher};
-use core::marker::PhantomData;
-use core::ops::Deref;
-use core::ptr;
-use core::str::FromStr;
 use std::simd;
 
-impl KmerStorage for simd::Simd<u64, 4> {
-    const BITS: usize = todo!();
+impl sealed::KmerStorage for simd::Simd<u64, 4> {
+    const BITS: usize = 256;
+    type BaN = Ba<4>;
 
-    fn new() -> Self {
+    fn to_bitarray(self) -> Self::BaN {
         todo!()
+    }
+
+    fn from_bitslice(_bs: &Bs) -> Self {
+        todo!()
+    }
+
+    fn mask(&mut self, bits: usize) {
+        let mask = if bits >= 256 {
+            simd::u64x4::splat(u64::MAX)
+        } else {
+            todo!()
+        };
+
+        *self &= mask;
     }
 }
 
-impl<A: Codec, const K: usize> Kmer<A, K, simd::Simd<u64, 4>> {
-    fn from_seq(seq: &SeqSlice<A>) -> Self {
-        todo!()
-    }
-}
+impl KmerStorage for simd::Simd<u64, 4> {}
 
 impl<A: Codec, const K: usize> Hash for Kmer<A, K, simd::Simd<u64, 4>> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        todo!()
-    }
-}
-
-impl<A: Codec, const K: usize> TryFrom<&SeqSlice<A>> for Kmer<A, K, simd::Simd<u64, 4>> {
-    type Error = ParseBioError;
-
-    fn try_from(seq: &SeqSlice<A>) -> Result<Self, Self::Error> {
+    fn hash<H: Hasher>(&self, _state: &mut H) {
         todo!()
     }
 }
