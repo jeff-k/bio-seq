@@ -1075,4 +1075,14 @@ mod tests {
             assert_eq!(hash1, hash2);
         }
     */
+    #[test]
+    fn static_eq() {
+        static STATIC_SEQ: &SeqArray<Dna, 8, 1> = dna!("TTTTTTTT");
+
+        assert_ne!(STATIC_SEQ, Seq::<Dna>::try_from("ACGT").unwrap());
+        assert_eq!(STATIC_SEQ, Seq::<Dna>::try_from("TTTTTTTT").unwrap());
+
+        assert_ne!(STATIC_SEQ, Seq::<Dna>::try_from("ACGT").unwrap());
+        assert_eq!(STATIC_SEQ, Seq::<Dna>::try_from("TTTTTTTT").unwrap());
+    }
 }

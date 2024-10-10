@@ -52,7 +52,7 @@ use serde_derive::{Deserialize, Serialize};
 mod sealed {
     use crate::Bs;
 
-    pub trait KmerStorage: Copy + Clone {
+    pub trait KmerStorage: Copy + Clone + PartialEq {
         const BITS: usize;
         type BaN: AsRef<Bs> + AsMut<Bs>;
 
@@ -68,6 +68,7 @@ mod sealed {
 
 pub trait KmerStorage: sealed::KmerStorage {}
 
+/*
 impl sealed::KmerStorage for u32 {
     const BITS: usize = u32::BITS as usize;
     type BaN = Ba<1>;
@@ -87,6 +88,7 @@ impl sealed::KmerStorage for u32 {
 }
 
 impl KmerStorage for u32 {}
+*/
 
 impl sealed::KmerStorage for usize {
     const BITS: usize = usize::BITS as usize;
@@ -163,6 +165,14 @@ pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
     pub _p: PhantomData<C>,
     pub bs: S,
 }
+
+/*
+impl<A: Codec, const K: usize, S1: KmerStorage, S2: KmerStorage> PartialEq<Kmer<A, K, S2>> for Kmer<A, K, S1> {
+    fn eq(&self, other: &Kmer<A, K, S2>) -> bool {
+        self.bs.to_bitarray() == other.bs.to_bitarray()
+    }
+}
+*/
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     // This error message can be formatted with constants in nightly (const_format)
@@ -329,11 +339,11 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
     pub _p: PhantomData<A>,
 }
 
-impl<A: Codec, const K: usize> Kmer<A, K> {
-    fn unsafe_from(slice: &SeqSlice<A>) -> Self {
+impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
+    fn unsafe_from(seq: &SeqSlice<A>) -> Self {
         Kmer {
             _p: PhantomData,
-            bs: slice.try_into().unwrap(),
+            bs: S::from_bitslice(&seq.bs),
         }
     }
 }
@@ -396,12 +406,12 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> TryFrom<&SeqSlice<A>> for Kmer<A, K> {
+impl<A: Codec, const K: usize, S: KmerStorage> TryFrom<&SeqSlice<A>> for Kmer<A, K, S> {
     type Error = ParseBioError;
 
     fn try_from(seq: &SeqSlice<A>) -> Result<Self, Self::Error> {
         if seq.len() == K {
-            Ok(Kmer::<A, K>::unsafe_from(&seq[0..K]))
+            Ok(Kmer::<A, K, S>::unsafe_from(&seq[0..K]))
         } else {
             Err(ParseBioError::MismatchedLength(K, seq.len()))
         }
@@ -424,6 +434,24 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
 }
 */
 
+impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<SeqArray<A, K, 1>> for Kmer<A, K, S> {
+    fn eq(&self, seq: &SeqArray<A, K, 1>) -> bool {
+        if seq.len() != K {
+            return false;
+        }
+        &Kmer::<A, K, S>::unsafe_from(seq.as_ref()) == self
+    }
+}
+
+impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<&SeqArray<A, K, 1>> for Kmer<A, K, S> {
+    fn eq(&self, seq: &&SeqArray<A, K, 1>) -> bool {
+        if seq.len() != K {
+            return false;
+        }
+        &Kmer::<A, K, S>::unsafe_from(seq.as_ref()) == self
+    }
+}
+
 impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     fn eq(&self, seq: &Seq<A>) -> bool {
         if seq.len() != K {
@@ -433,12 +461,21 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> PartialEq<SeqSlice<A>> for Kmer<A, K> {
+impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<SeqSlice<A>> for Kmer<A, K, S> {
     fn eq(&self, seq: &SeqSlice<A>) -> bool {
         if seq.len() != K {
             return false;
         }
-        &Kmer::<A, K>::unsafe_from(seq) == self
+        &Kmer::<A, K, S>::unsafe_from(seq) == self
+    }
+}
+
+impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<&SeqSlice<A>> for Kmer<A, K, S> {
+    fn eq(&self, seq: &&SeqSlice<A>) -> bool {
+        if seq.len() != K {
+            return false;
+        }
+        &Kmer::<A, K, S>::unsafe_from(seq) == self
     }
 }
 
@@ -448,7 +485,7 @@ impl<A: Codec, const K: usize> PartialEq<&str> for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
+impl<A: Codec, const K: usize, S: KmerStorage> FromStr for Kmer<A, K, S> {
     type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -456,7 +493,7 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
             return Err(ParseBioError::MismatchedLength(K, s.len()));
         }
         let seq: Seq<A> = Seq::from_str(s)?;
-        Kmer::<A, K>::try_from(seq.as_ref())
+        Kmer::<A, K, S>::try_from(seq.as_ref())
     }
 }
 
@@ -653,16 +690,18 @@ mod tests {
         assert_ne!(kmer.to_string(), "ACTGCGATGA");
     }
 
-    /*
     #[test]
     fn eq_functions() {
         assert_eq!(kmer!("ACGT"), dna!("ACGT"));
-        assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
+
+        // this should be a compiler error:
+        // assert_ne!(kmer!("ACGT"), dna!("ACGTA"));
+
         let kmer: Kmer<Iupac, 4> = Kmer::from_str("ACGT").unwrap();
         assert_eq!(kmer, iupac!("ACGT"));
         assert_ne!(kmer, iupac!("NCGT"));
     }
-    */
+
     #[test]
     fn kmer_iter() {
         //let seq = dna!("ACTGA");
@@ -729,6 +768,62 @@ mod tests {
     }
 
     #[test]
+    fn kmer_storage_types() {
+        let s1 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAAA";
+        let s2 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAA";
+        let s3 = "ACGTAGCCGCGAACTTACGTAGCCGCGAAAA";
+
+        let s4 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAAAAACGTAGCCGCGAACTTACGTAGCCGCGAAAA";
+        let s5 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAAAAACGTAGCCGCGAACTTACGTAGCCGCGAAAAA";
+
+        assert_eq!(s1.len(), 32);
+        assert_eq!(s2.len(), 31);
+        assert_eq!(s3.len(), 31);
+        assert_eq!(s4.len(), 64);
+        assert_eq!(s5.len(), 65);
+
+        let kmer1_64 = Kmer::<Dna, 32, u64>::from_str(&s1).unwrap();
+        let kmer2_64 = Kmer::<Dna, 31, u64>::from_str(&s2).unwrap();
+        let kmer3_64 = Kmer::<Dna, 31, u64>::from_str(&s3).unwrap();
+
+        let kmer1 = Kmer::<Dna, 32>::from_str(&s1).unwrap();
+        let kmer2 = Kmer::<Dna, 31>::from_str(&s2).unwrap();
+        let kmer3 = Kmer::<Dna, 31>::from_str(&s3).unwrap();
+
+        let kmer4_128 = Kmer::<Dna, 64, u128>::from_str(&s4).unwrap();
+
+        let seq5: Seq<Dna> = s5.try_into().unwrap();
+
+        assert_eq!(kmer4_128, &seq5[..64]);
+        assert_ne!(kmer4_128, &seq5[1..]);
+
+        assert_eq!(kmer1, &seq5[..32]);
+        assert_eq!(kmer1, &seq5[32..64]);
+
+        assert_eq!(kmer1_64, &seq5[..32]);
+        assert_eq!(kmer1_64, &seq5[32..64]);
+
+        assert_ne!(kmer1, &seq5[..31]);
+        assert_ne!(kmer1, &seq5[32..]);
+
+        assert_ne!(kmer1_64, &seq5[1..33]);
+        assert_ne!(kmer1_64, &seq5[33..]);
+
+        assert_eq!(kmer4_128, kmer4_128);
+        assert_eq!(kmer1_64, kmer1_64);
+        assert_eq!(kmer2, kmer2);
+
+        assert_ne!(kmer2, kmer3);
+        assert_ne!(kmer2_64, kmer3_64);
+        // PartialEq is not implemented for different storgage types
+        /*
+                assert_ne!(kmer2, kmer3_64);
+                assert_eq!(kmer2, kmer2_64);
+                assert_eq!(kmer1, kmer1_64);
+        */
+    }
+
+    #[test]
     fn try_from_seq() {
         let seq: Seq<Dna> = Seq::try_from("ACACACACACACGT").unwrap();
         assert_eq!(
@@ -753,12 +848,4 @@ mod tests {
             "ACACACACACACGT"
         );
     }
-    /*
-    #[test]
-    fn kmer_static() {
-        static STATIC_KMER: Kmer<Dna, 8> = kmer!("TTTTTTTT");
-
-        assert_eq!(STATIC_KMER.to_string(), "ACGT");
-    }
-    */
 }
