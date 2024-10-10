@@ -199,6 +199,22 @@ impl<A: Codec> Seq<A> {
     pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
         iter.into_iter().for_each(|base| self.push(base));
     }
+
+    /// **Experimental**
+    pub fn from_raw(len: usize, bits: &[usize]) -> Self {
+        let mut bv: Bv = Bv::from_slice(bits);
+        bv.truncate(len * A::BITS as usize);
+
+        Seq {
+            _p: PhantomData,
+            bv,
+        }
+    }
+
+    /// **Experimental**
+    pub fn into_raw(&self) -> &[usize] {
+        self.bv.as_raw_slice()
+    }
 }
 
 impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for Seq<A> {
@@ -471,6 +487,17 @@ impl From<Vec<usize>> for Seq<text::Dna> {
     }
 }
 
+/// **Unstable** construct a `Seq` from a bitslice. This may change in the future.
+impl<A: Codec> From<&Bs> for Seq<A> {
+    fn from(bs: &Bs) -> Self {
+        Seq {
+            _p: PhantomData,
+            bv: bs.into(),
+        }
+    }
+}
+
+/// **Unstable** construct a `Seq` from a bitvec. This may change in the future.
 impl<A: Codec> From<Bv> for Seq<A> {
     fn from(bv: Bv) -> Self {
         Seq {
@@ -1013,6 +1040,18 @@ mod tests {
         let x: &'static str = "TGACT";
 
         assert_eq!(s.to_string(), x);
+    }
+
+    #[test]
+    fn test_to_from_raw() {
+        let s = "TCAGCTAGCTACGACTGATCGATCGACTGATGCCGCGCGCGGCGCCGCGCGCGCGCGCCGCGCGCCCCGCGCGCGGCGCGCGCCGCGCGCGCGCGCGGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGC";
+
+        let seq: Seq<Dna> = s.try_into().unwrap();
+        let raw = seq.into_raw();
+        let new = Seq::<Dna>::from_raw(s.len(), raw);
+        assert_eq!(new, seq);
+        let bad = Seq::<Dna>::from_raw(342, raw);
+        assert_ne!(bad, seq);
     }
     /*
         #[test]

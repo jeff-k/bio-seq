@@ -10,9 +10,9 @@ use crate::error::ParseBioError;
 use crate::seq::ReverseComplement;
 use crate::seq::Seq;
 
-use crate::Order;
+use crate::Bs;
 use bitvec::field::BitField;
-use bitvec::prelude::*;
+//use bitvec::prelude::*;
 
 use core::fmt;
 //use core::hash::{Hash, Hasher};
@@ -26,7 +26,7 @@ use core::ops::{BitAnd, BitOr};
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
     pub(crate) _p: PhantomData<A>,
-    pub(crate) bs: BitSlice<usize, Order>,
+    pub(crate) bs: Bs,
 }
 
 impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
