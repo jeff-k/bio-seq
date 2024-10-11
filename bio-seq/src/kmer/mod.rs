@@ -3,9 +3,9 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Short sequences of fixed length
+//! Encoded sequences of static length
 //!
-//! Encoded sequences of length `k`, fixed at compile time. Generally, the underlying storage type of `Kmer` should lend itself to optimisation. For example, the default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
+//! Generally, the underlying storage type of `Kmer` should lend itself to optimisation. The default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
 //!
 //! `k * codec::BITS` must fit in the storage type, e.g. `usize` (64 bits).
 //!
@@ -27,7 +27,7 @@
 //! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").into();
 //! ```
 
-// permit truncations that may happen on 32-bit platforms (unsupported)
+// permit truncations that may happen on 32-bit platforms which are unsupported anyway
 #![allow(clippy::cast_possible_truncation)]
 
 use crate::codec::Codec;
@@ -181,7 +181,19 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         "`KmerStorage` not large enough for `Kmer`",
     );
 
+    const _ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
+
     const BITS: usize = K * A::BITS as usize;
+
+    pub fn len(&self) -> usize {
+        K
+    }
+
+    pub fn is_empty(&self) -> bool {
+        // This is recommended by clippy since we have `len`
+        // Kmers are never empty if K > 0
+        false
+    }
 
     pub fn rotated_left(&self, n: u32) -> Self {
         let n: usize = (n as usize % K) * A::BITS as usize;

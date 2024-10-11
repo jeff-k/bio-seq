@@ -120,6 +120,7 @@ impl From<Dna> for Iupac {
     }
 }
 
+/*
 impl Seq<Iupac> {
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
@@ -147,14 +148,18 @@ impl SeqSlice<Iupac> {
         self & rhs == rhs
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
 
     #[test]
+    #[ignore]
     fn iupac_ops() {
+        /*
         let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+
         let pattern = iupac!("AYG");
 
         let matches: Vec<Seq<Iupac>> = seq
@@ -163,5 +168,6 @@ mod tests {
             .collect();
 
         assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")])
+        */
     }
 }

@@ -11,11 +11,11 @@
 //!
 //! ## Sequences
 //!
-//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`SeqArray`s](seq::SeqArray) can be declared with the [`dna!`](macro@dna) and [`iupac!`](macro@iupac) macros. Generally these should be dereferenced as `&'static SeqSlice`s or kmers.
+//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`SeqArray`s](seq::SeqArray) can be declared with the [`dna!`](macro@dna) and [`iupac!`](macro@iupac) macros but these should be dereferenced as `&'static SeqSlice`s.
 //!
-//! [`Kmer`](mod@kmer)s are shorter, fixed-length sequences. They generally fit in a single register and implement `Copy`. They are used for optimised algorithms on sequences and succinct datastructures. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding a `Kmer<Dna, 32>` occupies 64 bits.
+//! [`Kmer`s](mod@kmer) are shorter, fixed-length sequences. They generally fit in a single register and implement `Copy`. They are used for optimised algorithms on sequences and succinct datastructures. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding a `Kmer<Dna, 32>` occupies 64 bits.
 //!
-//! These sequence types are parameterised with [encodings](`codec`) (e.g. `Seq<Dna>`, `Seq<Amino>`, etc.) that define how symbols are encoded into strings of bits and decoded as readable strings.
+//! These sequence types are parameterised with [`Codec`s](`codec`) (e.g. `Seq<Dna>`, `Seq<Amino>`, etc.) that define how symbols are encoded into strings of bits and decoded as readable strings.
 //!
 //! ## Quick start
 //!
@@ -44,16 +44,15 @@
 //! // ...
 //! ```
 //!
-//! Sequences are analogous to rust's string types and follow similar dereferencing conventions.
+//! Sequences are analogous to rust's string types and follow similar dereferencing conventions:
 //!
 //! ```rust
 //! # use bio_seq::prelude::*;
-//! // The `dna!` macro packs a static sequence with 2-bits per symbol at compile time.
-//! // This is analogous to rust's string literals:
+//! // The `dna!` macro packs a static sequence with 2-bits per symbol at compile time:
 //! let s: &'static str = "hello!";
 //! let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
 //!
-//! // Static sequences can also be copied as kmers
+//! // Sequences can also be copied into `Kmer`s:
 //! let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
 //! // or with the kmer! macro:
 //! let kmer = kmer!("CGCTAGCTACGATCGCAT");
@@ -65,14 +64,14 @@
 //! // Alternatively, a `Seq` can be fallibly encoded at runtime:
 //! let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
 //!
-//! // &SeqSlices are analogous to &str, String slices:
+//! // `&SeqSlice` is analogous to `&str`:
 //! let slice: &str = &s[1..3];
 //! let seqslice: &SeqSlice<Dna> = &seq[2..4];
 //! ```
 //!
 //! ## Bit-packed encodings
 //!
-//! Encodings of genomic symbols are implemented as "[`Codecs`](codec)." This crate provides four common ones:
+//! Encodings of genomic symbols are implemented as [`Codec`s](codec). This crate provides four common ones:
 //!   - [`codec::dna`]: 2-bit encoding of the four nucleotides
 //!   - [`codec::text`]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
 //!   - [`codec::iupac`]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
@@ -80,7 +79,7 @@
 //!
 //! Each of these encodings is designed to facilitate common bioinformatics tasks, such as minimising k-mers and implementing succinct datastructures. The [translation] module provides traits and methods for translating between nucleotide and amino acid sequences.
 //!
-//! Custom codecs can also be implemented with the `Codec` trait and derived on well crafted enums.
+//! Custom codecs can also be implemented with the `Codec` trait and derived on specially crafted enums.
 //!
 
 #![warn(clippy::pedantic)]
@@ -433,5 +432,172 @@ mod tests {
             assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), format!("{}", e));
             assert_eq!(Kmer::<Dna, 2>::from(i), *e);
         }
+    }
+
+    #[test]
+    fn sequence_type_equality() {
+        let raw_a = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA";
+        let raw_b = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
+        let raw_c = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
+        let raw_d = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAAA";
+
+        assert_eq!(raw_a.len(), 63);
+        assert_eq!(raw_b.len(), 64);
+        assert_eq!(raw_d.len(), 65);
+
+        assert_eq!(raw_c, raw_b);
+        assert_eq!(raw_c, &raw_b[..]);
+
+        assert_ne!(raw_b, raw_d);
+        assert_ne!(raw_a, raw_b);
+
+        // Seq
+
+        let seq_a: Seq<Dna> = raw_a.try_into().unwrap();
+        let seq_b: Seq<Dna> = raw_b.try_into().unwrap();
+        let seq_c: Seq<Dna> = raw_c.try_into().unwrap();
+        let seq_d: Seq<Dna> = raw_d.try_into().unwrap();
+
+        assert_eq!(seq_a.len(), raw_a.len());
+        assert_eq!(seq_d.len(), raw_d.len());
+
+        assert_eq!(seq_c, seq_b);
+        assert_eq!(seq_c, &seq_b);
+
+        assert_ne!(seq_a, &seq_b);
+        assert_ne!(seq_a, seq_b);
+        assert_ne!(seq_c, seq_d);
+
+        // SeqSlice
+
+        let slice_a: &SeqSlice<Dna> = &seq_a;
+        let slice_b: &SeqSlice<Dna> = &seq_b;
+        let slice_c: &SeqSlice<Dna> = &seq_c;
+        let slice_d: &SeqSlice<Dna> = &seq_d;
+
+        assert_eq!(slice_a.len(), raw_a.len());
+        assert_eq!(slice_d.len(), raw_d.len());
+
+        assert_eq!(slice_c, slice_b);
+        assert_eq!(slice_c, &slice_b[..]);
+
+        assert_ne!(slice_a, slice_b);
+        assert_ne!(slice_c, slice_d);
+        assert_ne!(slice_c, &slice_d[..]);
+
+        // SeqArray references
+
+        let array_a: &'static SeqArray<Dna, 63, 2> =
+            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA");
+        let array_b: &'static SeqArray<Dna, 64, 2> =
+            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
+        let array_c: &'static SeqArray<Dna, 64, 2> =
+            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
+        let array_d: &'static SeqArray<Dna, 65, 3> =
+            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAAA");
+
+        assert_eq!(array_a.len(), raw_a.len());
+        assert_eq!(array_d.len(), raw_d.len());
+
+        assert_eq!(array_c, array_b);
+
+        assert_ne!(array_a, array_b);
+        assert_ne!(array_c, array_d);
+
+        // Kmers
+
+        let kmer_ax_32: Kmer<Dna, 32> = kmer!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAG");
+        let kmer_bx_32 = Kmer::<Dna, 32>::from_str(&raw_b[..32]).unwrap();
+
+        let kmer_x_32: Kmer<Dna, 32> = kmer!("AATTGTGGGTTCGTCTGCGCCTCCGCCCTTAG");
+
+        assert_eq!(kmer_ax_32.len(), 32);
+
+        assert_eq!(kmer_ax_32, kmer_bx_32);
+        assert_ne!(kmer_ax_32, kmer_x_32);
+
+        let kmer_b_64 = Kmer::<Dna, 64, u128>::from_str(&raw_b).unwrap();
+        let kmer_cx_64 = Kmer::<Dna, 64, u128>::from_str(&raw_d[..64]).unwrap();
+        let kmer_dx_64 = Kmer::<Dna, 64, u128>::from_str(&raw_d[1..]).unwrap();
+
+        assert_eq!(kmer_cx_64.len(), 64);
+
+        assert_eq!(kmer_b_64, kmer_cx_64);
+        assert_ne!(kmer_b_64, kmer_dx_64);
+
+        // Cross-type equality:
+
+        assert_eq!(seq_c, slice_b);
+        assert_eq!(seq_c, array_b);
+        //        assert_eq!(seq_c, kmer_b_64);
+
+        assert_eq!(&seq_c, slice_b);
+        assert_eq!(&seq_c, array_b);
+        //        assert_eq!(&seq_c, kmer_b_64);
+
+        assert_eq!(slice_c, seq_b);
+        assert_eq!(slice_c, &seq_b);
+        assert_eq!(slice_c, array_b);
+        //        assert_eq!(slice_c, kmer_b_64);
+
+        assert_eq!(array_c, &seq_b);
+        assert_eq!(array_c, seq_b);
+        assert_eq!(array_c, slice_b);
+        //        assert_eq!(array_c, kmer_b_64);
+
+        //        assert_eq!(kmer_b_64, &seq_c);
+        //        assert_eq!(kmer_b_64, seq_c);
+        //        assert_eq!(kmer_b_64, slice_c);
+        //        assert_eq!(kmer_b_64, array_c);
+
+        // Cross-type inequality (shorter):
+
+        assert_ne!(&seq_a, slice_b);
+        assert_ne!(&seq_a, array_b);
+        assert_ne!(seq_a, slice_b);
+        assert_ne!(seq_a, array_b);
+        //        assert_ne!(seq_a, kmer_b_64);
+        //        assert_ne!(&seq_a, kmer_b_64);
+
+        assert_ne!(slice_a, &seq_b);
+        assert_ne!(slice_a, seq_b);
+        assert_ne!(slice_a, array_b);
+        //        assert_ne!(slice_a, kmer_b_64);
+
+        assert_ne!(array_a, &seq_b);
+        assert_ne!(array_a, seq_b);
+        assert_ne!(array_a, slice_b);
+        //        assert_ne!(array_a, kmer_b_64);
+
+        //        assert_ne!(kmer_b_64, &seq_a);
+        //        assert_ne!(kmer_b_64, seq_a);
+        //        assert_ne!(kmer_b_64, slice_a);
+        //        assert_ne!(kmer_b_64, array_a);
+
+        // Cross-type inequality (longer):
+
+        assert_ne!(seq_d, slice_b);
+        assert_ne!(seq_d, array_b);
+        //        assert_ne!(seq_d, kmer_b_64);
+        assert_ne!(&seq_d, slice_b);
+        assert_ne!(&seq_d, array_b);
+        //        assert_ne!(&seq_d, kmer_b_64);
+
+        assert_ne!(slice_d, &seq_b);
+        assert_ne!(slice_d, seq_b);
+        assert_ne!(slice_d, array_b);
+        //        assert_ne!(slice_d, kmer_b_64);
+
+        assert_ne!(array_d, &seq_b);
+        assert_ne!(array_d, seq_b);
+
+        assert_ne!(slice_b, array_d);
+        assert_ne!(array_d, slice_b);
+        //        assert_ne!(array_d, kmer_b_64);
+
+        //        assert_ne!(kmer_b_64, &seq_d);
+        //        assert_ne!(kmer_b_64, seq_d);
+        //        assert_ne!(kmer_b_64, slice_d);
+        //        assert_ne!(kmer_b_64, array_d);
     }
 }
