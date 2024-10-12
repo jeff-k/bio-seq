@@ -286,7 +286,7 @@ mod tests {
         let seq = dna!("GCTCGATCGTAAAAAATCGTATT");
 
         let minimised = seq.kmers::<8>().min().unwrap();
-        assert_eq!(minimised, Kmer::from(dna!("GTAAAAAA")));
+        assert_eq!(minimised, Kmer::try_from(dna!("GTAAAAAA"))?);
     }
 
     #[test]
@@ -358,10 +358,10 @@ mod tests {
         let l3_b: &SeqSlice<Dna> = &q4[..32];
         let l4: &SeqSlice<Dna> = &q4;
 
-        let k1: Kmer<Dna, 32> = s1.into();
-        let k1_a: Kmer<Dna, 32> = s1.into();
+        let k1: Kmer<Dna, 32> = s1.try_into().unwrap();
+        let k1_a: Kmer<Dna, 32> = s1.try_into().unwrap();
 
-        let k3: Kmer<Dna, 32> = s3.into();
+        let k3: Kmer<Dna, 32> = s3.try_into().unwrap();
 
         assert_eq!(hash(&l3), hash(q3));
         assert_eq!(hash(&l3), hash(&l3_a));
@@ -395,10 +395,10 @@ mod tests {
             hasher.finish()
         }
 
-        let seq_arr: &SeqArray<Dna, 32, 1> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
+        let seq_arr: &SeqSlice<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
         let seq: Seq<Dna> = seq_arr.into();
         let seq_slice: &SeqSlice<Dna> = &seq;
-        let kmer: Kmer<Dna, 32> = seq_arr.into();
+        let kmer: Kmer<Dna, 32> = seq_arr.try_into().unwrap();
 
         assert_eq!(hash(seq_arr), hash(&seq));
         assert_eq!(hash(&seq), hash(&seq_slice));
@@ -487,13 +487,11 @@ mod tests {
 
         // SeqArray references
 
-        let array_a: &'static SeqArray<Dna, 63, 2> =
-            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA");
-        let array_b: &'static SeqArray<Dna, 64, 2> =
+        let array_a = dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA");
+        let array_b = dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
+        let array_c: &'static SeqSlice<Dna> =
             dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
-        let array_c: &'static SeqArray<Dna, 64, 2> =
-            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
-        let array_d: &'static SeqArray<Dna, 65, 3> =
+        let array_d: &'static SeqSlice<Dna> =
             dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAAA");
 
         assert_eq!(array_a.len(), raw_a.len());
@@ -528,7 +526,7 @@ mod tests {
         // Cross-type equality:
 
         assert_eq!(seq_c, slice_b);
-        assert_eq!(seq_c, array_b);
+        assert_eq!(seq_c, *array_b);
         //        assert_eq!(seq_c, kmer_b_64);
 
         assert_eq!(&seq_c, slice_b);
@@ -537,7 +535,7 @@ mod tests {
 
         assert_eq!(slice_c, seq_b);
         assert_eq!(slice_c, &seq_b);
-        assert_eq!(slice_c, array_b);
+        assert_eq!(&slice_c, array_b);
         //        assert_eq!(slice_c, kmer_b_64);
 
         assert_eq!(array_c, &seq_b);
@@ -561,7 +559,7 @@ mod tests {
 
         assert_ne!(slice_a, &seq_b);
         assert_ne!(slice_a, seq_b);
-        assert_ne!(slice_a, array_b);
+        assert_ne!(&slice_a, array_b);
         //        assert_ne!(slice_a, kmer_b_64);
 
         assert_ne!(array_a, &seq_b);
@@ -585,7 +583,7 @@ mod tests {
 
         assert_ne!(slice_d, &seq_b);
         assert_ne!(slice_d, seq_b);
-        assert_ne!(slice_d, array_b);
+        assert_ne!(&slice_d, array_b);
         //        assert_ne!(slice_d, kmer_b_64);
 
         assert_ne!(array_d, &seq_b);
