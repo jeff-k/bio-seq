@@ -44,6 +44,12 @@ impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
     }
 }
 
+impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A>> for SeqArray<A, N, W> {
+    fn as_ref(&self) -> &SeqSlice<A> {
+        self
+    }
+}
+
 impl<A: Codec, const N: usize> From<&SeqArray<A, N, 1>> for usize {
     fn from(slice: &SeqArray<A, N, 1>) -> usize {
         slice.bs.load_le::<usize>()
@@ -62,6 +68,18 @@ impl<A: Codec, const N: usize, const W: usize, const M: usize, const V: usize>
     }
 }
 
+impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for SeqArray<A, N, W> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for &SeqArray<A, N, W> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
+
 impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqSlice<A>> for SeqArray<A, N, W> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
         self.as_ref() == other
@@ -71,24 +89,6 @@ impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqSlice<A>> for SeqArr
 impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqSlice<A>> for &SeqArray<A, N, W> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
         self.as_ref() == other
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for &SeqSlice<A> {
-    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
-        *self == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for SeqSlice<A> {
-    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
-        self == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A>> for SeqArray<A, N, W> {
-    fn as_ref(&self) -> &SeqSlice<A> {
-        self
     }
 }
 

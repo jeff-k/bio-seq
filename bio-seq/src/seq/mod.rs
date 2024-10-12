@@ -59,7 +59,7 @@ use core::str::FromStr;
 /// A arbitrary length sequence of bit-packed symbols
 ///
 /// Stored on the heap
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Seq<A: Codec> {
@@ -229,18 +229,6 @@ impl<A: Codec, const N: usize, const W: usize> PartialEq<&SeqArray<A, N, W>> for
     }
 }
 
-impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for SeqArray<A, N, W> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        self.as_ref() == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for &SeqArray<A, N, W> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        self.as_ref() == other.as_ref()
-    }
-}
-
 impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
         self.as_ref() == other
@@ -250,18 +238,6 @@ impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
 impl<A: Codec> PartialEq<&SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &&SeqSlice<A>) -> bool {
         self.as_ref() == *other
-    }
-}
-
-impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        self == other.as_ref()
-    }
-}
-
-impl<A: Codec> PartialEq<Seq<A>> for &SeqSlice<A> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        *self == other.as_ref()
     }
 }
 
@@ -1021,8 +997,11 @@ mod tests {
 
         assert_eq!(s1, s2);
         assert_ne!(s1, s3);
-        assert_ne!(s1, s4);
-        assert_ne!(s4, s1);
+
+        // these two tests won't compile because lengths are different
+        assert_ne!(s1.len(), s4.len());
+        assert_ne!(s4.len(), s1.len());
+
         assert_ne!(s5, s1);
     }
 

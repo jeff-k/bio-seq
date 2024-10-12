@@ -6,7 +6,7 @@
 //use crate::codec::{Codec, Complement};
 use crate::codec::{Codec, Complement};
 use crate::error::ParseBioError;
-//use crate::seq::array::SeqArray;
+use crate::seq::array::SeqArray;
 use crate::seq::ReverseComplement;
 use crate::seq::Seq;
 
@@ -21,7 +21,7 @@ use core::str;
 
 use core::ops::{BitAnd, BitOr};
 
-/// A lightweight, read-only window into part of a sequence
+/// An unsized, read-only window into part of a sequence
 #[derive(Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec> {
@@ -79,6 +79,30 @@ impl<A: Codec> SeqSlice<A> {
 impl<A: Codec> From<&SeqSlice<A>> for String {
     fn from(seq: &SeqSlice<A>) -> Self {
         seq.into_iter().map(Codec::to_char).collect()
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for &SeqSlice<A> {
+    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
+        *self == other.as_ref()
+    }
+}
+
+impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for SeqSlice<A> {
+    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
+        self == other.as_ref()
+    }
+}
+
+impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        self == other.as_ref()
+    }
+}
+
+impl<A: Codec> PartialEq<Seq<A>> for &SeqSlice<A> {
+    fn eq(&self, other: &Seq<A>) -> bool {
+        *self == other.as_ref()
     }
 }
 
