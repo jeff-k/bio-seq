@@ -286,7 +286,7 @@ mod tests {
         let seq = dna!("GCTCGATCGTAAAAAATCGTATT");
 
         let minimised = seq.kmers::<8>().min().unwrap();
-        assert_eq!(minimised, Kmer::try_from(dna!("GTAAAAAA"))?);
+        assert_eq!(minimised, Kmer::try_from(dna!("GTAAAAAA")).unwrap());
     }
 
     #[test]

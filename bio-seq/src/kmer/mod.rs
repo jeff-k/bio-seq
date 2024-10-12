@@ -638,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_rotations() {
-        let kmer = Kmer::from(dna!("ACTGCGATG"));
+        let kmer = Kmer::try_from(dna!("ACTGCGATG")).unwrap();
 
         for (shift, rotation) in vec![
             "ACTGCGATG",
@@ -681,32 +681,32 @@ mod tests {
             assert_eq!(kmer.rotated_right(shift as u32), rotation);
         }
 
-        let kmer: Kmer<Dna, 8> = Kmer::from(dna!("ACTGCGAT")).rotated_left(1);
+        let kmer: Kmer<Dna, 8> = Kmer::try_from(dna!("ACTGCGAT")).unwrap().rotated_left(1);
 
         assert_ne!(kmer.to_string(), "ACTGCGAT");
         assert_eq!(kmer.to_string(), "CTGCGATA");
 
-        let kmer: Kmer<Dna, 8> = Kmer::from(dna!("ACTGCGAT")).rotated_right(1);
+        let kmer: Kmer<Dna, 8> = kmer!("ACTGCGAT").rotated_right(1);
 
         assert_ne!(kmer.to_string(), "ACTGCGAT");
         assert_eq!(kmer.to_string(), "TACTGCGA");
 
-        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_left(0);
+        let kmer: Kmer<Dna, 9> = Kmer::from_str("ACTGCGATG").unwrap().rotated_left(0);
 
         assert_eq!(kmer.to_string(), "ACTGCGATG");
         assert_ne!(kmer.to_string(), "ACTGCGATGA");
 
-        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_right(0);
+        let kmer: Kmer<Dna, 9> = Kmer::try_from(dna!("ACTGCGATG")).unwrap().rotated_right(0);
 
         assert_eq!(kmer.to_string(), "ACTGCGATG");
         assert_ne!(kmer.to_string(), "ACTGCGATGA");
 
-        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_left(9 * 3307);
+        let kmer: Kmer<Dna, 9> = Kmer::from_str("ACTGCGATG").unwrap().rotated_left(9 * 3307);
 
         assert_eq!(kmer.to_string(), "ACTGCGATG");
         assert_ne!(kmer.to_string(), "ACTGCGATGA");
 
-        let kmer: Kmer<Dna, 9> = Kmer::from(dna!("ACTGCGATG")).rotated_right(9 * 3307);
+        let kmer: Kmer<Dna, 9> = kmer!("ACTGCGATG").rotated_right(9 * 3307);
 
         assert_eq!(kmer.to_string(), "ACTGCGATG");
         assert_ne!(kmer.to_string(), "ACTGCGATGA");

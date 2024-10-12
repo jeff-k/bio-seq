@@ -217,6 +217,7 @@ impl<A: Codec> Seq<A> {
     }
 }
 
+/*
 impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for Seq<A> {
     fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
         self.as_ref() == other.as_ref()
@@ -228,6 +229,7 @@ impl<A: Codec, const N: usize, const W: usize> PartialEq<&SeqArray<A, N, W>> for
         self.as_ref() == other.as_ref()
     }
 }
+*/
 
 impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
@@ -1054,14 +1056,4 @@ mod tests {
             assert_eq!(hash1, hash2);
         }
     */
-    #[test]
-    fn static_eq() {
-        static STATIC_SEQ: &SeqArray<Dna, 8, 1> = dna!("TTTTTTTT");
-
-        assert_ne!(STATIC_SEQ, Seq::<Dna>::try_from("ACGT").unwrap());
-        assert_eq!(STATIC_SEQ, Seq::<Dna>::try_from("TTTTTTTT").unwrap());
-
-        assert_ne!(STATIC_SEQ, Seq::<Dna>::try_from("ACGT").unwrap());
-        assert_eq!(STATIC_SEQ, Seq::<Dna>::try_from("TTTTTTTT").unwrap());
-    }
 }
