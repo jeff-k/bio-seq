@@ -12,19 +12,20 @@
 //! use bio_seq::prelude::*;
 //! use bio_seq::seq;
 //!
-//! let reference: Seq<Dna> = dna!("ACGTTCGCATGCTACGACGATC").into();
+//! let reference = dna!("ACGTTCGCATGCTACGACGATC");
 //!
-//! let mut table: HashMap<Seq<Dna>, &SeqSlice<Dna>> = HashMap::new();
-//! table.insert(dna!("ACGTT").into(), &reference[2..5]);
-//! table.insert(dna!("ACACCCCC").into(), &reference[6..]);
+//! let mut table: HashMap<&SeqSlice<Dna>, usize> = HashMap::new();
+//!
+//! // Associate some kind of count with sequences as keys:
+//! table.insert(dna!("ACGTT"), 1);
+//! table.insert(dna!("ACACCCCC"), 0);
 //!
 //! // The query is a short window in the reference `Seq`
 //! let query: &SeqSlice<Dna> = &reference[..5];
 //!
-//! // The keys of the hashmap are `Seq`, but since `Seq` can be borrowed as a SeqSlice we can call `HashMap::get` on another slice.
 //! if let Some(value) = table.get(&query) {
 //!        // `SeqSlice` implements `Display`
-//!        println!("{value}");
+//!        println!("{query}: {value}");
 //! }
 //! ```
 pub mod index;

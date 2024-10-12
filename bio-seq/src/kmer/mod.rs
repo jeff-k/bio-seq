@@ -542,7 +542,7 @@ impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
 /// This is a wrapper for the `dna!` macro that returns a `Kmer`:
 /// ```
 /// # use bio_seq::prelude::*;
-/// let kmer: Kmer<Dna, 8> = dna!("ACGTACGT").into();
+/// let kmer: Kmer<Dna, 8> = kmer!("ACGTACGT");
 /// ```
 #[macro_export]
 macro_rules! kmer {

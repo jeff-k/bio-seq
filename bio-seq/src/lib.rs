@@ -53,7 +53,7 @@
 //! let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
 //!
 //! // Sequences can also be copied into `Kmer`s:
-//! let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
+//! let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").try_into().unwrap();
 //! // or with the kmer! macro:
 //! let kmer = kmer!("CGCTAGCTACGATCGCAT");
 //!
