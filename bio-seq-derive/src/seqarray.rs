@@ -27,7 +27,7 @@ pub(crate) fn gen_seqarray(
         _p: core::marker::PhantomData,
         ba: __bio_seq_bitarr![const usize, Lsb0; #(#bits),*]
     };
-    & #seq_name_ident
+    & #seq_name_ident.as_ref()
     }
     }
 }
