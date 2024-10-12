@@ -256,6 +256,14 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         }
     }
 
+    /// Create Kmer from sequence without checking length
+    pub fn unsafe_from_seqslice(seq: &SeqSlice<A>) -> Self {
+        debug_assert!(K == seq.len(), "K != seq.len()");
+        Kmer {
+            _p: PhantomData,
+            bs: S::from_bitslice(&seq.bs),
+        }
+    }
     /*
         /// Iterate through all bases of a Kmer
         pub fn iter(self) -> KmerBases<A, K> {
@@ -288,14 +296,16 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage> From<&SeqArray<A, K, 1>> for Kmer<A, K, S> {
-    fn from(seq: &SeqArray<A, K, 1>) -> Self {
+/*
+impl<A: Codec, const K: usize, S: KmerStorage> From<&SeqSlice<A>> for Kmer<A, K, S> {
+    fn from(seq: &SeqSlice<A>) -> Self {
         Kmer {
             _p: PhantomData,
             bs: S::from_bitslice(&seq.bs),
         }
     }
 }
+*/
 
 impl<A: Codec, const K: usize> From<&Kmer<A, K, usize>> for usize {
     fn from(kmer: &Kmer<A, K, usize>) -> usize {
@@ -537,7 +547,7 @@ impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
 #[macro_export]
 macro_rules! kmer {
     ($seq:expr) => {
-        Kmer::<Dna, { $seq.len() }>::from(dna!($seq))
+        Kmer::<Dna, { $seq.len() }>::unsafe_from_seqslice(dna!($seq))
     };
 }
 
