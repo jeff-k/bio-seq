@@ -56,6 +56,7 @@ impl<A: Codec, const N: usize> From<&SeqArray<A, N, 1>> for usize {
     }
 }
 
+/*
 impl<A: Codec, const N: usize, const W: usize, const M: usize, const V: usize>
     PartialEq<SeqArray<A, N, W>> for SeqArray<A, M, V>
 {
@@ -91,6 +92,7 @@ impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqSlice<A>> for &SeqAr
         self.as_ref() == other
     }
 }
+*/
 
 impl<A: Codec, const N: usize, const W: usize> fmt::Display for SeqArray<A, N, W> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
