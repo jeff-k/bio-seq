@@ -24,7 +24,7 @@
 //!
 //! ```
 //! # use bio_seq::prelude::*;
-//! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").into();
+//! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").try_into().unwrap();
 //! ```
 
 // permit truncations that may happen on 32-bit platforms which are unsupported anyway
@@ -422,8 +422,8 @@ impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
 /// ```
 impl<A: Codec, const K: usize> Hash for Kmer<A, K> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let bs: &SeqSlice<A> = self.as_ref();
-        bs.hash(state);
+        //        let bs: &SeqSlice<A> = self.as_ref();
+        self.as_ref().bs.hash(state);
         //K.hash(state);
     }
 }
@@ -638,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_rotations() {
-        let kmer = Kmer::try_from(dna!("ACTGCGATG")).unwrap();
+        let kmer: Kmer<Dna, 9> = Kmer::try_from(dna!("ACTGCGATG")).unwrap();
 
         for (shift, rotation) in vec![
             "ACTGCGATG",

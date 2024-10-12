@@ -22,7 +22,7 @@
 //! let query: &SeqSlice<Dna> = &reference[..5];
 //!
 //! // The keys of the hashmap are `Seq`, but since `Seq` can be borrowed as a SeqSlice we can call `HashMap::get` on another slice.
-//! if let Some(value) = table.get(query) {
+//! if let Some(value) = table.get(&query) {
 //!        // `SeqSlice` implements `Display`
 //!        println!("{value}");
 //! }
@@ -49,7 +49,7 @@ use serde::{Deserialize, Serialize};
 
 use core::borrow::Borrow;
 use core::fmt;
-//use core::hash::Hash;
+use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;
@@ -59,7 +59,7 @@ use core::str::FromStr;
 /// A arbitrary length sequence of bit-packed symbols
 ///
 /// Stored on the heap
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Seq<A: Codec> {
@@ -71,6 +71,12 @@ impl<A: Codec> From<Seq<A>> for usize {
     fn from(slice: Seq<A>) -> usize {
         assert!(slice.bv.len() <= usize::BITS as usize);
         slice.bv.load_le::<usize>() //.wrapping_shr(shift)
+    }
+}
+
+impl<A: Codec> Hash for Seq<A> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_ref().hash(state);
     }
 }
 
@@ -269,7 +275,13 @@ impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
 ///
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
     fn borrow(&self) -> &SeqSlice<A> {
-        self
+        self.as_ref()
+    }
+}
+
+impl<A: Codec> Borrow<SeqSlice<A>> for &Seq<A> {
+    fn borrow(&self) -> &SeqSlice<A> {
+        self.as_ref()
     }
 }
 
@@ -487,6 +499,7 @@ impl<A: Codec> From<Bv> for Seq<A> {
 
 #[cfg(test)]
 mod tests {
+    use crate::codec::text;
     use crate::prelude::*;
     use crate::{Bv, Order};
     use bitvec::prelude::*;
@@ -532,19 +545,17 @@ mod tests {
         assert_ne!(&s1[2..20], &s2[2..20]);
     }
 
-    /*
     #[test]
     fn slice_index_owned() {
         let seq = dna!("GCTCGATCACT");
 
-        assert_eq!(seq[..], dna!("GCTCGATCACT"));
-        assert_eq!(seq[..=4], dna!("GCTCG"));
-        assert_eq!(seq[1..=4], dna!("CTCG"));
-        assert_eq!(seq[1..4], dna!("CTC"));
-        assert_eq!(seq[..4], dna!("GCTC"));
-        assert_eq!(seq[1..], dna!("CTCGATCACT"));
+        assert_eq!(&seq[..], dna!("GCTCGATCACT"));
+        assert_eq!(&seq[..=4], dna!("GCTCG"));
+        assert_eq!(&seq[1..=4], dna!("CTCG"));
+        assert_eq!(&seq[1..4], dna!("CTC"));
+        assert_eq!(&seq[..4], dna!("GCTC"));
+        assert_eq!(&seq[1..], dna!("CTCGATCACT"));
     }
-    */
 
     #[test]
     fn slice_indexing() {
@@ -1034,26 +1045,25 @@ mod tests {
         let bad = Seq::<Dna>::from_raw(342, raw);
         assert_ne!(bad, seq);
     }
-    /*
-        #[test]
-        fn test_seq_and_seq_slice_eq_and_hash() {
-            let seq: Seq<text::Dna> = Seq::from("ACGT".to_string());
-            let slice = &seq[..];
+    #[test]
+    fn test_seq_and_seq_slice_eq_and_hash() {
+        let seq: Seq<text::Dna> = Seq::try_from("ACGT".to_string()).unwrap();
+        let slice = &seq[..];
 
-            // Equality checks
-            assert_eq!(&seq, slice);
-            assert_eq!(slice, &seq);
+        // Equality checks
+        assert_eq!(seq, slice);
+        assert_eq!(&seq, slice);
+        assert_eq!(slice, &seq);
 
-            // Hash checks
-            let mut hasher1 = std::collections::hash_map::DefaultHasher::new();
-            seq.hash(&mut hasher1);
-            let hash1 = hasher1.finish();
+        // Hash checks
+        let mut hasher1 = std::collections::hash_map::DefaultHasher::new();
+        seq.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
 
-            let mut hasher2 = std::collections::hash_map::DefaultHasher::new();
-            slice.hash(&mut hasher2);
-            let hash2 = hasher2.finish();
+        let mut hasher2 = std::collections::hash_map::DefaultHasher::new();
+        slice.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
 
-            assert_eq!(hash1, hash2);
-        }
-    */
+        assert_eq!(hash1, hash2);
+    }
 }

@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn hash_characteristics() {
-        fn hash<T: Hash>(chunk: &T) -> u64 {
+        fn hash<T: Hash>(chunk: T) -> u64 {
             let mut hasher = DefaultHasher::new();
             chunk.hash(&mut hasher);
             hasher.finish()
@@ -400,7 +400,7 @@ mod tests {
         let seq_slice: &SeqSlice<Dna> = &seq;
         let kmer: Kmer<Dna, 32> = seq_arr.try_into().unwrap();
 
-        assert_eq!(hash(seq_arr), hash(&seq));
+        assert_eq!(hash(&seq_arr), hash(&seq));
         assert_eq!(hash(&seq), hash(&seq_slice));
         assert_eq!(hash(&seq_slice), hash(&kmer));
     }

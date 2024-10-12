@@ -46,7 +46,7 @@ impl Codec for Dna {
 
 //impl Eq for Dna {
 //    fn eq(self, rhs: Self) {
-//        true
+//        todo!()
 //    }
 //}
 
@@ -100,7 +100,6 @@ impl TryFrom<Dna> for dna::Dna {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use crate::codec::text;
@@ -108,20 +107,19 @@ mod tests {
 
     #[test]
     fn test_text_dna_encoding() {
-        let v: Vec<usize> = vec![b'A', b'a', b'a', b'c', b'C', b'c', b'G', b'g', b'T', b'a'];
-        let s: Seq<text::Dna> = v.into();
-        assert_eq!(s.nth(0), Dna::A.into());
-        assert_eq!(s.nth(4), Dna::C.into());
+        let s: Seq<text::Dna> = "CATCGCGACTGATCACTCGATC".try_into().unwrap();
+        println!("{s}");
+        assert_eq!(s.nth(0), Dna::C.into());
+        assert_eq!(s.nth(4), Dna::G.into());
         assert_eq!(s.nth(6), Dna::G.into());
-        assert_eq!(s.nth(8), Dna::T.into());
+        assert_eq!(s.nth(8), Dna::C.into());
 
-        assert_eq!(Dna::A, s.nth(0).try_into().unwrap());
-        assert_eq!(Dna::C, s.nth(4).try_into().unwrap());
+        assert_eq!(Dna::C, s.nth(0).try_into().unwrap());
+        assert_eq!(Dna::G, s.nth(4).try_into().unwrap());
         assert_eq!(Dna::G, s.nth(6).try_into().unwrap());
-        assert_eq!(Dna::T, s.nth(8).try_into().unwrap());
+        assert_eq!(Dna::C, s.nth(8).try_into().unwrap());
 
-        assert_ne!(s.nth(1), Dna::G.into());
-        assert_ne!(s.nth(3), Dna::C.into());
+        assert_ne!(s.nth(1), Dna::T.into());
+        assert_ne!(s.nth(3), Dna::A.into());
     }
 }
-*/
