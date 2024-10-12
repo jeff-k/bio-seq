@@ -120,7 +120,6 @@ impl From<Dna> for Iupac {
     }
 }
 
-/*
 impl Seq<Iupac> {
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
@@ -148,15 +147,15 @@ impl SeqSlice<Iupac> {
         self & rhs == rhs
     }
 }
-*/
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    //    use crate::prelude::*;
 
     #[test]
     #[ignore]
     fn iupac_ops() {
+        assert!(false);
         /*
         let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
 
