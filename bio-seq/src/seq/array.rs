@@ -11,7 +11,6 @@ use crate::seq::Seq;
 use crate::{Ba, Bs};
 
 use bitvec::field::BitField;
-//use bitvec::prelude::*;
 
 use core::fmt;
 use core::marker::PhantomData;
@@ -55,44 +54,6 @@ impl<A: Codec, const N: usize> From<&SeqArray<A, N, 1>> for usize {
         slice.bs.load_le::<usize>()
     }
 }
-
-/*
-impl<A: Codec, const N: usize, const W: usize, const M: usize, const V: usize>
-    PartialEq<SeqArray<A, N, W>> for SeqArray<A, M, V>
-{
-    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
-        if N == M {
-            self.ba == other.ba
-        } else {
-            false
-        }
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for SeqArray<A, N, W> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        self.as_ref() == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<Seq<A>> for &SeqArray<A, N, W> {
-    fn eq(&self, other: &Seq<A>) -> bool {
-        self.as_ref() == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqSlice<A>> for SeqArray<A, N, W> {
-    fn eq(&self, other: &SeqSlice<A>) -> bool {
-        self.as_ref() == other
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqSlice<A>> for &SeqArray<A, N, W> {
-    fn eq(&self, other: &SeqSlice<A>) -> bool {
-        self.as_ref() == other
-    }
-}
-*/
 
 impl<A: Codec, const N: usize, const W: usize> fmt::Display for SeqArray<A, N, W> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

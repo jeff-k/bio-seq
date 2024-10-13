@@ -10,20 +10,19 @@
 //! ```
 //! use std::collections::HashMap;
 //! use bio_seq::prelude::*;
-//! use bio_seq::seq;
 //!
 //! let reference = dna!("ACGTTCGCATGCTACGACGATC");
 //!
-//! let mut table: HashMap<&SeqSlice<Dna>, usize> = HashMap::new();
+//! let mut table: HashMap<Seq<Dna>, usize> = HashMap::new();
 //!
 //! // Associate some kind of count with sequences as keys:
-//! table.insert(dna!("ACGTT"), 1);
-//! table.insert(dna!("ACACCCCC"), 0);
+//! table.insert(dna!("ACGTT").into(), 1);
+//! table.insert(dna!("ACACCCCC").into(), 0);
 //!
 //! // The query is a short window in the reference `Seq`
 //! let query: &SeqSlice<Dna> = &reference[..5];
 //!
-//! if let Some(value) = table.get(&query) {
+//! if let Some(value) = table.get(query) {
 //!        // `SeqSlice` implements `Display`
 //!        println!("{query}: {value}");
 //! }
@@ -70,7 +69,7 @@ pub struct Seq<A: Codec> {
 
 impl<A: Codec> From<Seq<A>> for usize {
     fn from(slice: Seq<A>) -> usize {
-        assert!(slice.bv.len() <= usize::BITS as usize);
+        debug_assert!(slice.bv.len() <= usize::BITS as usize);
         slice.bv.load_le::<usize>() //.wrapping_shr(shift)
     }
 }
@@ -208,13 +207,17 @@ impl<A: Codec> Seq<A> {
     }
 
     /// **Experimental**
-    pub fn from_raw(len: usize, bits: &[usize]) -> Self {
+    pub fn from_raw(len: usize, bits: &[usize]) -> Option<Self> {
         let mut bv: Bv = Bv::from_slice(bits);
-        bv.truncate(len * A::BITS as usize);
-
-        Seq {
-            _p: PhantomData,
-            bv,
+        //debug_assert!(len <= bv.len(), "desired length is greater than provided bits string");
+        if len > bv.len() {
+            None
+        } else {
+            bv.truncate(len * A::BITS as usize);
+            Some(Seq {
+                _p: PhantomData,
+                bv,
+            })
         }
     }
 
@@ -223,20 +226,6 @@ impl<A: Codec> Seq<A> {
         self.bv.as_raw_slice()
     }
 }
-
-/*
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for Seq<A> {
-    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
-        self.as_ref() == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<&SeqArray<A, N, W>> for Seq<A> {
-    fn eq(&self, other: &&SeqArray<A, N, W>) -> bool {
-        self.as_ref() == other.as_ref()
-    }
-}
-*/
 
 impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
@@ -1042,9 +1031,13 @@ mod tests {
         let seq: Seq<Dna> = s.try_into().unwrap();
         let raw = seq.into_raw();
         let new = Seq::<Dna>::from_raw(s.len(), raw);
-        assert_eq!(new, seq);
+        assert_eq!(new.unwrap(), seq);
+
+        let bad = Seq::<Dna>::from_raw(s.len() + 1, raw);
+        assert_ne!(bad.unwrap(), seq);
+
         let bad = Seq::<Dna>::from_raw(342, raw);
-        assert_ne!(bad, seq);
+        assert_eq!(bad, None);
     }
     #[test]
     fn test_seq_and_seq_slice_eq_and_hash() {

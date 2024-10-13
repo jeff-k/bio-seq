@@ -106,7 +106,6 @@ pub mod error;
 pub mod kmer;
 pub mod seq;
 
-//#[macro_use]
 pub use bio_seq_derive::{dna, iupac};
 
 #[doc(hidden)]
@@ -153,13 +152,12 @@ mod tests {
         assert_eq!(iupac!("-").nth(0), Iupac::X);
     }
 
-    /*
     #[test]
     fn into_usize() {
-        let a: usize = dna!("ACGT").into();
+        let a: usize = dna!("ACGT").to_owned().into_raw()[0];
         assert_eq!(a, 0b11_10_01_00);
 
-        let b: usize = dna!("CGCG").into();
+        let b: usize = dna!("CGCG").to_owned().into_raw()[0];
         assert_eq!(b, 0b10_01_10_01);
 
         let c: usize = Seq::from(&vec![T, T]).into();
@@ -177,7 +175,7 @@ mod tests {
         let g: usize = Seq::from(&vec![A]).into();
         assert_eq!(g, 0b00);
     }
-    */
+
     #[test]
     fn test_display_aminos() {
         let a: Seq<Amino> = Seq::from_str("DCMNLKG*HI").unwrap();

@@ -99,6 +99,10 @@ impl sealed::KmerStorage for usize {
     }
 
     fn from_bitslice(bs: &Bs) -> Self {
+        debug_assert!(
+            bs.len() <= Self::BITS as usize,
+            "bitslice larger than kmer storage type"
+        );
         bs.load_le()
     }
 
@@ -165,14 +169,6 @@ pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
     pub _p: PhantomData<C>,
     pub bs: S,
 }
-
-/*
-impl<A: Codec, const K: usize, S1: KmerStorage, S2: KmerStorage> PartialEq<Kmer<A, K, S2>> for Kmer<A, K, S1> {
-    fn eq(&self, other: &Kmer<A, K, S2>) -> bool {
-        self.bs.to_bitarray() == other.bs.to_bitarray()
-    }
-}
-*/
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     // This error message can be formatted with constants in nightly (const_format)
@@ -264,27 +260,6 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
             bs: S::from_bitslice(&seq.bs),
         }
     }
-    /*
-        /// Iterate through all bases of a Kmer
-        pub fn iter(self) -> KmerBases<A, K> {
-            KmerBases {
-                _p: PhantomData,
-                bits: Ba::from(self.bs),
-                index: 0,
-            }
-        }
-    */
-    /*
-    /// tail
-    pub fn tail(self, base: A) -> Seq<A> {
-        let bv: Bv::from(self.bs);
-
-        Seq {
-            _p: PhantomData,
-            bv: bv[A::BITS ..],
-        }
-    }
-    */
 }
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
@@ -312,17 +287,6 @@ impl<A: Codec, const K: usize> From<&Kmer<A, K, usize>> for usize {
         kmer.bs
     }
 }
-
-/*
-impl<A: Codec, const K: usize> Deref for SeqArray<A, K, 1> {
-    type Target = Kmer<A, K>;
-
-    fn deref(&self) -> &Self::Target {
-        let bs: usize = &self.ba.view_bits()[0..(K * A::BITS as usize)];
-        unsafe { &*(bs *const Kmer<A, K>) }
-    }
-}
-*/
 
 impl<A: Codec, const K: usize> Deref for Kmer<A, K> {
     type Target = SeqSlice<A>;
@@ -363,6 +327,7 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     fn unsafe_from(seq: &SeqSlice<A>) -> Self {
+        debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
             bs: S::from_bitslice(&seq.bs),
@@ -381,30 +346,6 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
         Some(Kmer::<A, K>::unsafe_from(&self.slice[i..i + K]))
     }
 }
-
-/*
-/// An iterator over the bases of a kmer
-pub struct KmerBases<A: Codec, const K: usize, S: KmerStorage> {
-    pub _p: PhantomData<A>,
-    pub bits: S::BaN,
-    pub index: usize,
-}
-
-/// An iterator over the bases of a kmer
-impl<A: Codec, const K: usize> Iterator for KmerBases<A, K> {
-    type Item = A;
-
-    fn next(&mut self) -> Option<A> {
-        let i = self.index * A::BITS as usize;
-        if self.index >= K {
-            return None;
-        }
-        self.index += 1;
-        let chunk = &self.bits[i..i + (A::BITS as usize)];
-        Some(A::unsafe_from_bits(chunk.load_le::<u8>()))
-    }
-}
-*/
 
 /// ```
 /// use bio_seq::prelude::*;
@@ -447,14 +388,6 @@ impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
         Self::try_from(seq.as_ref())
     }
 }
-
-/*
-impl<A: Codec, const K: usize> From<Kmer<A, K>> for String {
-    fn from(kmer: Kmer<A, K>) -> Self {
-        kmer.to_string()
-    }
-}
-*/
 
 impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<SeqArray<A, K, 1>> for Kmer<A, K, S> {
     fn eq(&self, seq: &SeqArray<A, K, 1>) -> bool {

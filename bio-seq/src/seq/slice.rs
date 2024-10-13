@@ -3,16 +3,13 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//use crate::codec::{Codec, Complement};
 use crate::codec::{Codec, Complement};
 use crate::error::ParseBioError;
-//use crate::seq::array::SeqArray;
 use crate::seq::ReverseComplement;
 use crate::seq::Seq;
 
 use crate::Bs;
 use bitvec::field::BitField;
-//use bitvec::prelude::*;
 
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -82,20 +79,6 @@ impl<A: Codec> From<&SeqSlice<A>> for String {
     }
 }
 
-/*
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for &SeqSlice<A> {
-    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
-        *self == other.as_ref()
-    }
-}
-
-impl<A: Codec, const N: usize, const W: usize> PartialEq<SeqArray<A, N, W>> for SeqSlice<A> {
-    fn eq(&self, other: &SeqArray<A, N, W>) -> bool {
-        self == other.as_ref()
-    }
-}
-*/
-
 impl<A: Codec> PartialEq<SeqSlice<A>> for SeqSlice<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
         self.bs == other.bs
@@ -107,14 +90,6 @@ impl<A: Codec> PartialEq<SeqSlice<A>> for &SeqSlice<A> {
         self.bs == other.bs
     }
 }
-
-/*
-impl<A: Codec> PartialEq<&SeqSlice<A>> for &SeqSlice<A> {
-    fn eq(&self, other: &&SeqSlice<A>) -> bool {
-        self.bs == other.bs
-    }
-}
-    */
 
 impl<A: Codec> PartialEq<Seq<A>> for SeqSlice<A> {
     fn eq(&self, other: &Seq<A>) -> bool {
@@ -148,7 +123,7 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
     }
 }
 
-impl<A: Codec> Hash for &SeqSlice<A> {
+impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
         // prepend length to make robust against matching prefixes

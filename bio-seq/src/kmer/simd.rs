@@ -8,7 +8,6 @@
 
 use crate::codec::Codec;
 use crate::kmer::{sealed, Kmer, KmerStorage};
-//use crate::seq::{SeqSlice};
 use crate::{Ba, Bs};
 use bitvec::field::BitField;
 
@@ -62,7 +61,6 @@ impl<A: Codec, const K: usize> Hash for Kmer<A, K, simd::Simd<u64, 4>> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::seq::SeqArray;
     use core::simd;
 
     #[test]

@@ -82,6 +82,7 @@
 //!
 //! Translation tables may not be complete or they may be ambiguous
 //!
+use core::cmp::Eq;
 use core::fmt;
 use std::collections::HashMap;
 
@@ -178,10 +179,10 @@ impl<A: Codec, B: Codec + fmt::Display> CodonTable<A, B> {
 
 impl<A: Codec, B: Codec + fmt::Display> PartialTranslationTable<A, B> for CodonTable<A, B> {
     fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError<A, B>> {
-        match self.table.get(codon) {
-            Some(amino) => Ok(*amino),
-            None => Err(TranslationError::InvalidCodon(codon.into())),
-        }
+        self.table
+            .get(codon)
+            .ok_or_else(|| TranslationError::InvalidCodon(codon.into()))
+            .copied()
     }
 
     fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>> {
