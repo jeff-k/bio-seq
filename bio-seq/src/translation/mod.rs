@@ -95,7 +95,7 @@ pub use crate::translation::standard::STANDARD;
 
 /// Error conditions for codon/amino acid translation
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum TranslationError<A: Codec = Dna, B: Codec + fmt::Display + fmt::Debug = Amino> {
+pub enum TranslationError<A: Codec = Dna, B: Codec = Amino> {
     /// Amino acid can be translation from multiple codons
     AmbiguousCodon(B),
     /// Codon sequence maps to multiple amino acids
@@ -106,10 +106,11 @@ pub enum TranslationError<A: Codec = Dna, B: Codec + fmt::Display + fmt::Debug =
     InvalidAmino(B),
 }
 
-impl<A: Codec, B: Codec + fmt::Display> fmt::Display for TranslationError<A, B> {
+impl<A: Codec, B: Codec> fmt::Display for TranslationError<A, B> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TranslationError::AmbiguousCodon(amino) => {
+                let amino = amino.to_char();
                 write!(f, "Multiple codon sequences: {amino}")
             }
             TranslationError::AmbiguousTranslation(codon) => {
@@ -117,17 +118,18 @@ impl<A: Codec, B: Codec + fmt::Display> fmt::Display for TranslationError<A, B> 
             }
             TranslationError::InvalidCodon(codon) => write!(f, "Invalid codon sequence: {codon}"),
             TranslationError::InvalidAmino(amino) => {
-                write!(f, "Invalid amino acid character: {amino:?}")
+                let amino = amino.to_char();
+                write!(f, "Invalid amino acid character: {amino}")
             }
         }
     }
 }
 
 // #![feature(error_in_core)
-impl<A: Codec, B: Codec + fmt::Display + fmt::Debug> std::error::Error for TranslationError<A, B> {}
+impl<A: Codec, B: Codec> std::error::Error for TranslationError<A, B> {}
 
 /// A codon translation table where all codons map to amino acids
-pub trait TranslationTable<A: Codec, B: Codec + fmt::Display> {
+pub trait TranslationTable<A: Codec, B: Codec> {
     fn to_amino(&self, codon: &SeqSlice<A>) -> B;
 
     /// # Errors
@@ -137,7 +139,7 @@ pub trait TranslationTable<A: Codec, B: Codec + fmt::Display> {
 }
 
 /// A partial translation table where not all triples of characters map to amino acids
-pub trait PartialTranslationTable<A: Codec, B: Codec + fmt::Display> {
+pub trait PartialTranslationTable<A: Codec, B: Codec> {
     /// # Errors
     ///
     /// Will return an `Err` if a codon does not map to an amino acid. This would be
@@ -156,7 +158,7 @@ pub struct CodonTable<A: Codec, B: Codec> {
     inverse_table: HashMap<B, Option<Seq<A>>>,
 }
 
-impl<A: Codec, B: Codec + fmt::Display> CodonTable<A, B> {
+impl<A: Codec, B: Codec> CodonTable<A, B> {
     pub fn from_map<T>(table: T) -> Self
     where
         T: Into<HashMap<Seq<A>, B>>,
@@ -177,7 +179,7 @@ impl<A: Codec, B: Codec + fmt::Display> CodonTable<A, B> {
     }
 }
 
-impl<A: Codec, B: Codec + fmt::Display> PartialTranslationTable<A, B> for CodonTable<A, B> {
+impl<A: Codec, B: Codec> PartialTranslationTable<A, B> for CodonTable<A, B> {
     fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError<A, B>> {
         self.table
             .get(codon)
