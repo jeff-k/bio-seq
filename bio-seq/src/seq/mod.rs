@@ -201,6 +201,21 @@ impl<A: Codec> Seq<A> {
         self.bv.splice(s..e, other.bs.iter().by_vals());
     }
 
+    pub fn insert(&mut self, index: usize, other: &SeqSlice<A>) {
+        if index > self.len() {
+            panic!("Index out of bounds");
+        }
+
+        let i = index * A::BITS as usize;
+        let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
+
+        bv.extend_from_bitslice(&self.bs[..i]);
+        bv.extend_from_bitslice(&other.bs);
+        bv.extend_from_bitslice(&self.bs[i..]);
+
+        self.bv = bv;
+    }
+
     pub fn remove<R: RangeBounds<usize>>(&mut self, range: R) {
         let (s, e) = self.bit_range(range);
         self.bv.drain(s..e);
@@ -1063,5 +1078,87 @@ mod tests {
         let hash2 = hasher2.finish();
 
         assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_prepend() {
+        let mut seq1 =
+            Seq::<Dna>::from_str("GCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAAT").unwrap();
+        seq1.prepend(dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+        assert_eq!(seq1.to_string(), "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAAT");
+
+        let mut seq2 =
+            Seq::<Dna>::from_str("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA").unwrap();
+        seq2.prepend(dna!("GCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAAT"));
+        assert_eq!(seq2.to_string(), "GCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAATAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+        assert_ne!(seq1, seq2);
+    }
+
+    #[test]
+    fn test_append() {
+        let mut seq1 =
+            Seq::<Dna>::from_str("GCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAAT").unwrap();
+        seq1.append(dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+        assert_eq!(seq1.to_string(), "GCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAATAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+        let mut seq2 =
+            Seq::<Dna>::from_str("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA").unwrap();
+        seq2.append(dna!("GCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAAT"));
+        assert_eq!(seq2.to_string(), "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGCTCGATCGATCGATCGACTGACTGACGCGCGCATCCGATAAAAAAAAT");
+
+        assert_ne!(seq1, seq2);
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCG").into();
+        seq.remove(4..6);
+        assert_eq!(&seq, dna!("TCAGTCGATCAATCG"));
+        seq.remove(..4);
+        assert_eq!(&seq, dna!("TCGATCAATCG"));
+        seq.remove(6..);
+        assert_eq!(&seq, dna!("TCGATC"));
+    }
+
+    #[test]
+    fn test_insert() {
+        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCG").into();
+        let insertion = dna!("CCCCC");
+
+        seq.insert(4, insertion);
+        assert_eq!(&seq, dna!("TCAGCCCCCCATCGATCAATCG"));
+
+        seq.insert(seq.len(), dna!("AAAAA"));
+        assert_eq!(&seq, dna!("TCAGCCCCCCATCGATCAATCGAAAAA"));
+    }
+
+    #[test]
+    fn test_truncate() {
+        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCG").into();
+
+        seq.truncate(seq.len());
+        assert_eq!(&seq, dna!("TCAGCATCGATCAATCG"));
+
+        seq.truncate(10);
+        assert_eq!(&seq, dna!("TCAGCATCGA"));
+
+        seq.truncate(0);
+        assert_eq!(&seq, dna!(""));
+    }
+
+    #[test]
+    fn test_splice() {
+        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCG").into();
+        let insertion = dna!("CCCCC");
+
+        seq.splice(4..6, insertion);
+        assert_eq!(&seq, dna!("TCAGCCCCCTCGATCAATCG"));
+
+        seq.splice(1..=1, dna!("AAA"));
+        assert_eq!(&seq, dna!("TAAAAGCCCCCTCGATCAATCG"));
+
+        seq.splice(10.., dna!("TTTT"));
+        assert_eq!(&seq, dna!("TAAAAGCCCCTTTT"));
     }
 }
