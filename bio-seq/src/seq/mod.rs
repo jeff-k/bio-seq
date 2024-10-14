@@ -50,7 +50,7 @@ use serde::{Deserialize, Serialize};
 use core::borrow::Borrow;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::Deref;
+use core::ops::{Bound, Deref, RangeBounds};
 use core::str::FromStr;
 use core::{fmt, ptr, str};
 
@@ -100,6 +100,25 @@ impl<A: Codec> Seq<A> {
             _p: PhantomData,
             bv: Bv::new(),
         }
+    }
+
+    fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> (usize, usize) {
+        let s = match range.start_bound() {
+            Bound::Included(&n) => n,
+            Bound::Excluded(&n) => n + 1,
+            Bound::Unbounded => 0,
+        };
+
+        let e = match range.end_bound() {
+            Bound::Included(&n) => n + 1,
+            Bound::Excluded(&n) => n,
+            Bound::Unbounded => self.len(),
+        };
+
+        debug_assert!(s <= e, "Start of range must be less than or equal to end");
+        debug_assert!(e <= self.len(), "Range out of bounds");
+
+        (s * A::BITS as usize, e * A::BITS as usize)
     }
 
     /// Trim leading and trailing characters that don't match bases/symbols
@@ -166,20 +185,25 @@ impl<A: Codec> Seq<A> {
         self.bv.truncate(len * A::BITS as usize);
     }
 
+    pub fn prepend(&mut self, other: &SeqSlice<A>) {
+        let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
+        bv.extend_from_bitslice(&other.bs);
+        bv.extend_from_bitslice(&self.bv);
+        self.bv = bv;
+    }
+
     pub fn append(&mut self, other: &SeqSlice<A>) {
         self.bv.extend_from_bitslice(&other.bs);
     }
 
-    pub fn splice(&mut self, _other: &SeqSlice<A>, _index: usize) {
-        todo!()
+    pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
+        let (s, e) = self.bit_range(range);
+        self.bv.splice(s..e, other.bs.iter().by_vals());
     }
 
-    pub fn remove(&mut self, index: usize) -> A {
-        debug_assert!(index <= self.len(), "Sequence index out of range");
-        let start = index * A::BITS as usize;
-        let end = start + A::BITS as usize;
-        let bits = self.bv.drain(start..end).collect::<Bv>();
-        A::unsafe_from_bits(bits.load_le())
+    pub fn remove<R: RangeBounds<usize>>(&mut self, range: R) {
+        let (s, e) = self.bit_range(range);
+        self.bv.drain(s..e);
     }
 
     pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
