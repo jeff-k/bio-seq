@@ -42,7 +42,7 @@ impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
 
 impl<A: Codec> From<&SeqSlice<A>> for u8 {
     fn from(slice: &SeqSlice<A>) -> u8 {
-        assert!(slice.bs.len() <= u8::BITS as usize);
+        debug_assert!(slice.bs.len() <= u8::BITS as usize);
         slice.bs.load_le::<u8>()
     }
 }
@@ -66,6 +66,15 @@ impl<A: Codec> SeqSlice<A> {
 
     pub fn len(&self) -> usize {
         self.bs.len() / A::BITS as usize
+    }
+
+    /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
+    pub fn get(&self, i: usize) -> Option<A> {
+        if i >= self.bs.len() / A::BITS as usize {
+            None
+        } else {
+            Some(A::unsafe_from_bits(self[i].into()))
+        }
     }
 
     pub fn is_empty(&self) -> bool {

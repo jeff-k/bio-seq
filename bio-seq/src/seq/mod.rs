@@ -48,13 +48,11 @@ use bitvec::view::BitView;
 use serde::{Deserialize, Serialize};
 
 use core::borrow::Borrow;
-use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::Deref;
-use core::ptr;
-use core::str;
 use core::str::FromStr;
+use core::{fmt, ptr, str};
 
 /// A arbitrary length sequence of bit-packed symbols
 ///
@@ -140,28 +138,6 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    /// Unsafely index into a sequence.
-    pub fn nth(&self, i: usize) -> A {
-        A::unsafe_from_bits(self[i].into())
-    }
-
-    /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
-    pub fn get(&self, i: usize) -> Option<A> {
-        if i >= self.bv.len() / A::BITS as usize {
-            None
-        } else {
-            Some(A::unsafe_from_bits(self[i].into()))
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.bv.len() / A::BITS as usize
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     pub fn bit_and(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
@@ -186,20 +162,24 @@ impl<A: Codec> Seq<A> {
         self.bv.clear();
     }
 
-    pub fn pop(&mut self) -> Option<A> {
-        unimplemented!()
+    pub fn truncate(&mut self, len: usize) {
+        self.bv.truncate(len * A::BITS as usize);
     }
 
-    pub fn truncate(&mut self, _len: usize) {
-        unimplemented!()
+    pub fn append(&mut self, other: &SeqSlice<A>) {
+        self.bv.extend_from_bitslice(&other.bs);
     }
 
-    pub fn remove(&mut self, _index: usize) -> A {
-        unimplemented!()
+    pub fn splice(&mut self, _other: &SeqSlice<A>, _index: usize) {
+        todo!()
     }
 
-    pub fn insert(&mut self, _index: usize, _element: A) {
-        unimplemented!()
+    pub fn remove(&mut self, index: usize) -> A {
+        debug_assert!(index <= self.len(), "Sequence index out of range");
+        let start = index * A::BITS as usize;
+        let end = start + A::BITS as usize;
+        let bits = self.bv.drain(start..end).collect::<Bv>();
+        A::unsafe_from_bits(bits.load_le())
     }
 
     pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {

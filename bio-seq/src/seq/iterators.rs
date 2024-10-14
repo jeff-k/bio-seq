@@ -34,10 +34,8 @@ impl<'a, A: Codec> SeqSlice<A> {
     pub fn iter(&'a self) -> SeqIter<'a, A> {
         <&Self as IntoIterator>::into_iter(self)
     }
-}
 
-impl<A: Codec> SeqSlice<A> {
-    /// Iterate over sliding windows of size K
+    /// Iterate over sliding windows of length K
     pub fn kmers<const K: usize>(&self) -> KmerIter<A, K> {
         KmerIter::<A, K> {
             slice: self,
@@ -56,10 +54,6 @@ impl<A: Codec> SeqSlice<A> {
     }
 
     /// Iterate over the sequence in overlapping windows of a specified width
-    ///
-    /// This will panic if the length of the window is greater than the length of the sequence.
-    ///
-    /// Example:
     ///
     /// ```
     /// use bio_seq::prelude::*;
@@ -81,8 +75,6 @@ impl<A: Codec> SeqSlice<A> {
     ///
     /// The last incomplete chunk will be excluded if the sequence length is not divisible by the specified
     /// width.
-    ///
-    /// Example:
     ///
     /// ```
     /// use bio_seq::prelude::*;
