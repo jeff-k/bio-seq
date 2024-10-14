@@ -62,7 +62,7 @@ impl<A: Codec> Index<RangeFull> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
-        let bs: *const Bs = ptr::from_ref::<Bs>(&self.bs);
+        let bs: *const Bs = ptr::from_ref::<Bs>(&self.bs[..]);
         unsafe { &*(bs as *const SeqSlice<A>) }
     }
 }
@@ -71,14 +71,9 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, i: usize) -> &Self::Output {
-        &self[i..=i]
+        let s = i * A::BITS as usize;
+        let e = s + A::BITS as usize;
+        let bs: *const Bs = ptr::from_ref::<Bs>(&self.bs[s..e]);
+        unsafe { &*(bs as *const SeqSlice<A>) }
     }
 }
-
-/*
-impl<A: Codec> IndexMut<usize> for Seq<A> {
-    fn index_mut(&mut self, _index: usize) -> &mut SeqSlice<A> {
-        unimplemented!()
-    }
-}
-*/
