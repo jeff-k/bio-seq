@@ -150,13 +150,10 @@ impl SeqSlice<Iupac> {
 
 #[cfg(test)]
 mod tests {
-    //    use crate::prelude::*;
+    use crate::prelude::*;
 
     #[test]
-    #[ignore]
     fn iupac_ops() {
-        assert!(false);
-        /*
         let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
 
         let pattern = iupac!("AYG");
@@ -167,6 +164,5 @@ mod tests {
             .collect();
 
         assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")])
-        */
     }
 }
