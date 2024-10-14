@@ -20,6 +20,13 @@ use core::ptr;
 use core::ops::{BitAnd, BitOr};
 use std::hash::{Hash, Hasher};
 
+/// Static bit-packed sequence meant to be accessed as a `&'static SeqSlice`
+///
+/// ```
+/// # use bio_seq::prelude::*;
+/// // internally, `dna!` constructs a `SeqArray<Dna>`
+/// let seq: &'static SeqSlice<Dna> = dna!("ACGTGT");
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct SeqArray<A: Codec, const N: usize, const W: usize> {

@@ -3,30 +3,9 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Arbitrary length sequences of bit-packed genomic data, stored on the heap
+//! Arbitrary length sequences of bit-packed genomic data
 //!
-//! `Seq` and `SeqSlice` are analogous to `String` and `str`. A `Seq` owns its data and a `SeqSlice` is a read-only window into a `Seq`.
-//!
-//! ```
-//! use std::collections::HashMap;
-//! use bio_seq::prelude::*;
-//!
-//! let reference = dna!("ACGTTCGCATGCTACGACGATC");
-//!
-//! let mut table: HashMap<Seq<Dna>, usize> = HashMap::new();
-//!
-//! // Associate some kind of count with sequences as keys:
-//! table.insert(dna!("ACGTT").into(), 1);
-//! table.insert(dna!("ACACCCCC").into(), 0);
-//!
-//! // The query is a short window in the reference `Seq`
-//! let query: &SeqSlice<Dna> = &reference[..5];
-//!
-//! if let Some(value) = table.get(query) {
-//!        // `SeqSlice` implements `Display`
-//!        println!("{query}: {value}");
-//! }
-//! ```
+//! `Seq` and `&SeqSlice` are analogous to `String` and `&str`. A `Seq` owns its data and a `SeqSlice` is a read-only window into a `Seq`.
 pub mod index;
 pub mod iterators;
 
@@ -181,10 +160,24 @@ impl<A: Codec> Seq<A> {
         self.bv.clear();
     }
 
+    /// Truncate a sequence
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("CCCCC").into();
+    /// seq.truncate(2);
+    /// assert_eq!(&seq, dna!("CC"));
+    /// ```
     pub fn truncate(&mut self, len: usize) {
         self.bv.truncate(len * A::BITS as usize);
     }
 
+    /// Prepend a slice
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("CCCCC").into();
+    /// seq.prepend(dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("TTTTCCCCC"));
+    /// ```
     pub fn prepend(&mut self, other: &SeqSlice<A>) {
         let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
         bv.extend_from_bitslice(&other.bs);
@@ -192,19 +185,41 @@ impl<A: Codec> Seq<A> {
         self.bv = bv;
     }
 
+    /// Append a slice
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("CCCCC").into();
+    /// seq.append(dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("CCCCCTTTT"));
+    /// ```
     pub fn append(&mut self, other: &SeqSlice<A>) {
         self.bv.extend_from_bitslice(&other.bs);
     }
 
+    /// Remove a range and replace it with a slice
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
+    /// seq.splice(4..6, dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
+    /// ```
     pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
         let (s, e) = self.bit_range(range);
         self.bv.splice(s..e, other.bs.iter().by_vals());
     }
 
+    /// Insert a slice into a sequence
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("AAAAA").into();
+    /// seq.insert(3, dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("AAATTTTAA"));
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if index out of bounds
     pub fn insert(&mut self, index: usize, other: &SeqSlice<A>) {
-        if index > self.len() {
-            panic!("Index out of bounds");
-        }
+        assert!(index <= self.len(), "Index out of bounds");
 
         let i = index * A::BITS as usize;
         let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
@@ -216,6 +231,13 @@ impl<A: Codec> Seq<A> {
         self.bv = bv;
     }
 
+    /// Remove a region of a sequence
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("ACGTACGT").into();
+    /// seq.remove(2..5);
+    /// assert_eq!(&seq, dna!("ACCGT"));
+    /// ```
     pub fn remove<R: RangeBounds<usize>>(&mut self, range: R) {
         let (s, e) = self.bit_range(range);
         self.bv.drain(s..e);
@@ -240,7 +262,14 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    /// **Experimental**
+    /// **Experimental** Access raw sequence data us `&[usize]`
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let seq: Seq<Dna> = dna!("TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCACGT").into();
+    /// let ints: Vec<usize> = seq.into_raw().iter().copied().collect();
+    /// assert_eq!(ints[0], 0b0101010101010101010101010101010111111111111111111111111111111111);
+    /// assert_eq!(ints[1], 0b11100100); // ACGT
+    /// ```
     pub fn into_raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
     }
@@ -273,15 +302,26 @@ impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
 /// Borrow a `Seq<A>` as a `SeqSlice<A>`.
 ///
 /// The `Borrow` trait to is used to obtain a reference to a `SeqSlice` from a `Seq`, allowing it to be used wherever a `SeqSlice` is expected.
-///
 /// ```
-/// # use bio_seq::prelude::*;
-/// use std::borrow::Borrow;
+/// use std::collections::HashMap;
+/// use bio_seq::prelude::*;
 ///
-/// let seq: Seq<Dna> = dna!("CTACGTACGATCATCG").into();
-/// let slice: &SeqSlice<Dna> = seq.borrow();
+/// let reference = dna!("ACGTTCGCATGCTACGACGATC");
+///
+/// let mut table: HashMap<Seq<Dna>, usize> = HashMap::new();
+///
+/// // Associate some kind of count with sequences as keys:
+/// table.insert(dna!("ACGTT").into(), 1);
+/// table.insert(dna!("ACACCCCC").into(), 0);
+///
+/// // The query is a short window in the reference `Seq`
+/// let query: &SeqSlice<Dna> = &reference[..5];
+///
+/// if let Some(value) = table.get(query) {
+///        // `SeqSlice` implements `Display`
+///        println!("{query}: {value}");
+/// }
 /// ```
-///
 impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
     fn borrow(&self) -> &SeqSlice<A> {
         self.as_ref()

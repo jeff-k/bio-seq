@@ -91,7 +91,7 @@ Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/lates
 
 kmers are short sequences of length `k` that generally fit into a register (e.g. `usize`, or SIMD vector) and implement `Copy`. `k` is a compile-time constant.
 
-All data is stored little-endian. This effects the order that sequences map to the integers ("colexicographic" order).
+All data is stored little-endian. This effects the order that sequences map to the integers:
 
 ```rust
 for i in 0..=15 {
@@ -156,7 +156,7 @@ assert_eq!(minimiser, Kmer::from(dna!("GTAAAAAA")));
 `Hash` is implemented for sequence and kmer types so equal values of these types will hash identically:
 
 ```rust
-let seq_arr: &SeqArray<Dna, 32, 1> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
+let seq_arr: &'static SeqSlice<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
 let seq: Seq<Dna> = seq_arr.into();
 let seq_slice: &SeqSlice<Dna> = &seq;
 let kmer: Kmer<Dna, 32> = seq_arr.into();
