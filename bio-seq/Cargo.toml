@@ -26,10 +26,11 @@ serde_derive = { version = "1", optional = true }
 serde = ["dep:serde",  "dep:serde_derive", "bitvec/serde"]
 translation = []
 simd = []
+extra_codecs = []
 
 #[[example]]
 #name = "aminokmers"
 
 [package.metadata.docs.rs]
-features = ["translation", "serde"]
+features = ["translation", "serde", "extra_codecs"]
 # all-features = true

@@ -1,6 +1,3 @@
-//! Experimental 4-bit DNA encoding with masked bases
-//! Includes `N`, `n`, `.`, `-`
-
 use crate::codec::Codec;
 use crate::seq::{ReverseComplement, Seq};
 

@@ -119,13 +119,18 @@ use core::hash::Hash;
 pub mod amino;
 pub mod dna;
 pub mod iupac;
+
+#[cfg(feature = "extra_codecs")]
 pub mod masked;
+
+#[cfg(feature = "extra_codecs")]
+pub mod degenerate;
 
 pub mod text;
 
 pub use bio_seq_derive::Codec;
 
-/// The bit encodings of an alphabet's symbols can be represented with any type.
+/// The binary encoding of an alphabet's symbols can be represented with any type.
 /// Encoding from ASCII bytes and decoding the representation is implemented through
 /// the `Codec` trait.  
 ///
