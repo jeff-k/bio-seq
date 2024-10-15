@@ -11,8 +11,9 @@ pub trait Maskable {
     fn unmask(&self) -> Self;
 }
 
+/*
 #[cfg(test)]
 mod tests {
-    use crate::codec::masked;
     use crate::prelude::*;
 }
+*/

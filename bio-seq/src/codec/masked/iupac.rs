@@ -90,10 +90,21 @@ impl Maskable for Iupac {
     }
 }
 
+impl Maskable for Seq<Iupac> {
+    fn mask(&self) -> Self {
+        // set the third bit of every chunk of 5 bits
+        todo!()
+    }
+
+    fn unmask(&self) -> Self {
+        todo!()
+    }
+}
+
 impl ReverseComplement for Seq<Iupac> {
     type Output = Self;
 
-    /// A reverse complementing just requires reversing the bit sequence
+    /// Reverse complementing just requires reversing the bit sequence
     fn revcomp(&self) -> Self {
         let mut bv = self.bv.clone();
         bv.reverse();
@@ -104,5 +115,15 @@ impl ReverseComplement for Seq<Iupac> {
 #[cfg(test)]
 mod tests {
     use crate::codec::masked;
+    use crate::codec::masked::Maskable;
     use crate::prelude::*;
+
+    #[ignore]
+    #[test]
+    fn mask_iupac_seq() {
+        let seq = Seq::<masked::Iupac>::try_from("A.TCGCgtcataN--A").unwrap();
+
+        assert_ne!(seq.mask().to_string(), "a.tcgcGTGATAN--a".to_string());
+        assert_eq!(seq.mask().to_string(), "a.tcgcGTCATAn--a".to_string());
+    }
 }

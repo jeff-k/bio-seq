@@ -30,6 +30,13 @@ impl ReverseComplement for Seq<Dna> {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::masked;
+    use crate::codec::degenerate;
     use crate::prelude::*;
+
+    #[test]
+    fn test_1bit() {
+        let seq = Seq::<degenerate::Dna>::from_str("SSSWWWSW").unwrap();
+        let seq_rc: Seq<degenerate::Dna> = seq.revcomp();
+        assert_eq!("WSWWWSSS", String::from(seq_rc));
+    }
 }

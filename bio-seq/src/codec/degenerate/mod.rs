@@ -1,5 +1,4 @@
-//! Experimental encodings with degenerate representations
-//! Includes `N`, `n`, `.`, `-`
+//! Experimental encodings for degenerate representations (eg 1-bit)
 
 pub mod dna;
 
@@ -9,8 +8,6 @@ pub mod dna;
 pub use dna::Dna;
 //pub use iupac::Iupac;
 
-#[cfg(test)]
-mod tests {
-    use crate::codec::masked;
-    use crate::prelude::*;
-}
+//#[cfg(test)]
+//mod tests {
+//}

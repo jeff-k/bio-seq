@@ -1,6 +1,10 @@
-use crate::codec::Codec;
+use crate::codec::masked::Maskable;
+use crate::codec::{Codec, Complement};
 use crate::seq::{ReverseComplement, Seq};
 
+/// **Experimental** 4-bit nucleotide encoding with fast reverse complement and toggled mask operation
+///
+/// Note that masking/unmasking are not idempotent
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Codec)]
 #[bits(4)]
 #[repr(u8)]
@@ -38,26 +42,32 @@ pub enum Dna {
     Unknown2 = 0b1001,
 }
 
-/*
 impl Complement for Dna {
     /// This representation can be complemented by reversing the bit pattern
     fn comp(&self) -> Self {
-        // reverse the bits
-        Dna::unsafe_from_bits(b)
+        todo!()
     }
 }
-*/
 
-impl Dna {
-    /// Flipping the bit pattern masks/unmasks this representation
-    pub fn mask(&self) -> Self {
+impl Maskable for Dna {
+    /// Inverting the bit pattern masks/unmasks this representation
+    fn mask(&self) -> Self {
+        let b = *self as u8 ^ 0b1111;
+        Dna::unsafe_from_bits(b)
+    }
+
+    fn unmask(&self) -> Self {
         let b = *self as u8 ^ 0b1111;
         Dna::unsafe_from_bits(b)
     }
 }
 
-impl Seq<Dna> {
-    pub fn mask(&self) -> Self {
+impl Maskable for Seq<Dna> {
+    fn mask(&self) -> Self {
+        Self::from(!self.bv.clone())
+    }
+
+    fn unmask(&self) -> Self {
         Self::from(!self.bv.clone())
     }
 }
@@ -75,6 +85,7 @@ impl ReverseComplement for Seq<Dna> {
 #[cfg(test)]
 mod tests {
     use crate::codec::masked;
+    use crate::codec::masked::Maskable;
     use crate::prelude::*;
 
     #[test]
