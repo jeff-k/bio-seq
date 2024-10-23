@@ -32,6 +32,10 @@ extra_codecs = []
 name = "aminokmers"
 required-features = ["noodles/fasta"]
 
+[[example]]
+name = "codec-bench"
+required-features = ["extra_codecs"]
+
 [package.metadata.docs.rs]
 features = ["translation", "serde", "extra_codecs"]
 # all-features = true
