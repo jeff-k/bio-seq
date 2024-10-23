@@ -14,13 +14,15 @@ pub enum Dna {
 impl Codec for Dna {
     const BITS: u8 = 2;
 
-    /// Take the two least significant bits of a `u8` and map them to the
-    /// corresponding nucleotides.
+    /// Transmute a `u8` into a nucleotide
+    ///
+    /// SAFETY: This only looks at the lower 2 bits of the `u8`
     fn unsafe_from_bits(b: u8) -> Self {
+        debug_assert!(b < 4);
         unsafe { std::mem::transmute(b & 0b11) }
     }
 
-    /// We can efficient verify that a byte is a valid `Dna` value if it's
+    /// We can verify that a byte is a valid `Dna` value if it's
     /// between 0 and 3.
     fn try_from_bits(b: u8) -> Option<Self> {
         if b < 4 {

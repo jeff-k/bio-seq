@@ -66,6 +66,23 @@ let slice: &str = &s[1..3];
 let seqslice: &SeqSlice<Dna> = &seq[2..4];
 ```
 
+Sequences can be encoded from popular third-party crates like [noodles](https://crates.io/crates/noodles):
+
+```
+let mut reader = noodles::fasta::Reader::new(BufReader::new(fasta));
+
+for result in reader.records() {
+    let record = result?;
+    let seq: Seq<Dna> = record
+        .sequence()
+        .as_ref()
+        .try_into()
+        .unwrap()
+
+    // ...
+}
+```
+
 ## Philosophy
 
 Many bioinformatics crates implement their own kmer packing logic. This effort began as a way to define types and traits that allow kmer code to be shared between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general type for sequences. The scope of this crate will be limited to operating on fixed and arbitrary length sequences with an emphasis on safety.
@@ -123,20 +140,29 @@ for i in 0..=15 {
 A lookup table can be indexed in constant time by treating kmers directly as `usize`:
 
 ```rust
-// This example builds a histogram of kmer occurences (on the stack!)
+struct Histogram<C: Codec, const K: usize> {
+    counts: Vec<usize>,
+    _p: PhantomData<C>,
+}
 
-fn kmer_histogram<C: Codec, const K: usize>(seq: &SeqSlice<C>) -> Vec<usize> {
-    // For dna::Dna our histogram will need 4^4
-    // bins to count every possible 4-mer
-    let mut histo = vec![0; 1 << (C::WIDTH * K as u8)];
-
-    for kmer in seq.kmers::<K>() {
-        histo[usize::from(kmer)] += 1;
+impl<C: Codec, const K: usize> Histogram<C, K> {
+    fn new() -> Self {
+        Self {
+            counts: vec![0; 1 << (K * C::BITS as usize)],
+            _p: PhantomData,
+        }
     }
 
-    histo
+    fn add(&mut self, kmer: Kmer<C, K>) {
+        self.counts[usize::from(&kmer)] += 1;
+    }
+
+    fn get(&self, kmer: Kmer<C, K>) -> usize {
+        self.counts[usize::from(&kmer)]
+    }
 }
 ```
+
 
 ## Sketching
 

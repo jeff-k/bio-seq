@@ -12,9 +12,9 @@ categories = ["science::bioinformatics", "science::bioinformatics::genomics", "s
 readme = "../README.md"
 rust-version = "1.79"
 
-#[dev-dependencies]
-#bio-streams = { git="https://github.com/jeff-k/bio-streams.git" }
-#clap = { version="4", features=["derive"] }
+[dev-dependencies]
+clap = { version="4", features=["derive"] }
+noodles = { version="0.84", features=["fasta"] }
 
 [dependencies]
 bitvec = "1"
@@ -28,8 +28,9 @@ translation = []
 simd = []
 extra_codecs = []
 
-#[[example]]
-#name = "aminokmers"
+[[example]]
+name = "aminokmers"
+required-features = ["noodles/fasta"]
 
 [package.metadata.docs.rs]
 features = ["translation", "serde", "extra_codecs"]
