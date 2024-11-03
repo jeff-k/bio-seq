@@ -66,9 +66,9 @@ let slice: &str = &s[1..3];
 let seqslice: &SeqSlice<Dna> = &seq[2..4];
 ```
 
-Sequences can be encoded from popular third-party crates like [noodles](https://crates.io/crates/noodles):
+Sequences can be read from popular third-party crates like [noodles](https://crates.io/crates/noodles):
 
-```
+```rust
 let mut reader = noodles::fasta::Reader::new(BufReader::new(fasta));
 
 for result in reader.records() {
@@ -218,7 +218,7 @@ To consider both the forward and reverse complement of kmers when minimising:
 let (canonical_minimiser, canonical_hash) = seq
     .kmers::<16>()
     .map(|kmer| {
-        let canonical_hash = min(hash(&kmer), hash(&kmer.revcomp()));
+        let canonical_hash = hash(min(kmer, kmer.revcomp()));
         (kmer, canonical_hash)
     })
     .min_by_key(|&(_, hash)| hash)
