@@ -130,18 +130,11 @@ pub(crate) fn parse_variants(
 
         for attr in &variant.attrs {
             if attr.path().is_ident("display") {
-                let alt_attr: syn::LitChar = match attr.parse_args() {
-                    Ok(attr) => attr,
-                    Err(err) => return Err(err),
-                };
+                let alt_attr: syn::LitChar = attr.parse_args()?;
                 char_repr = alt_attr.value() as u8;
             } else if attr.path().is_ident("alt") {
                 let discs: Punctuated<syn::ExprLit, Token![,]> =
-                    match attr.parse_args_with(Punctuated::parse_terminated) {
-                        Ok(discs) => discs,
-                        Err(err) => return Err(err),
-                    };
-
+                    attr.parse_args_with(Punctuated::parse_terminated)?;
                 for d in discs {
                     alts.push(quote! { #d => Some(Self::#ident) });
                     unsafe_alts.push(quote! { #d => Self::#ident });
