@@ -1,4 +1,5 @@
 use core::fmt;
+use core::result;
 
 #[derive(Debug, PartialEq)]
 pub enum ParseBioError {
@@ -6,6 +7,8 @@ pub enum ParseBioError {
     MismatchedLength(usize, usize),
     SequenceTooLong(usize, usize),
 }
+
+pub type Result<T> = result::Result<T, ParseBioError>;
 
 impl fmt::Display for ParseBioError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -30,6 +33,12 @@ impl fmt::Display for ParseBioError {
                 write!(f, "Expected length <= {expected}, got {got}")
             }
         }
+    }
+}
+
+impl From<ParseBioError> for std::io::Error {
+    fn from(err: ParseBioError) -> Self {
+        std::io::Error::new(std::io::ErrorKind::Other, err)
     }
 }
 
