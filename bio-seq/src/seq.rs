@@ -247,7 +247,13 @@ impl<A: Codec> Seq<A> {
         iter.into_iter().for_each(|base| self.push(base));
     }
 
-    /// **Experimental**
+    /// **Experimental** Decode sequence from raw `usize` array. This requires the exact length of the target sequence to be known.
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let ints: [usize; 2] = [0b0101010101010101010101010101010111111111111111111111111111111111, 0b11100100];
+    /// let seq: Option<Seq<Dna>> = Seq::from_raw(36, &ints);
+    /// assert_eq!(seq.unwrap(), dna!("TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCACGT"));
+    /// ```
     pub fn from_raw(len: usize, bits: &[usize]) -> Option<Self> {
         let mut bv: Bv = Bv::from_slice(bits);
         //debug_assert!(len <= bv.len(), "desired length is greater than provided bits string");
@@ -262,7 +268,7 @@ impl<A: Codec> Seq<A> {
         }
     }
 
-    /// **Experimental** Access raw sequence data us `&[usize]`
+    /// **Experimental** Access raw sequence data as `&[usize]`
     /// ```
     /// # use bio_seq::prelude::*;
     /// let seq: Seq<Dna> = dna!("TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCACGT").into();
