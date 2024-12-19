@@ -21,7 +21,7 @@ Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 bio-seq = "0.13"
 ```
 
-Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s for a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
+Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s of a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
 
 ```rust
 use bio_seq::prelude::*;
@@ -83,11 +83,17 @@ for result in reader.records() {
 }
 ```
 
+## Application examples
+
+* [Saving packed sequences to binary files](https://github.com/jeff-k/bio-seq/blob/main/bio-seq/examples/seq2bin.rs)
+* [Using noodles and counting kmers](https://github.com/jeff-k/bio-seq/blob/main/bio-seq/examples/aminokmers.rs)
+* [Codec benchmarks](https://github.com/jeff-k/bio-seq/blob/main/bio-seq/examples/codec-bench.rs) comparing memory use and entropy of lossy/degenerate encodings
+
 ## Philosophy
 
 Many bioinformatics crates implement their own kmer packing logic. This effort began as a way to define types and traits that allow kmer code to be shared between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general type for sequences. The scope of this crate will be limited to operating on fixed and arbitrary length sequences with an emphasis on safety.
 
-Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives cooperatively.
+Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives.
 
 Benchmarking is a useful tool for tracking assumptions about program behaviour and keeping fun hacks realistic (the "trees") but the primary design goal for this crate is to define traits that allow us to reason about these datastructures safely and consistently (the "forest".) We should be able to incrementally introduce optimisations without breaking the API.
 
