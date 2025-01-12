@@ -1,9 +1,10 @@
-[![Docs.rs](https://docs.rs/bio-seq/badge.svg)](https://docs.rs/bio-seq)
-[![CI status](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml/badge.svg)](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml)
-
 <div class="title-block" style="text-align: center;" align="center">
 
 # bio-seq
+
+[![Docs.rs](https://docs.rs/bio-seq/badge.svg)](https://docs.rs/bio-seq)
+[![CI status](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml/badge.svg)](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml)
+[![codecov](https://codecov.io/gh/jeff-k/bio-seq/graph/badge.svg?token=8KUETH9JVT)](https://codecov.io/gh/jeff-k/bio-seq)
 
 ### Bit-packed and well-typed biological sequences
 </div>
