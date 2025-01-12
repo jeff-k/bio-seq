@@ -95,9 +95,9 @@ Many bioinformatics crates implement their own kmer packing logic. This effort b
 
 Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives.
 
-Benchmarking is a useful tool for tracking assumptions about program behaviour and keeping fun hacks realistic (the "trees") but the primary design goal for this crate is to define traits that allow us to reason about these datastructures safely and consistently (the "forest".) We should be able to incrementally introduce optimisations without breaking the API.
+## Contributing
 
-Contributions are very welcome. There's lots of low hanging fruit for optimisations and ideally we should only have to write them once!
+Contributions and suggestions are very much welcome. Check out the [Roadmap](https://github.com/jeff-k/bio-seq/issues/10) to get started.
 
 ## Contents
 
@@ -384,6 +384,4 @@ impl TranslationTable<Dna, Amino> for Mitochondria {
 }
 ```
 
-## Contributing
 
-Contributions and suggestions are very much welcome. The easiest way to begin contributing is through github issues.

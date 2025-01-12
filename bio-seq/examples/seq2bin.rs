@@ -1,4 +1,4 @@
-//! This example demonstrates how to safe bio-seq sequences to binary files
+//! This example demonstrates how to save bio-seq sequences to binary files
 //!
 //! It encodes amino acid or DNA sequences from the first record of a fasta file
 //! and saves them to a binary file along with metadata about the encoding
