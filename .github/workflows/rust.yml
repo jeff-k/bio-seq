@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Update rust
       run: rustup update
     - name: Build
@@ -27,7 +27,7 @@ jobs:
     name: Coverage report
     runs-on: ubuntu-latest
     steps:
-      - uses: actions
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools
