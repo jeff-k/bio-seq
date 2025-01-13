@@ -34,7 +34,9 @@ impl Codec for Dna {
 
     /// The ASCII values of 'A', 'C', 'G', and 'T' can be translated into
     /// the numbers 0, 1, 2, and 3 using bitwise operations: `((b << 1) + b) >> 3`.
+    /// In other words, multiply the ASCII value by 3 and shift right.
     fn unsafe_from_ascii(b: u8) -> Self {
+        // TODO: benchmark against b * 3
         Dna::unsafe_from_bits(((b << 1) + b) >> 3)
     }
 
