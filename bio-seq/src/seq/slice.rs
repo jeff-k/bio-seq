@@ -50,10 +50,13 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
     type Output = Seq<A>;
 
-    /// The inefficient default complementation of reverse
-    fn revcomp(&self) -> Seq<A> {
-        let mut seq = Seq::<A>::with_capacity(self.len());
-        seq.extend(self.rev().map(|base| base.comp()));
+    fn revcomp(&mut self) -> &mut Self {
+        todo!()
+    }
+
+    fn to_revcomp(&self) -> Self::Output {
+        let mut seq: Self::Output = self.into();
+        seq.revcomp();
         seq
     }
 }

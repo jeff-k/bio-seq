@@ -15,7 +15,7 @@ mod slice;
 pub use array::SeqArray;
 pub use slice::SeqSlice;
 
-use crate::codec::{text, Codec};
+use crate::codec::{text, Codec, Complement};
 use crate::error::ParseBioError;
 
 use crate::{Bs, Bv, Order};
@@ -57,14 +57,15 @@ impl<A: Codec> Hash for Seq<A> {
     }
 }
 
-// Note that we could set a default output type with this feature:
-// #![feature(associated_type_defaults)]
 /// A reversible sequence of things that can be complemented can be reverse complemented
 pub trait ReverseComplement {
-    type Output;
+    type Output: ReverseComplement;
 
-    /// Reverse complement of a sequence
-    fn revcomp(&self) -> Self::Output;
+    /// Reverse complement a sequence in place
+    fn revcomp(&mut self) -> &mut Self;
+
+    /// Return a reverse complement of a sequence
+    fn to_revcomp(&self) -> Self::Output;
 }
 
 impl<A: Codec> Default for Seq<A> {
@@ -278,6 +279,18 @@ impl<A: Codec> Seq<A> {
     /// ```
     pub fn into_raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
+    }
+}
+
+impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+    type Output = Self;
+
+    fn revcomp(&mut self) -> &mut Self {
+        todo!()
+    }
+
+    fn to_revcomp(&self) -> Self::Output {
+        todo!()
     }
 }
 

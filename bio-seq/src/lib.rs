@@ -88,7 +88,6 @@
 #![allow(clippy::module_name_repetitions)]
 // the lint doesn't seem to recognise our implementations
 #![allow(clippy::into_iter_without_iter)]
-#![cfg_attr(feature = "simd", feature(portable_simd))]
 
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("bio-seq currently only supports 64-bit platforms");
