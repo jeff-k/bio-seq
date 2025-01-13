@@ -579,24 +579,25 @@ mod tests {
     #[test]
     fn test_revcomp() {
         let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA").into();
-        let s2: Seq<Dna> = dna!("TCAGTCGCACACAT").into();
+        let mut s2: Seq<Dna> = dna!("TCAGTCGCACACAT").into();
         let s3: &SeqSlice<Dna> = &s1;
-        assert_eq!(s3.revcomp(), s2.revcomp().revcomp());
-        assert_eq!(s3.revcomp(), s2);
-        assert_ne!(s3.revcomp(), s2.revcomp());
+        assert_eq!(s3.to_revcomp(), s2.revcomp().to_revcomp());
+        assert_eq!(s3.to_revcomp(), &s2);
+        assert_ne!(&s3.to_revcomp(), s2.revcomp());
         assert_eq!(s3, s2.revcomp());
     }
 
     #[test]
     fn test_revcomp_mismatched_sizes() {
         let s1 = dna!("AAAA");
-        let s2 = dna!("TTTTT");
-        assert_ne!(s1, s2.revcomp());
+        let mut s2: Seq<Dna> = dna!("TTTTT").into();
+        s2.revcomp();
+        assert_ne!(s1, s2);
     }
 
     #[test]
     fn test_revcomp_idempotence() {
-        let s = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC");
+        let mut s = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC").to_owned();
         let sc = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC");
 
         assert_eq!(s.revcomp().revcomp(), sc);

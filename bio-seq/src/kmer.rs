@@ -720,12 +720,16 @@ mod tests {
 
     #[test]
     fn kmer_revcomp() {
-        assert_eq!(kmer!("ACGT"), kmer!("ACGT").revcomp());
+        assert_eq!(kmer!("ACGT"), kmer!("ACGT").to_revcomp());
         assert_ne!(kmer!("GTCGTA"), kmer!("TACGAC"));
+
+        let rc = kmer!("GTCGTA").to_revcomp();
+
+        assert_eq!(rc, kmer!("TACGAC"));
 
         assert_eq!(
             kmer!("ATCGCTATCGATCTGATCGTATATAATATATA"),
-            kmer!("TATATATTATATACGATCAGATCGATAGCGAT").revcomp()
+            kmer!("TATATATTATATACGATCAGATCGATAGCGAT").to_revcomp()
         );
     }
 

@@ -302,7 +302,7 @@ mod tests {
         //        let minimised = seq.kmers::<16>().map(hash).min().unwrap();
 
         let (minimiser_rc, min_hash_rc) = seq
-            .revcomp()
+            .to_revcomp()
             .kmers::<16>()
             .map(|kmer| (kmer, hash(&kmer)))
             .min_by_key(|&(_, hash)| hash)
@@ -319,7 +319,7 @@ mod tests {
         let (canonical_minimiser, canonical_hash) = seq
             .kmers::<16>()
             .map(|kmer| {
-                let canonical_hash = min(hash(&kmer), hash(&kmer.revcomp()));
+                let canonical_hash = min(hash(&kmer), hash(&kmer.to_revcomp()));
                 (kmer, canonical_hash)
             })
             .min_by_key(|&(_, hash)| hash)
@@ -327,7 +327,7 @@ mod tests {
 
         println!("{minimiser_rc} {min_hash_rc}\n{minimiser} {min_hash}\n{canonical_minimiser} {canonical_hash}");
         assert_eq!(min_hash_rc, canonical_hash);
-        assert_eq!(minimiser_rc, canonical_minimiser.revcomp());
+        assert_eq!(minimiser_rc, canonical_minimiser.to_revcomp());
     }
 
     #[test]
