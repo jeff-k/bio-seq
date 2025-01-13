@@ -2,11 +2,12 @@
 
 # bio-seq
 
+### Bit-packed and well-typed biological sequences
+
 [![Docs.rs](https://docs.rs/bio-seq/badge.svg)](https://docs.rs/bio-seq)
 [![CI status](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml/badge.svg)](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml)
 [![codecov](https://codecov.io/gh/jeff-k/bio-seq/graph/badge.svg?token=8KUETH9JVT)](https://codecov.io/gh/jeff-k/bio-seq)
 
-### Bit-packed and well-typed biological sequences
 </div>
 
 This crate provides types and traits for sequences of genomic data. Common encodings are provided and can be extended with the `Codec` trait.
@@ -31,7 +32,7 @@ use bio_seq::prelude::*;
 let seq = dna!("ATACGATCGATCGATCGATCCGT");
 
 // iterate over the 8-mers of the reverse complement
-for kmer in seq.revcomp().kmers::<8>() {
+for kmer in seq.to_revcomp().kmers::<8>() {
     println!("{kmer}");
 }
 
@@ -225,7 +226,7 @@ To consider both the forward and reverse complement of kmers when minimising:
 let (canonical_minimiser, canonical_hash) = seq
     .kmers::<16>()
     .map(|kmer| {
-        let canonical_hash = hash(min(kmer, kmer.revcomp()));
+        let canonical_hash = hash(min(kmer, kmer.to_revcomp()));
         (kmer, canonical_hash)
     })
     .min_by_key(|&(_, hash)| hash)
