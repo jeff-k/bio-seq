@@ -52,6 +52,23 @@ pub mod wasm;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
+const fn make_2bit_table() -> [u8; 256] {
+    let mut table = [0u8; 256];
+    let mut i: usize = 0;
+    while i < 256 {
+        let b0: u8 = (i as u8 & 0b11_00_00_00) >> 6;
+        let b1: u8 = (i as u8 & 0b00_11_00_00) >> 2;
+        let b2: u8 = (i as u8 & 0b00_00_11_00) << 2;
+        let b3: u8 = (i as u8 & 0b00_00_00_11) << 6;
+
+        table[i] = b3 | b2 | b1 | b0;
+        i += 1;
+    }
+    table
+}
+
+const REV_2BIT: [u8; 256] = make_2bit_table();
+
 mod sealed {
     use crate::Bs;
 
@@ -66,32 +83,14 @@ mod sealed {
         //        fn rotate_right(self, n: u32) -> Self;
 
         fn mask(&mut self, bits: usize);
+
+        fn complement(&mut self);
+
+        fn rev_blocks_2(&mut self);
     }
 }
 
 pub trait KmerStorage: sealed::KmerStorage {}
-
-/*
-impl sealed::KmerStorage for u32 {
-    const BITS: usize = u32::BITS as usize;
-    type BaN = Ba<1>;
-
-    fn to_bitarray(self) -> Ba<1> {
-        Self::BaN::new([self as usize])
-    }
-
-    fn from_bitslice(bs: &Bs) -> Self {
-        debug_assert!(bs.len() >= 32, "Target SeqSlice data less than 32 bits");
-        bs[..32].load_le()
-    }
-
-    fn mask(&mut self, bits: usize) {
-        *self &= (1 << bits) - 1;
-    }
-}
-
-impl KmerStorage for u32 {}
-*/
 
 impl sealed::KmerStorage for usize {
     const BITS: usize = usize::BITS as usize;
@@ -121,6 +120,18 @@ impl sealed::KmerStorage for usize {
     fn mask(&mut self, bits: usize) {
         *self &= (1 << bits) - 1;
     }
+
+    fn complement(&mut self) {
+        *self ^= Self::MAX;
+    }
+
+    fn rev_blocks_2(&mut self) {
+        let mut bs = self.swap_bytes().to_le_bytes();
+
+        for b in &mut bs {
+            *b = REV_2BIT[*b as usize];
+        }
+    }
 }
 
 impl KmerStorage for usize {}
@@ -141,6 +152,17 @@ impl sealed::KmerStorage for u64 {
     fn mask(&mut self, bits: usize) {
         *self &= (1 << bits) - 1;
     }
+
+    fn complement(&mut self) {
+        *self ^= Self::MAX;
+    }
+    fn rev_blocks_2(&mut self) {
+        let mut bs = self.swap_bytes().to_le_bytes();
+
+        for b in &mut bs {
+            *b = REV_2BIT[*b as usize];
+        }
+    }
 }
 
 impl KmerStorage for u64 {}
@@ -159,6 +181,17 @@ impl sealed::KmerStorage for u128 {
 
     fn mask(&mut self, bits: usize) {
         *self &= (1 << bits) - 1;
+    }
+
+    fn complement(&mut self) {
+        *self ^= Self::MAX;
+    }
+    fn rev_blocks_2(&mut self) {
+        let mut bs = self.swap_bytes().to_le_bytes();
+
+        for b in &mut bs {
+            *b = REV_2BIT[*b as usize];
+        }
     }
 }
 
@@ -262,6 +295,10 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
             _p: PhantomData,
             bs: S::from_bitslice(&seq.bs),
         }
+    }
+
+    fn complement(&mut self) {
+        self.bs.complement();
     }
 }
 
@@ -467,7 +504,9 @@ impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
     type Output = Self;
 
     fn revcomp(&mut self) -> &mut Self {
-        todo!()
+        self.complement();
+        //self.bs.rev_blocks::<A::BITS>();
+        self
     }
 
     fn to_revcomp(&self) -> Self {
