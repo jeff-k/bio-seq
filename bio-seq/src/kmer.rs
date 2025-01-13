@@ -43,8 +43,11 @@ use core::ops::Deref;
 use core::ptr;
 use core::str::FromStr;
 
-#[cfg(feature = "simd")]
-pub mod simd;
+//#[cfg(target_feature(enable = "avx2,bmi2"))]
+//pub mod avx2;
+
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
@@ -463,10 +466,12 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
 impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
     type Output = Self;
 
-    fn revcomp(&self) -> Self {
-        let seq: Seq<A> = (*self).into();
-        let x: usize = seq.revcomp().into();
-        Self::from(x)
+    fn revcomp(&mut self) -> &mut Self {
+        todo!()
+    }
+
+    fn to_revcomp(&self) -> Self {
+        todo!()
     }
 }
 

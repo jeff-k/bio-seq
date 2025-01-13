@@ -27,7 +27,6 @@ serde_derive = { version = "1", optional = true }
 [features]
 serde = ["dep:serde",  "dep:serde_derive", "bitvec/serde"]
 translation = []
-simd = []
 extra_codecs = []
 
 [[example]]
