@@ -54,6 +54,7 @@
 //! ```
 use crate::codec::{dna::Dna, Codec};
 use crate::seq::{Seq, SeqArray, SeqSlice};
+use crate::{Complement, Reverse, ReverseComplement};
 
 /*
 const LTABLE: [u8; 256] = {
@@ -120,6 +121,23 @@ impl From<Dna> for Iupac {
     }
 }
 
+/// The complement of an IUPAC base is the reverse of the bit-pattern
+impl Complement for Iupac {
+    type Output = Self;
+
+    /// Clever bit-twiddling hack to reverse a pattern of 4 bits:
+    /// `(b * 0x11) >> 4 & 0x0f`
+    fn comp(&mut self) {
+        *self = Iupac::unsafe_from_bits((*self as u8 * 0x11) >> 4 & 0x0f);
+    }
+
+    fn to_comp(&self) -> Self::Output {
+        let mut new = Iupac::unsafe_from_bits(*self as u8);
+        new.comp();
+        new
+    }
+}
+
 impl Seq<Iupac> {
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
@@ -145,6 +163,33 @@ impl SeqSlice<Iupac> {
             return false;
         }
         self & rhs == rhs
+    }
+}
+
+impl Complement for Seq<Iupac> {
+    type Output = Self;
+
+    fn comp(&mut self) {
+        todo!()
+    }
+
+    fn to_comp(&self) -> Self::Output {
+        todo!()
+    }
+}
+
+/// Reverse complementing a sequence of IUPAC characters is simply a
+/// matter of reversing the entire bit sequence
+impl ReverseComplement for Seq<Iupac> {
+    type Output = Self;
+
+    fn revcomp(&mut self) {
+        // simply do bit-wise reversal
+        self.bv.reverse();
+    }
+
+    fn to_revcomp(&self) -> Self::Output {
+        todo!()
     }
 }
 

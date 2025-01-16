@@ -15,8 +15,9 @@ mod slice;
 pub use array::SeqArray;
 pub use slice::SeqSlice;
 
-use crate::codec::{text, Codec, Complement};
+use crate::codec::{text, Codec};
 use crate::error::ParseBioError;
+use crate::{Complement, Reverse, ReverseComplement};
 
 use crate::{Bs, Bv, Order};
 
@@ -55,17 +56,6 @@ impl<A: Codec> Hash for Seq<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ref().hash(state);
     }
-}
-
-/// A reversible sequence of things that can be complemented can be reverse complemented
-pub trait ReverseComplement {
-    type Output: ReverseComplement;
-
-    /// Reverse complement a sequence in place
-    fn revcomp(&mut self) -> &mut Self;
-
-    /// Return a reverse complement of a sequence
-    fn to_revcomp(&self) -> Self::Output;
 }
 
 impl<A: Codec> Default for Seq<A> {
@@ -282,15 +272,31 @@ impl<A: Codec> Seq<A> {
     }
 }
 
-impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+impl<A: Codec> Reverse for Seq<A> {
     type Output = Self;
 
-    fn revcomp(&mut self) -> &mut Self {
+    fn rev(&mut self) {
         todo!()
     }
 
-    fn to_revcomp(&self) -> Self::Output {
+    fn to_rev(&self) -> Self::Output {
         todo!()
+    }
+}
+
+impl<A: Codec + Complement> ReverseComplement for Seq<A> {
+    type Output = Seq<A>;
+
+    fn revcomp(&mut self) {
+        self.rev();
+        self.comp();
+    }
+
+    fn to_revcomp(&self) -> Self::Output {
+        let mut seq = self.clone();
+        seq.rev();
+        seq.comp();
+        seq
     }
 }
 

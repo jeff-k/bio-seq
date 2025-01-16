@@ -3,10 +3,11 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::codec::{Codec, Complement};
+use crate::codec::Codec;
 use crate::error::ParseBioError;
 use crate::seq::ReverseComplement;
 use crate::seq::Seq;
+use crate::{Complement, Reverse, ReverseComplement};
 
 use crate::Bs;
 use bitvec::field::BitField;
@@ -203,5 +204,33 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
             bv,
             _p: PhantomData,
         }
+    }
+}
+
+impl<A: Codec> Reverse for &SeqSlice<A> {
+    type Output = Seq<A>;
+
+    fn rev(&mut self) {
+        todo!()
+    }
+
+    fn to_rev(&self) -> Self::Output {
+        todo!()
+    }
+}
+
+impl<A: Codec + Complement> ReverseComplement for &SeqSlice<A> {
+    type RcOutput = Seq<A>;
+
+    fn revcomp(&mut self) {
+        self.rev();
+        self.comp();
+    }
+
+    fn to_revcomp(&self) -> Self::RcOutput {
+        let mut seq = self.clone();
+        seq.rev();
+        seq.comp();
+        seq
     }
 }

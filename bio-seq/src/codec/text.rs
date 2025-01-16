@@ -1,8 +1,9 @@
 //! 8-bit ASCII representation of nucleotides
 //!
 //! This encoding is a literal interpretation of bytes of text as DNA
-use crate::codec::{dna, Codec, Complement};
+use crate::codec::{dna, Codec};
 use crate::error::ParseBioError;
+use crate::{Complement, Reverse, ReverseComplement};
 
 #[derive(Copy, Clone, PartialEq, Debug, Ord, Eq, PartialOrd, Hash)]
 #[repr(transparent)]
@@ -51,7 +52,13 @@ impl Codec for Dna {
 //}
 
 impl Complement for Dna {
-    fn comp(&self) -> Self {
+    type Output = Self;
+
+    fn comp(&mut self) {
+        todo!()
+    }
+
+    fn to_comp(&self) -> Self {
         match self {
             Self(b'A') => Self(b'T'),
             Self(b'C') => Self(b'G'),
