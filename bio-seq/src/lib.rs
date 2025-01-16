@@ -120,10 +120,11 @@ pub mod prelude {
     pub use crate::codec::amino::Amino;
     pub use crate::codec::dna::Dna;
     pub use crate::codec::iupac::Iupac;
-    pub use crate::codec::{Codec, Complement};
+    pub use crate::codec::Codec;
+    pub use crate::{Complement, Reverse, ReverseComplement};
 
     pub use crate::kmer::Kmer;
-    pub use crate::seq::{ReverseComplement, Seq, SeqArray, SeqSlice};
+    pub use crate::seq::{Seq, SeqArray, SeqSlice};
 
     #[cfg(feature = "translation")]
     pub use crate::translation;
@@ -138,6 +139,52 @@ pub mod prelude {
     pub use crate::__bio_seq_Lsb0;
     #[doc(hidden)]
     pub use crate::__bio_seq_bitarr;
+}
+
+/// Nucleotide bases and sequences can be complemented
+pub trait Complement {
+    type Output;
+
+    /// ```
+    /// use bio_seq::prelude::{Dna, Complement};
+    /// assert_eq!(Dna::A.comp(), Dna::T);
+    /// ````
+    fn comp(&mut self);
+
+    /// Complement of a sequence or single element
+    fn to_comp(&self) -> Self::Output {
+        let mut new: Self::Output = self.into();
+        new.comp();
+        new
+    }
+}
+
+/// A reversible sequence
+pub trait Reverse {
+    type Output;
+
+    /// Reverse sequence in place
+    fn rev(&mut self);
+
+    fn to_rev(&self) -> Self::Output;
+}
+
+/// A reversible sequence that can be complemented can be reverse complemented
+pub trait ReverseComplement: Complement + Reverse {
+    type RcOutput: Complement + Reverse + From<&Self>;
+
+    /// Reverse complement a sequence in place
+    fn revcomp(&mut self) {
+        self.rev();
+        self.comp();
+    }
+
+    fn to_revcomp(&self) -> Self::RcOutput {
+        let mut rev Self::RcOutput = self.into();
+        rev.rev();
+        rev.comp();
+        rev
+    }
 }
 
 #[cfg(test)]
