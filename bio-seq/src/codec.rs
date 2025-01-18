@@ -164,23 +164,6 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
     fn items() -> impl Iterator<Item = Self>;
 }
 
-/// Nucleotides and nucleotide sequences can be complemented
-pub trait Complement {
-    /// ```
-    /// use bio_seq::prelude::{Dna, Complement};
-    /// assert_eq!(Dna::A.comp(), Dna::T);
-    /// ````
-    fn comp(&self) -> Self;
-
-    /// `Complement` a value in place
-    fn comp_assign(&mut self)
-    where
-        Self: Sized,
-    {
-        *self = self.comp();
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::dna::Dna;

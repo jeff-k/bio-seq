@@ -147,16 +147,12 @@ pub trait Complement {
 
     /// ```
     /// use bio_seq::prelude::{Dna, Complement};
-    /// assert_eq!(Dna::A.comp(), Dna::T);
+    /// assert_eq!(Dna::A.to_comp(), Dna::T);
     /// ````
     fn comp(&mut self);
 
     /// Complement of a sequence or single element
-    fn to_comp(&self) -> Self::Output {
-        let mut new: Self::Output = self.into();
-        new.comp();
-        new
-    }
+    fn to_comp(&self) -> Self::Output;
 }
 
 /// A reversible sequence
@@ -170,21 +166,25 @@ pub trait Reverse {
 }
 
 /// A reversible sequence that can be complemented can be reverse complemented
-pub trait ReverseComplement: Complement + Reverse {
-    type RcOutput: Complement + Reverse + From<&Self>;
-
+pub trait ReverseComplement: Complement + Reverse
+where
+    <Self as Reverse>::Output: Complement + Reverse,
+{
     /// Reverse complement a sequence in place
-    fn revcomp(&mut self) {
-        self.rev();
-        self.comp();
-    }
+    fn revcomp(&mut self);
 
-    fn to_revcomp(&self) -> Self::RcOutput {
-        let mut rev Self::RcOutput = self.into();
-        rev.rev();
-        rev.comp();
-        rev
-    }
+    fn to_revcomp(&self) -> <Self as Reverse>::Output;
+}
+
+/// Some sequence types may be maskable
+pub trait Maskable {
+    type Output;
+
+    fn mask(&mut self);
+    fn unmask(&mut self);
+
+    fn to_masked(&self) -> Self::Output;
+    fn to_unmasked(&self) -> Self::Output;
 }
 
 #[cfg(test)]

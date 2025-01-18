@@ -5,7 +5,6 @@
 
 use crate::codec::Codec;
 use crate::error::ParseBioError;
-use crate::seq::ReverseComplement;
 use crate::seq::Seq;
 use crate::{Complement, Reverse, ReverseComplement};
 
@@ -45,20 +44,6 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
     fn from(slice: &SeqSlice<A>) -> u8 {
         debug_assert!(slice.bs.len() <= u8::BITS as usize);
         slice.bs.load_le::<u8>()
-    }
-}
-
-impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> {
-    type Output = Seq<A>;
-
-    fn revcomp(&mut self) -> &mut Self {
-        todo!()
-    }
-
-    fn to_revcomp(&self) -> Self::Output {
-        let mut seq: Self::Output = self.into();
-        seq.revcomp();
-        seq
     }
 }
 
@@ -207,6 +192,7 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
     }
 }
 
+/*
 impl<A: Codec> Reverse for &SeqSlice<A> {
     type Output = Seq<A>;
 
@@ -234,3 +220,4 @@ impl<A: Codec + Complement> ReverseComplement for &SeqSlice<A> {
         seq
     }
 }
+*/
