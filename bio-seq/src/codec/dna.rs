@@ -1,6 +1,7 @@
 //! 2-bit DNA representation: `A: 00, C: 01, G: 10, T: 11`
 
 use crate::codec::Codec;
+use crate::kmer::Kmer;
 use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::{Complement, Reverse, ReverseComplement};
 
@@ -85,6 +86,23 @@ impl Complement for Dna {
     }
 }
 
+impl Complement for Seq<Dna> {
+    type Output = Self;
+
+    fn comp(&mut self) {
+        for word in self.bv.as_raw_mut_slice() {
+            *word ^= usize::MAX;
+        }
+    }
+
+    fn to_comp(&self) -> Self::Output {
+        let mut seq = self.to_owned();
+        seq.comp();
+        seq
+    }
+}
+
+/*
 impl ReverseComplement for Seq<Dna> {
     type Output = Self;
 
@@ -101,6 +119,21 @@ impl ReverseComplement for Seq<Dna> {
         todo!()
     }
 }
+
+
+impl<const K: usize> ReverseComplement for Kmer<Dna, K> {
+    type Output = Self;
+
+    fn revcomp(&mut self) {
+        self.complement();
+        //self.bs.rev_blocks::<A::BITS>();
+    }
+
+    fn to_revcomp(&self) -> Self {
+        todo!()
+    }
+}
+*/
 
 #[cfg(test)]
 mod tests {
