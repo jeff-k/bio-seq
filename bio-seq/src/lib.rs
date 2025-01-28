@@ -32,7 +32,7 @@
 //! let seq = dna!("ATACGATCGATCGATCGATCCGT");
 //!
 //! // iterate over the 8-mers of the reverse complement
-//! for kmer in seq.revcomp().kmers::<8>() {
+//! for kmer in seq.to_revcomp().kmers::<8>() {
 //!     println!("{kmer}");
 //! }
 //!
@@ -164,7 +164,7 @@ where
     }
 }
 
-impl<T: ComplementMut + ToOwned> Complement for T where <T as ToOwned>::Owned: ComplementMut {}
+//impl<T: ?Sized + ComplementMut + ToOwned> Complement for T where <T as ToOwned>::Owned: ComplementMut {}
 
 /// A reversible sequence
 pub trait ReverseMut {
@@ -183,7 +183,7 @@ where
     }
 }
 
-impl<T: ReverseMut + ToOwned> Reverse for T where <T as ToOwned>::Owned: ReverseMut {}
+//impl<T: ?Sized + ReverseMut + ToOwned> Reverse for T where <T as ToOwned>::Owned: ReverseMut {}
 
 /// A reversible sequence that can be complemented can be reverse complemented
 pub trait ReverseComplementMut: ComplementMut + ReverseMut {
@@ -194,7 +194,7 @@ pub trait ReverseComplementMut: ComplementMut + ReverseMut {
     }
 }
 
-impl<T: ReverseMut + ComplementMut> ReverseComplementMut for T {}
+//impl<T: ?Sized + ReverseMut + ComplementMut> ReverseComplementMut for T {}
 
 pub trait ReverseComplement: ReverseComplementMut + ToOwned
 where
@@ -208,10 +208,10 @@ where
 }
 
 // TODO: Marker trait to allow overriding this blanket impl
-impl<T: ReverseComplementMut + ToOwned> ReverseComplement for T where
-    <T as ToOwned>::Owned: ReverseComplementMut
-{
-}
+//impl<T: ReverseComplementMut + ToOwned> ReverseComplement for T where
+//    <T as ToOwned>::Owned: ReverseComplementMut
+//{
+//}
 
 /// Some sequence types may be maskable
 pub trait MaskableMut {
@@ -223,19 +223,19 @@ pub trait Maskable: MaskableMut + ToOwned
 where
     <Self as ToOwned>::Owned: MaskableMut,
 {
-    fn to_masked(&self) -> <Self as ToOwned>::Owned {
+    fn to_mask(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.mask();
         owned
     }
-    fn to_unmasked(&self) -> <Self as ToOwned>::Owned {
+    fn to_unmask(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.unmask();
         owned
     }
 }
 
-impl<T: MaskableMut + ToOwned> Maskable for T where <T as ToOwned>::Owned: MaskableMut {}
+//impl<T: MaskableMut + ToOwned> Maskable for T where <T as ToOwned>::Owned: MaskableMut {}
 
 #[cfg(test)]
 mod tests {
