@@ -317,6 +317,7 @@ mod tests {
             Seq::<Amino>::try_from("DCMNLKGHI")
                 .unwrap()
                 .to_rev()
+                .into_iter()
                 .collect::<Vec<Amino>>(),
             vec![
                 Amino::I,
