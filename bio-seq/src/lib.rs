@@ -146,10 +146,6 @@ pub mod prelude {
 
 /// Nucleotide bases and sequences can be complemented
 pub trait ComplementMut {
-    /// ```
-    /// use bio_seq::prelude::{Dna, Complement};
-    /// assert_eq!(Dna::A.to_comp(), Dna::T);
-    /// ````
     fn comp(&mut self);
 }
 
@@ -157,7 +153,10 @@ pub trait Complement: ComplementMut + ToOwned
 where
     <Self as ToOwned>::Owned: ComplementMut,
 {
-    /// Complement of a sequence or single element
+    /// ```
+    /// use bio_seq::prelude::{Dna, Complement};
+    /// assert_eq!(Dna::A.to_comp(), Dna::T);
+    /// ````
     fn to_comp(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.comp();
@@ -208,6 +207,7 @@ where
     }
 }
 
+// TODO: Marker trait to allow overriding this blanket impl
 impl<T: ReverseComplementMut + ToOwned> ReverseComplement for T where
     <T as ToOwned>::Owned: ReverseComplementMut
 {
@@ -232,7 +232,7 @@ pub trait Maskable: MaskableMut + ToOwned {
     }
 }
 
-impl<T: MaskableMut + ToOwned> Maskable for T where <T as ToOwned>::Owned: Maskable {}
+impl<T: MaskableMut + ToOwned> Maskable for T where <T as ToOwned>::Owned: MaskableMut {}
 
 #[cfg(test)]
 mod tests {
