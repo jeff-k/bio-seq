@@ -1,6 +1,6 @@
-use crate::codec::masked::Maskable;
-use crate::codec::{Codec, Complement};
-use crate::seq::{ReverseComplement, Seq};
+use crate::codec::Codec;
+//use crate::{Complement, Maskable, Reverse, ReverseComplement};
+use crate::{Complement, ComplementMut, MaskableMut}; //, ReverseComplementMut, ReverseMut};
 
 /// **Experimental** 4-bit nucleotide encoding with fast reverse complement and toggled mask operation
 ///
@@ -42,65 +42,74 @@ pub enum Dna {
     Unknown2 = 0b1001,
 }
 
-impl Complement for Dna {
+impl ComplementMut for Dna {
     /// This representation can be complemented by reversing the bit pattern
-    fn comp(&self) -> Self {
-        todo!()
+    fn comp(&mut self) {
+        let bits = self.to_bits();
+        *self = Self::unsafe_from_bits(
+            ((bits & 0b1000) >> 3)
+                | ((bits & 0b0100) >> 1)
+                | ((bits & 0b0010) << 1)
+                | ((bits & 0b0001) << 3),
+        );
     }
 }
 
-impl Maskable for Dna {
+impl Complement for Dna {}
+
+impl MaskableMut for Dna {
     /// Inverting the bit pattern masks/unmasks this representation
-    fn mask(&self) -> Self {
+    fn mask(&mut self) {
         let b = *self as u8 ^ 0b1111;
-        Dna::unsafe_from_bits(b)
+        *self = Dna::unsafe_from_bits(b);
     }
 
-    fn unmask(&self) -> Self {
+    fn unmask(&mut self) {
         let b = *self as u8 ^ 0b1111;
-        Dna::unsafe_from_bits(b)
-    }
-}
-
-impl Maskable for Seq<Dna> {
-    fn mask(&self) -> Self {
-        Self::from(!self.bv.clone())
-    }
-
-    fn unmask(&self) -> Self {
-        Self::from(!self.bv.clone())
-    }
-}
-
-impl ReverseComplement for Seq<Dna> {
-    type Output = Self;
-
-    fn revcomp(&self) -> Self {
-        let mut bv = self.bv.clone();
-        bv.reverse();
-        Self::from(bv)
+        *self = Dna::unsafe_from_bits(b);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::codec::masked;
-    use crate::codec::masked::Maskable;
     use crate::prelude::*;
+
+    #[test]
+    fn iupac_comp() {
+        let a: masked::Dna = masked::Dna::A;
+        let t: masked::Dna = masked::Dna::T;
+        let c: masked::Dna = masked::Dna::C;
+        let g: masked::Dna = masked::Dna::G;
+        assert_eq!(t.to_comp(), a);
+        assert_eq!(c.to_comp(), g);
+
+        assert_ne!(t.to_comp(), c);
+        assert_ne!(c.to_comp(), c);
+
+        assert_eq!(c.to_comp(), g.to_comp().to_comp());
+    }
 
     #[test]
     fn mask_sequence() {
         let seq = Seq::<masked::Dna>::try_from("A.TCGCgtcataN--A").unwrap();
 
-        assert_ne!(seq.mask().to_string(), "a.tcgcGTGATAN--a".to_string());
-        assert_eq!(seq.mask().to_string(), "a.tcgcGTCATAn--a".to_string());
+        assert_ne!(seq.to_mask().to_string(), "a.tcgcGTGATAN--a".to_string());
+        assert_eq!(seq.to_mask().to_string(), "a.tcgcGTCATAn--a".to_string());
+    }
+
+    #[test]
+    fn masked_comp() {
+        let seq = Seq::<masked::Dna>::try_from("A.TCGCgtcataN--A").unwrap();
+
+        assert_eq!(seq.to_comp().to_string(), "T.AGCGcagtatN--T".to_string());
     }
 
     #[test]
     fn masked_revcomp() {
         let seq = Seq::<masked::Dna>::try_from("A.TCGCgtcataN--A").unwrap();
 
-        assert_ne!(seq.revcomp().to_string(), "T--NtaagacGCGA.T".to_string());
-        assert_eq!(seq.revcomp().to_string(), "T--NtatgacGCGA.T".to_string());
+        assert_ne!(seq.to_revcomp().to_string(), "T--NtaagacGCGA.T".to_string());
+        assert_eq!(seq.to_revcomp().to_string(), "T--NtatgacGCGA.T".to_string());
     }
 }

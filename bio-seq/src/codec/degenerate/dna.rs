@@ -1,6 +1,5 @@
 use crate::codec::Codec;
-use crate::codec::Complement;
-use crate::seq::{ReverseComplement, Seq};
+use crate::ComplementMut;
 
 /// 1-bit encoding for `S`trong (`G`/`C`) and `W`eak (`A`/`T`) binding nucleotides
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -59,21 +58,9 @@ impl Codec for Dna {
     }
 }
 
-impl Complement for Dna {
-    /// This representation collapses complements; `comp(x) == x`
-    fn comp(&self) -> Self {
-        *self
-    }
-}
-
-impl ReverseComplement for Seq<Dna> {
-    type Output = Self;
-
-    fn revcomp(&self) -> Self {
-        let mut bv = self.bv.clone();
-        bv.reverse();
-        Self::from(bv)
-    }
+impl ComplementMut for Dna {
+    /// This representation erases complements, so this is the identify function
+    fn comp(&mut self) {}
 }
 
 #[cfg(test)]
@@ -84,7 +71,7 @@ mod tests {
     #[test]
     fn test_1bit() {
         let seq = Seq::<degenerate::Dna>::from_str("SSSWWWSW").unwrap();
-        let seq_rc: Seq<degenerate::Dna> = seq.revcomp();
+        let seq_rc: Seq<degenerate::Dna> = seq.to_revcomp();
         assert_eq!("WSWWWSSS", String::from(seq_rc));
     }
 }

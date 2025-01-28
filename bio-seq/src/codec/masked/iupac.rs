@@ -1,6 +1,6 @@
-use crate::codec::masked::Maskable;
-use crate::codec::{Codec, Complement};
-use crate::seq::{ReverseComplement, Seq};
+use crate::codec::Codec;
+//use crate::{Complement, Maskable, Reverse, ReverseComplement};
+use crate::{ComplementMut, Maskable, MaskableMut}; //, ReverseComplementMut, ReverseMut};
 
 /// 5-bit encoding for maskable IUPAC symbols
 /// The middle bit is the mask flag and symbols are complemented by reversing the bit pattern
@@ -68,54 +68,36 @@ pub enum Iupac {
     XMasked = 0b00100,
 }
 
-impl Complement for Iupac {
+#[allow(clippy::cast_possible_truncation)]
+impl ComplementMut for Iupac {
     /// This representation can be complemented by reversing the bit pattern
-    fn comp(&self) -> Self {
+    fn comp(&mut self) {
         // reverse the bits
-        todo!()
+        *self = Self::unsafe_from_bits(
+            ((self.to_bits() as usize * 0x0202).rotate_right(8) & 0b1111) as u8,
+        );
     }
 }
 
-impl Maskable for Iupac {
+impl MaskableMut for Iupac {
     /// Setting the middle bit sets the mask flag
-    fn mask(&self) -> Self {
+    fn mask(&mut self) {
         let b = *self as u8 | 0b00100;
-        Self::unsafe_from_bits(b)
+        *self = Self::unsafe_from_bits(b);
     }
 
     /// Unsetting the middle bit clears the mask flag
-    fn unmask(&self) -> Self {
+    fn unmask(&mut self) {
         let b = *self as u8 & 0b11011;
-        Self::unsafe_from_bits(b)
+        *self = Self::unsafe_from_bits(b);
     }
 }
 
-impl Maskable for Seq<Iupac> {
-    fn mask(&self) -> Self {
-        // set the third bit of every chunk of 5 bits
-        todo!()
-    }
-
-    fn unmask(&self) -> Self {
-        todo!()
-    }
-}
-
-impl ReverseComplement for Seq<Iupac> {
-    type Output = Self;
-
-    /// Reverse complementing just requires reversing the bit sequence
-    fn revcomp(&self) -> Self {
-        let mut bv = self.bv.clone();
-        bv.reverse();
-        Self::from(bv)
-    }
-}
+impl Maskable for Iupac {}
 
 #[cfg(test)]
 mod tests {
     use crate::codec::masked;
-    use crate::codec::masked::Maskable;
     use crate::prelude::*;
 
     #[ignore]
@@ -123,7 +105,7 @@ mod tests {
     fn mask_iupac_seq() {
         let seq = Seq::<masked::Iupac>::try_from("A.TCGCgtcataN--A").unwrap();
 
-        assert_ne!(seq.mask().to_string(), "a.tcgcGTGATAN--a".to_string());
-        assert_eq!(seq.mask().to_string(), "a.tcgcGTCATAn--a".to_string());
+        assert_ne!(seq.to_mask().to_string(), "a.tcgcGTGATAN--a".to_string());
+        assert_eq!(seq.to_mask().to_string(), "a.tcgcGTCATAn--a".to_string());
     }
 }
