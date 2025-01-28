@@ -30,11 +30,13 @@
 // permit truncations that may happen on 32-bit platforms which are unsupported anyway
 #![allow(clippy::cast_possible_truncation)]
 
-use crate::codec::Codec;
+use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
 use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::{Ba, Bs};
-use crate::{ComplementMut, ReverseMut};
+use crate::{
+    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
+};
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 use core::fmt;
@@ -73,7 +75,7 @@ const REV_2BIT: [u8; 256] = make_2bit_table();
 mod sealed {
     use crate::Bs;
 
-    pub trait KmerStorage: Copy + Clone + PartialEq {
+    pub trait KmerStorage: Copy + Clone + PartialEq + std::fmt::Debug {
         const BITS: usize;
         type BaN: AsRef<Bs> + AsMut<Bs>;
 
@@ -83,9 +85,13 @@ mod sealed {
         //        fn rotate_left(self, n: u32) -> Self;
         //        fn rotate_right(self, n: u32) -> Self;
 
+        fn shiftr(&mut self, n: u32);
+
+        fn shiftl(&mut self, n: u32);
+
         fn mask(&mut self, bits: usize);
 
-        fn complement(&mut self);
+        fn complement(&mut self, mask: usize);
 
         fn rev_blocks_2(&mut self);
     }
@@ -95,6 +101,7 @@ pub trait KmerStorage: sealed::KmerStorage {}
 
 impl sealed::KmerStorage for usize {
     const BITS: usize = usize::BITS as usize;
+
     type BaN = Ba<1>;
 
     fn to_bitarray(self) -> Ba<1> {
@@ -122,8 +129,21 @@ impl sealed::KmerStorage for usize {
         *self &= (1 << bits) - 1;
     }
 
-    fn complement(&mut self) {
-        *self ^= Self::MAX;
+    fn complement(&mut self, mask: usize) {
+        if mask >= Self::BITS as usize {
+            *self ^= Self::MAX;
+        } else {
+            let mask = (1 << mask) - 1;
+            *self ^= mask;
+        }
+    }
+
+    fn shiftr(&mut self, n: u32) {
+        *self >>= n;
+    }
+
+    fn shiftl(&mut self, n: u32) {
+        *self <<= n;
     }
 
     fn rev_blocks_2(&mut self) {
@@ -132,6 +152,8 @@ impl sealed::KmerStorage for usize {
         for b in &mut bs {
             *b = REV_2BIT[*b as usize];
         }
+
+        *self = usize::from_le_bytes(bs);
     }
 }
 
@@ -139,6 +161,7 @@ impl KmerStorage for usize {}
 
 impl sealed::KmerStorage for u64 {
     const BITS: usize = u64::BITS as usize;
+
     type BaN = Ba<1>;
 
     fn to_bitarray(self) -> Ba<1> {
@@ -154,9 +177,19 @@ impl sealed::KmerStorage for u64 {
         *self &= (1 << bits) - 1;
     }
 
-    fn complement(&mut self) {
-        *self ^= Self::MAX;
+    fn shiftr(&mut self, n: u32) {
+        *self >>= n;
     }
+
+    fn shiftl(&mut self, n: u32) {
+        *self <<= n;
+    }
+
+    fn complement(&mut self, mask: usize) {
+        let mask = (1 << mask) - 1;
+        *self ^= mask;
+    }
+
     fn rev_blocks_2(&mut self) {
         let mut bs = self.swap_bytes().to_le_bytes();
 
@@ -168,6 +201,7 @@ impl sealed::KmerStorage for u64 {
 
 impl KmerStorage for u64 {}
 
+// TODO: use marker trait to provide default implementations for these
 impl sealed::KmerStorage for u128 {
     const BITS: usize = u128::BITS as usize;
     type BaN = Ba<2>;
@@ -184,9 +218,19 @@ impl sealed::KmerStorage for u128 {
         *self &= (1 << bits) - 1;
     }
 
-    fn complement(&mut self) {
-        *self ^= Self::MAX;
+    fn shiftr(&mut self, n: u32) {
+        *self >>= n;
     }
+
+    fn shiftl(&mut self, n: u32) {
+        *self <<= n;
+    }
+
+    fn complement(&mut self, mask: usize) {
+        let mask = (1 << mask) - 1;
+        *self ^= mask;
+    }
+
     fn rev_blocks_2(&mut self) {
         let mut bs = self.swap_bytes().to_le_bytes();
 
@@ -299,7 +343,13 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     }
 
     fn complement(&mut self) {
-        self.bs.complement();
+        self.bs.complement(K * A::BITS as usize);
+    }
+
+    fn rev_blocks_2(&mut self) {
+        // TODO: assert K == 2
+        self.bs.rev_blocks_2();
+        self.bs.shiftr((S::BITS - (A::BITS as usize * K)) as u32);
     }
 }
 
@@ -501,17 +551,25 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
     }
 }
 
-impl<A: Codec, const K: usize> ComplementMut for Kmer<A, K, usize> {
+impl<const K: usize> ComplementMut for Kmer<codec::dna::Dna, K, usize> {
     fn comp(&mut self) {
-        todo!()
+        self.complement();
     }
 }
 
+impl<const K: usize> Complement for Kmer<codec::dna::Dna, K, usize> {}
+
 impl<A: Codec, const K: usize> ReverseMut for Kmer<A, K, usize> {
     fn rev(&mut self) {
-        todo!()
+        self.rev_blocks_2();
     }
 }
+
+impl<A: Codec, const K: usize> Reverse for Kmer<A, K, usize> {}
+
+impl<const K: usize> ReverseComplementMut for Kmer<codec::dna::Dna, K, usize> {}
+
+impl<const K: usize> ReverseComplement for Kmer<codec::dna::Dna, K, usize> {}
 
 /// Convenient compile time kmer constructor
 ///
@@ -767,6 +825,23 @@ mod tests {
         let seq: &SeqSlice<Dna> = &kmer.as_ref();
 
         assert_eq!(seq.to_string(), "TTTTTTTTTTTTTTTTAGCTAGCTAGCTAGCT");
+    }
+
+    #[test]
+    fn kmer_rev() {
+        let mut kmer: Kmer<Dna, 4> = kmer!("ACGT");
+
+        kmer.rev();
+
+        assert_eq!(kmer.to_string(), "TGCA");
+
+        kmer.rev();
+
+        assert_eq!(kmer.to_string(), "ACGT");
+
+        kmer.rev();
+
+        assert_eq!(kmer.to_string(), "TGCA");
     }
 
     #[test]
