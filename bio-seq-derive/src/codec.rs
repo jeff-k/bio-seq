@@ -43,6 +43,7 @@ pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Resul
 
 /// We can test whether the user's enum is also `#[repr(u8)]`
 /// I can't decide whether or not to enforce that Codecs are repr(u8). Currently not.
+/*
 pub(crate) fn test_repr(enum_ast: &syn::ItemEnum) -> Result<(), syn::Error> {
     // Test that enum is repr(u8)
     for attr in &enum_ast.attrs {
@@ -67,6 +68,7 @@ pub(crate) fn test_repr(enum_ast: &syn::ItemEnum) -> Result<(), syn::Error> {
         "Enums deriving Codec must be annotated with #[repr(u8)]",
     ))
 }
+*/
 
 /// The derived implementation will be constructed from these values
 pub(crate) struct CodecVariants {

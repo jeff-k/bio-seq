@@ -12,7 +12,7 @@
 mod codec;
 mod seqarray;
 
-use crate::codec::{parse_variants, parse_width, test_repr, CodecVariants};
+use crate::codec::{parse_variants, parse_width, CodecVariants};
 use crate::seqarray::{dna_seq, gen_seqarray, iupac_seq};
 use quote::quote;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -31,7 +31,7 @@ pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     };
 
     // Test whether enum is #[repr(u8)]
-    let _is_repr8 = test_repr(&enum_ast);
+    //    let _is_repr8 = test_repr(&enum_ast);
 
     let variants = match parse_variants(&enum_ast.variants) {
         Ok(variants) => variants,
