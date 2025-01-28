@@ -159,9 +159,9 @@ where
 {
     /// Complement of a sequence or single element
     fn to_comp(&self) -> <Self as ToOwned>::Owned {
-        let mut c = self.to_owned();
-        c.comp();
-        c
+        let mut owned = self.to_owned();
+        owned.comp();
+        owned
     }
 }
 
@@ -202,9 +202,9 @@ where
     <Self as ToOwned>::Owned: ReverseComplementMut,
 {
     fn to_revcomp(&self) -> <Self as ToOwned>::Owned {
-        let mut c = self.to_owned();
-        c.revcomp();
-        c
+        let mut owned = self.to_owned();
+        owned.revcomp();
+        owned
     }
 }
 
@@ -219,10 +219,20 @@ pub trait MaskableMut {
     fn unmask(&mut self);
 }
 
-pub trait Maskable: MaskableMut + ToOwned + Clone {
-    fn to_masked(&self) -> <Self as ToOwned>::Owned;
-    fn to_unmasked(&self) -> <Self as ToOwned>::Owned;
+pub trait Maskable: MaskableMut + ToOwned {
+    fn to_masked(&self) -> <Self as ToOwned>::Owned {
+        let mut owned = self.to_owned();
+        owned.mask();
+        owned
+    }
+    fn to_unmasked(&self) -> <Self as ToOwned>::Owned {
+        let mut owned = self.to_owned();
+        owned.unmask();
+        owned
+    }
 }
+
+impl<T: MaskableMut + ToOwned> Maskable for T where <T as ToOwned>::Owned: Maskable {}
 
 #[cfg(test)]
 mod tests {
