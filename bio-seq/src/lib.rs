@@ -219,7 +219,10 @@ pub trait MaskableMut {
     fn unmask(&mut self);
 }
 
-pub trait Maskable: MaskableMut + ToOwned {
+pub trait Maskable: MaskableMut + ToOwned
+where
+    <Self as ToOwned>::Owned: MaskableMut,
+{
     fn to_masked(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.mask();

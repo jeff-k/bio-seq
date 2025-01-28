@@ -3,7 +3,7 @@
 //! This encoding is a literal interpretation of bytes of text as DNA
 use crate::codec::{dna, Codec};
 use crate::error::ParseBioError;
-use crate::{Complement, Reverse, ReverseComplement};
+//use crate::{Complement, Reverse, ReverseComplement};
 
 #[derive(Copy, Clone, PartialEq, Debug, Ord, Eq, PartialOrd, Hash)]
 #[repr(transparent)]

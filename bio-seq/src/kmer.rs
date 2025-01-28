@@ -34,9 +34,7 @@ use crate::codec::Codec;
 use crate::prelude::ParseBioError;
 use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::{Ba, Bs};
-use crate::{
-    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
-};
+use crate::{ComplementMut, ReverseMut};
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 use core::fmt;
@@ -503,31 +501,17 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
     }
 }
 
-impl<A: Codec, const K: usize> Complement for Kmer<A, K, usize> {
-    type Output = Self;
-
+impl<A: Codec, const K: usize> ComplementMut for Kmer<A, K, usize> {
     fn comp(&mut self) {
         todo!()
     }
-
-    fn to_comp(&self) -> Self::Output {
-        todo!()
-    }
 }
 
-impl<A: Codec, const K: usize> Reverse for Kmer<A, K, usize> {
-    type Output = Self;
-
+impl<A: Codec, const K: usize> ReverseMut for Kmer<A, K, usize> {
     fn rev(&mut self) {
         todo!()
     }
-
-    fn to_rev(&self) -> Self::Output {
-        todo!()
-    }
 }
-
-impl<A: Codec, const K: usize> ReverseComplement for Kmer<A, K, usize> {}
 
 /// Convenient compile time kmer constructor
 ///

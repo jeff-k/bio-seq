@@ -54,7 +54,7 @@
 //! ```
 use crate::codec::{dna::Dna, Codec};
 use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::{Complement, Reverse, ReverseComplement};
+//use crate::{Complement, Reverse, ReverseComplement};
 
 /*
 const LTABLE: [u8; 256] = {

@@ -17,7 +17,7 @@ pub use slice::SeqSlice;
 
 use crate::codec::{text, Codec};
 use crate::error::ParseBioError;
-use crate::{Complement, Reverse, ReverseComplement};
+use crate::ReverseMut;
 
 use crate::{Bs, Bv, Order};
 
@@ -272,14 +272,8 @@ impl<A: Codec> Seq<A> {
     }
 }
 
-impl<A: Codec> Reverse for Seq<A> {
-    type Output = Self;
-
+impl<A: Codec> ReverseMut for Seq<A> {
     fn rev(&mut self) {
-        todo!()
-    }
-
-    fn to_rev(&self) -> Self::Output {
         todo!()
     }
 }

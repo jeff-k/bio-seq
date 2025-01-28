@@ -1,9 +1,9 @@
 //! 2-bit DNA representation: `A: 00, C: 01, G: 10, T: 11`
 
 use crate::codec::Codec;
-use crate::kmer::Kmer;
-use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::{Complement, Reverse, ReverseComplement};
+//use crate::kmer::Kmer;
+//use crate::seq::{Seq, SeqArray, SeqSlice};
+use crate::ComplementMut;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
@@ -73,64 +73,31 @@ impl Codec for Dna {
 
 /// This 2-bit representation of nucleotides lends itself to a very fast
 /// complement implementation with bitwise xor
-impl Complement for Dna {
-    type Output = Self;
-
+impl ComplementMut for Dna {
     fn comp(&mut self) {
         *self = Dna::unsafe_from_bits(*self as u8 ^ 0b11);
     }
-
-    fn to_comp(&self) -> Self::Output {
-        let b = *self as u8 ^ 0b11;
-        Dna::unsafe_from_bits(b)
-    }
 }
 
-impl Complement for Seq<Dna> {
-    type Output = Self;
-
+/*
+impl ComplementMut for Seq<Dna> {
     fn comp(&mut self) {
         for word in self.bv.as_raw_mut_slice() {
             *word ^= usize::MAX;
         }
     }
-
-    fn to_comp(&self) -> Self::Output {
-        let mut seq = self.to_owned();
-        seq.comp();
-        seq
-    }
 }
+*/
 
 /*
-impl ReverseComplement for Seq<Dna> {
-    type Output = Self;
-
-    fn revcomp(&mut self) {
+impl ReverseMut for Seq<Dna> {
+    fn rev(&mut self) {
         self.bv.reverse();
         for word in self.bv.as_raw_mut_slice().iter_mut() {
             let c: usize = *word;
             let odds = (c & 0x5555_5555_5555_5555usize) >> 1;
             *word = (c & 0xAAAA_AAAA_AAAA_AAAAusize) << 1 | odds;
         }
-    }
-
-    fn to_revcomp(&self) -> Self::Output {
-        todo!()
-    }
-}
-
-
-impl<const K: usize> ReverseComplement for Kmer<Dna, K> {
-    type Output = Self;
-
-    fn revcomp(&mut self) {
-        self.complement();
-        //self.bs.rev_blocks::<A::BITS>();
-    }
-
-    fn to_revcomp(&self) -> Self {
-        todo!()
     }
 }
 */
