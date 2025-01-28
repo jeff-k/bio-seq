@@ -6,7 +6,7 @@
 use crate::codec::Codec;
 use crate::error::ParseBioError;
 use crate::seq::Seq;
-use crate::ReverseMut;
+use crate::{ComplementMut, ReverseMut};
 
 use crate::Bs;
 use bitvec::field::BitField;
@@ -192,8 +192,14 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
     }
 }
 
-impl<A: Codec> ReverseMut for SeqSlice<A> {
+impl<A: Codec> ReverseMut for &SeqSlice<A> {
     fn rev(&mut self) {
+        todo!()
+    }
+}
+
+impl<A: Codec> ComplementMut for &SeqSlice<A> {
+    fn comp(&mut self) {
         todo!()
     }
 }

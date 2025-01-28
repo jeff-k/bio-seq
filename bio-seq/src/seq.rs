@@ -17,7 +17,7 @@ pub use slice::SeqSlice;
 
 use crate::codec::{text, Codec};
 use crate::error::ParseBioError;
-use crate::ReverseMut;
+use crate::{ComplementMut, ReverseMut};
 
 use crate::{Bs, Bv, Order};
 
@@ -274,6 +274,12 @@ impl<A: Codec> Seq<A> {
 
 impl<A: Codec> ReverseMut for Seq<A> {
     fn rev(&mut self) {
+        todo!()
+    }
+}
+
+impl<A: Codec> ComplementMut for Seq<A> {
+    fn comp(&mut self) {
         todo!()
     }
 }
@@ -565,10 +571,11 @@ mod tests {
         let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA").into();
         let mut s2: Seq<Dna> = dna!("TCAGTCGCACACAT").into();
         let s3: &SeqSlice<Dna> = &s1;
-        assert_eq!(s3.to_revcomp(), s2.revcomp().to_revcomp());
+        assert_eq!(s3.to_revcomp(), s2.to_revcomp().to_revcomp());
         assert_eq!(s3.to_revcomp(), &s2);
-        assert_ne!(&s3.to_revcomp(), s2.revcomp());
-        assert_eq!(s3, s2.revcomp());
+        s2.revcomp();
+        assert_ne!(s3.to_revcomp(), s2.to_revcomp());
+        assert_eq!(s3, s2.to_revcomp());
     }
 
     #[test]
@@ -583,8 +590,13 @@ mod tests {
     fn test_revcomp_idempotence() {
         let mut s = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC").to_owned();
         let sc = dna!("AAACGCTACGTACGCGCCTTCGGGGCATCAGCACCAC");
-
-        assert_eq!(s.revcomp().revcomp(), sc);
+        s.revcomp();
+        assert_eq!(s.to_revcomp(), sc);
+        s.comp();
+        s.rev();
+        s.rev();
+        s.comp();
+        assert_eq!(s.to_revcomp(), sc);
     }
     #[test]
     fn slice_index_comparisions() {
