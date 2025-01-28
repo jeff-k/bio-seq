@@ -121,7 +121,10 @@ pub mod prelude {
     pub use crate::codec::dna::Dna;
     pub use crate::codec::iupac::Iupac;
     pub use crate::codec::Codec;
-    pub use crate::{Complement, Reverse, ReverseComplement};
+    pub use crate::{
+        Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
+        ReverseComplementMut, ReverseMut,
+    };
 
     pub use crate::kmer::Kmer;
     pub use crate::seq::{Seq, SeqArray, SeqSlice};
@@ -142,49 +145,83 @@ pub mod prelude {
 }
 
 /// Nucleotide bases and sequences can be complemented
-pub trait Complement {
-    type Output;
-
+pub trait ComplementMut {
     /// ```
     /// use bio_seq::prelude::{Dna, Complement};
     /// assert_eq!(Dna::A.to_comp(), Dna::T);
     /// ````
     fn comp(&mut self);
-
-    /// Complement of a sequence or single element
-    fn to_comp(&self) -> Self::Output;
 }
+
+pub trait Complement: ComplementMut + ToOwned
+where
+    <Self as ToOwned>::Owned: ComplementMut,
+{
+    /// Complement of a sequence or single element
+    fn to_comp(&self) -> <Self as ToOwned>::Owned {
+        let mut c = self.to_owned();
+        c.comp();
+        c
+    }
+}
+
+impl<T: ComplementMut + ToOwned> Complement for T where <T as ToOwned>::Owned: ComplementMut {}
 
 /// A reversible sequence
-pub trait Reverse {
-    type Output;
-
+pub trait ReverseMut {
     /// Reverse sequence in place
     fn rev(&mut self);
-
-    fn to_rev(&self) -> Self::Output;
 }
 
-/// A reversible sequence that can be complemented can be reverse complemented
-pub trait ReverseComplement: Complement + Reverse
+pub trait Reverse: ReverseMut + ToOwned
 where
-    <Self as Reverse>::Output: Complement + Reverse,
+    <Self as ToOwned>::Owned: ReverseMut,
 {
-    /// Reverse complement a sequence in place
-    fn revcomp(&mut self);
+    fn to_rev(&self) -> <Self as ToOwned>::Owned {
+        let mut owned = self.to_owned();
+        owned.rev();
+        owned
+    }
+}
 
-    fn to_revcomp(&self) -> <Self as Reverse>::Output;
+impl<T: ReverseMut + ToOwned> Reverse for T where <T as ToOwned>::Owned: ReverseMut {}
+
+/// A reversible sequence that can be complemented can be reverse complemented
+pub trait ReverseComplementMut: ComplementMut + ReverseMut {
+    /// Reverse complement a sequence in place
+    fn revcomp(&mut self) {
+        self.comp();
+        self.rev();
+    }
+}
+
+impl<T: ReverseMut + ComplementMut> ReverseComplementMut for T {}
+
+pub trait ReverseComplement: ReverseComplementMut + ToOwned
+where
+    <Self as ToOwned>::Owned: ReverseComplementMut,
+{
+    fn to_revcomp(&self) -> <Self as ToOwned>::Owned {
+        let mut c = self.to_owned();
+        c.revcomp();
+        c
+    }
+}
+
+impl<T: ReverseComplementMut + ToOwned> ReverseComplement for T where
+    <T as ToOwned>::Owned: ReverseComplementMut
+{
 }
 
 /// Some sequence types may be maskable
-pub trait Maskable {
-    type Output;
-
+pub trait MaskableMut {
     fn mask(&mut self);
     fn unmask(&mut self);
+}
 
-    fn to_masked(&self) -> Self::Output;
-    fn to_unmasked(&self) -> Self::Output;
+pub trait Maskable: MaskableMut + ToOwned + Clone {
+    fn to_masked(&self) -> <Self as ToOwned>::Owned;
+    fn to_unmasked(&self) -> <Self as ToOwned>::Owned;
 }
 
 #[cfg(test)]
@@ -266,7 +303,7 @@ mod tests {
         assert_eq!(
             Seq::<Amino>::try_from("DCMNLKGHI")
                 .unwrap()
-                .rev()
+                .to_rev()
                 .collect::<Vec<Amino>>(),
             vec![
                 Amino::I,
