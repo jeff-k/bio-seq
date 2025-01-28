@@ -31,9 +31,12 @@
 #![allow(clippy::cast_possible_truncation)]
 
 use crate::codec::Codec;
-use crate::prelude::{Complement, ParseBioError, ReverseComplement};
+use crate::prelude::ParseBioError;
 use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::{Ba, Bs};
+use crate::{
+    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
+};
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 use core::fmt;
@@ -500,19 +503,31 @@ impl<A: Codec, const K: usize> From<Kmer<A, K>> for Seq<A> {
     }
 }
 
-impl<A: Codec + Complement, const K: usize> ReverseComplement for Kmer<A, K> {
+impl<A: Codec, const K: usize> Complement for Kmer<A, K, usize> {
     type Output = Self;
 
-    fn revcomp(&mut self) -> &mut Self {
-        self.complement();
-        //self.bs.rev_blocks::<A::BITS>();
-        self
+    fn comp(&mut self) {
+        todo!()
     }
 
-    fn to_revcomp(&self) -> Self {
+    fn to_comp(&self) -> Self::Output {
         todo!()
     }
 }
+
+impl<A: Codec, const K: usize> Reverse for Kmer<A, K, usize> {
+    type Output = Self;
+
+    fn rev(&mut self) {
+        todo!()
+    }
+
+    fn to_rev(&self) -> Self::Output {
+        todo!()
+    }
+}
+
+impl<A: Codec, const K: usize> ReverseComplement for Kmer<A, K, usize> {}
 
 /// Convenient compile time kmer constructor
 ///

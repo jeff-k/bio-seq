@@ -51,6 +51,7 @@ impl Codec for Dna {
 //    }
 //}
 
+/*
 impl Complement for Dna {
     type Output = Self;
 
@@ -68,6 +69,7 @@ impl Complement for Dna {
         }
     }
 }
+    */
 
 impl From<Dna> for u8 {
     fn from(val: Dna) -> Self {

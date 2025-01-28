@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.13.12"
+version = "0.14.0"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2021"
 description = "Bit packed and well-typed biological sequences"
@@ -14,7 +14,7 @@ rust-version = "1.79"
 
 [dev-dependencies]
 clap = { version="4", features=["derive"] }
-noodles = { version="0.84", features=["fasta"] }
+noodles = { version="0.87", features=["fasta"] }
 bincode = "1.3"
 tempfile = "3.0"
 
@@ -43,4 +43,4 @@ required-features = ["serde", "noodles/fasta"]
 
 [package.metadata.docs.rs]
 features = ["translation", "serde", "extra_codecs"]
-# all-features = true
+all-features = true

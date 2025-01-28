@@ -121,23 +121,6 @@ impl From<Dna> for Iupac {
     }
 }
 
-/// The complement of an IUPAC base is the reverse of the bit-pattern
-impl Complement for Iupac {
-    type Output = Self;
-
-    /// Clever bit-twiddling hack to reverse a pattern of 4 bits:
-    /// `(b * 0x11) >> 4 & 0x0f`
-    fn comp(&mut self) {
-        *self = Iupac::unsafe_from_bits((*self as u8 * 0x11) >> 4 & 0x0f);
-    }
-
-    fn to_comp(&self) -> Self::Output {
-        let mut new = Iupac::unsafe_from_bits(*self as u8);
-        new.comp();
-        new
-    }
-}
-
 impl Seq<Iupac> {
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
@@ -166,6 +149,26 @@ impl SeqSlice<Iupac> {
     }
 }
 
+/*
+/// The complement of an IUPAC base is the reverse of the bit-pattern
+impl Complement for Iupac {
+    type Output = Self;
+
+    /// Clever bit-twiddling hack to reverse a pattern of 4 bits:
+    /// `(b * 0x11) >> 4 & 0x0f`
+    fn comp(&mut self) {
+        *self = Iupac::unsafe_from_bits((*self as u8 * 0x11) >> 4 & 0x0f);
+    }
+
+    fn to_comp(&self) -> Self::Output {
+        let mut new = Iupac::unsafe_from_bits(*self as u8);
+        new.comp();
+        new
+    }
+}
+    */
+
+/*
 impl Complement for Seq<Iupac> {
     type Output = Self;
 
@@ -192,6 +195,7 @@ impl ReverseComplement for Seq<Iupac> {
         todo!()
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {

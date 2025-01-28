@@ -192,8 +192,7 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
     }
 }
 
-/*
-impl<A: Codec> Reverse for &SeqSlice<A> {
+impl<A: Codec> Reverse for SeqSlice<A> {
     type Output = Seq<A>;
 
     fn rev(&mut self) {
@@ -205,19 +204,4 @@ impl<A: Codec> Reverse for &SeqSlice<A> {
     }
 }
 
-impl<A: Codec + Complement> ReverseComplement for &SeqSlice<A> {
-    type RcOutput = Seq<A>;
-
-    fn revcomp(&mut self) {
-        self.rev();
-        self.comp();
-    }
-
-    fn to_revcomp(&self) -> Self::RcOutput {
-        let mut seq = self.clone();
-        seq.rev();
-        seq.comp();
-        seq
-    }
-}
-*/
+impl<A: Codec + Complement> ReverseComplement for SeqSlice<A> where Self: Complement {}

@@ -284,22 +284,6 @@ impl<A: Codec> Reverse for Seq<A> {
     }
 }
 
-impl<A: Codec + Complement> ReverseComplement for Seq<A> {
-    type Output = Seq<A>;
-
-    fn revcomp(&mut self) {
-        self.rev();
-        self.comp();
-    }
-
-    fn to_revcomp(&self) -> Self::Output {
-        let mut seq = self.clone();
-        seq.rev();
-        seq.comp();
-        seq
-    }
-}
-
 impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
         self.as_ref() == other
