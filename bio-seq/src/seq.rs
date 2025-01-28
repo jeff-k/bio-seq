@@ -274,13 +274,22 @@ impl<A: Codec> Seq<A> {
 
 impl<A: Codec> ReverseMut for Seq<A> {
     fn rev(&mut self) {
-        todo!()
+        self.bv.reverse();
+        for chunk in self.bv.rchunks_exact_mut(A::BITS as usize) {
+            chunk.reverse();
+        }
     }
 }
 
-impl<A: Codec> ComplementMut for Seq<A> {
+impl<A: Codec + ComplementMut> ComplementMut for Seq<A> {
     fn comp(&mut self) {
-        todo!()
+        unsafe {
+            for base in self.bv.chunks_exact_mut(A::BITS as usize).remove_alias() {
+                let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
+                bc.comp();
+                base.store(bc.to_bits() as usize);
+            }
+        }
     }
 }
 
