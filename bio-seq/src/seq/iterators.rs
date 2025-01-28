@@ -46,7 +46,7 @@ impl<'a, A: Codec> SeqSlice<A> {
     }
 
     /// Iterate over the sequence in reverse order
-    pub fn rev(&self) -> RevIter<A> {
+    pub fn rev_iter(&self) -> RevIter<A> {
         RevIter {
             slice: self,
             index: self.len(),
@@ -181,14 +181,13 @@ mod tests {
         assert_ne!(elements, vec![C, A, T, A, G, C, T, A, G, T, C, A]);
     }
 
-    // TODO: implement a rev_iter()?
-    //    #[test]
-    //    fn rev_iter() {
-    //        let seq: Seq<Dna> = dna!("ACTGATCGATAC").into();
-    //        let rev_elements: Vec<Dna> = seq.to_rev().into_iter().collect();
-    //        assert_ne!(rev_elements, vec![A, C, T, G, A, T, C, G, A, T, A, C]);
-    //        assert_eq!(rev_elements, vec![C, A, T, A, G, C, T, A, G, T, C, A]);
-    //    }
+    #[test]
+    fn rev_iter() {
+        let seq: Seq<Dna> = dna!("ACTGATCGATAC").into();
+        let rev_elements: Vec<Dna> = seq.rev_iter().collect();
+        assert_ne!(rev_elements, vec![A, C, T, G, A, T, C, G, A, T, A, C]);
+        assert_eq!(rev_elements, vec![C, A, T, A, G, C, T, A, G, T, C, A]);
+    }
 
     #[test]
     fn iterators() {

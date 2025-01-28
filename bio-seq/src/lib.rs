@@ -305,11 +305,15 @@ mod tests {
     fn rev_seq() {
         let seq = dna!("ACGTACGT");
         assert_eq!(
-            seq.rev().collect::<Vec<Dna>>(),
+            seq.rev_iter().collect::<Vec<Dna>>(),
             vec![T, G, C, A, T, G, C, A]
         );
         assert_eq!(
-            iupac!("GN-").rev().collect::<Vec<Iupac>>(),
+            seq.to_rev().into_iter().collect::<Vec<Dna>>(),
+            vec![T, G, C, A, T, G, C, A]
+        );
+        assert_eq!(
+            iupac!("GN-").rev_iter().collect::<Vec<Iupac>>(),
             vec![Iupac::X, Iupac::N, Iupac::G]
         );
 
