@@ -3,7 +3,7 @@
 use crate::codec::Codec;
 //use crate::kmer::Kmer;
 //use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::ComplementMut;
+use crate::{Complement, ComplementMut};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
@@ -78,6 +78,8 @@ impl ComplementMut for Dna {
         *self = Dna::unsafe_from_bits(*self as u8 ^ 0b11);
     }
 }
+
+impl Complement for Dna {}
 
 /*
 impl ComplementMut for Seq<Dna> {

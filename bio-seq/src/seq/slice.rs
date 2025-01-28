@@ -6,7 +6,9 @@
 use crate::codec::Codec;
 use crate::error::ParseBioError;
 use crate::seq::Seq;
-use crate::{ComplementMut, ReverseMut};
+use crate::{
+    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
+};
 
 use crate::Bs;
 use bitvec::field::BitField;
@@ -192,14 +194,37 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
     }
 }
 
-impl<A: Codec> ReverseMut for &SeqSlice<A> {
+impl<A: Codec> ReverseMut for SeqSlice<A> {
     fn rev(&mut self) {
-        todo!()
+        self.bs.reverse();
+        for chunk in self.bs.rchunks_exact_mut(A::BITS as usize) {
+            chunk.reverse();
+        }
     }
 }
 
-impl<A: Codec> ComplementMut for &SeqSlice<A> {
+impl<A: Codec + ComplementMut> ComplementMut for SeqSlice<A> {
     fn comp(&mut self) {
-        todo!()
+        unsafe {
+            for base in self.bs.chunks_exact_mut(A::BITS as usize).remove_alias() {
+                let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
+                bc.comp();
+                base.store(bc.to_bits() as usize);
+            }
+        }
     }
+}
+
+impl<A: Codec + ComplementMut> ReverseComplementMut for SeqSlice<A> where
+    SeqSlice<A>: ComplementMut + ReverseMut
+{
+}
+
+impl<A: Codec> Reverse for SeqSlice<A> {}
+
+impl<A: Codec + ComplementMut> Complement for SeqSlice<A> {}
+
+impl<A: Codec + ComplementMut> ReverseComplement for SeqSlice<A> where
+    SeqSlice<A>: ComplementMut + ReverseMut
+{
 }

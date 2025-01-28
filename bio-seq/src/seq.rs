@@ -17,7 +17,10 @@ pub use slice::SeqSlice;
 
 use crate::codec::{text, Codec};
 use crate::error::ParseBioError;
-use crate::{ComplementMut, ReverseMut};
+use crate::{
+    Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
+    ReverseComplementMut, ReverseMut,
+};
 
 use crate::{Bs, Bv, Order};
 
@@ -292,6 +295,40 @@ impl<A: Codec + ComplementMut> ComplementMut for Seq<A> {
         }
     }
 }
+
+impl<A: Codec + MaskableMut> MaskableMut for Seq<A> {
+    fn mask(&mut self) {
+        unsafe {
+            for base in self.bv.chunks_exact_mut(A::BITS as usize).remove_alias() {
+                let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
+                bc.mask();
+                base.store(bc.to_bits() as usize);
+            }
+        }
+    }
+    fn unmask(&mut self) {
+        unsafe {
+            for base in self.bv.chunks_exact_mut(A::BITS as usize).remove_alias() {
+                let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
+                bc.unmask();
+                base.store(bc.to_bits() as usize);
+            }
+        }
+    }
+}
+
+impl<A: Codec + MaskableMut> Maskable for Seq<A> {}
+
+impl<A: Codec + ComplementMut> ReverseComplementMut for Seq<A> where
+    Seq<A>: ComplementMut + ReverseMut
+{
+}
+
+impl<A: Codec> Reverse for Seq<A> {}
+
+impl<A: Codec + ComplementMut> Complement for Seq<A> {}
+
+impl<A: Codec + ComplementMut> ReverseComplement for Seq<A> where Seq<A>: ComplementMut + ReverseMut {}
 
 impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
@@ -580,11 +617,14 @@ mod tests {
         let s1: Seq<Dna> = dna!("ATGTGTGCGACTGA").into();
         let mut s2: Seq<Dna> = dna!("TCAGTCGCACACAT").into();
         let s3: &SeqSlice<Dna> = &s1;
+
         assert_eq!(s3.to_revcomp(), s2.to_revcomp().to_revcomp());
         assert_eq!(s3.to_revcomp(), &s2);
+
         s2.revcomp();
-        assert_ne!(s3.to_revcomp(), s2.to_revcomp());
-        assert_eq!(s3, s2.to_revcomp());
+
+        assert_eq!(s3.to_revcomp(), s2.to_revcomp());
+        assert_ne!(s3, s2.to_revcomp());
     }
 
     #[test]
