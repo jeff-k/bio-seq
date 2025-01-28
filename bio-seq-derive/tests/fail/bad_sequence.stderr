@@ -1,0 +1,15 @@
+error: Invalid IUPAC code at position 4: x
+ --> tests/fail/bad_sequence.rs:4:16
+  |
+4 |     let _seq = iupac!("ACGTx");
+  |                ^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `iupac` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Invalid DNA base at position 0: a
+ --> tests/fail/bad_sequence.rs:5:16
+  |
+5 |     let _seq = dna!("asdf");
+  |                ^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `dna` (in Nightly builds, run with -Z macro-backtrace for more info)

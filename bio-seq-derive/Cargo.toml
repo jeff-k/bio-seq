@@ -12,5 +12,9 @@ syn = { version="2", features=["full"] }
 quote = "1"
 proc-macro2 = "1"
 
+[dev-dependencies]
+trybuild = "1.0"
+bio-seq = { path = "../bio-seq" }
+
 [lib]
 proc-macro = true
