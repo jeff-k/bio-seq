@@ -6,19 +6,19 @@
 use crate::codec::Codec;
 
 use crate::seq::slice::SeqSlice;
-use crate::seq::Seq;
+//use crate::seq::Seq;
 
 use crate::{Ba, Bs};
 
-use bitvec::field::BitField;
+//use bitvec::field::BitField;
 
-use core::fmt;
+//use core::fmt;
 use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;
 
-use core::ops::{BitAnd, BitOr};
-use std::hash::{Hash, Hasher};
+//use core::ops::{BitAnd, BitOr};
+//use std::hash::{Hash, Hasher};
 
 /// Static bit-packed sequence meant to be accessed as a `&'static SeqSlice`
 ///
@@ -34,12 +34,14 @@ pub struct SeqArray<A: Codec, const N: usize, const W: usize> {
     pub ba: Ba<W>,
 }
 
+/*
 impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let bs: &SeqSlice<A> = self.as_ref();
         bs.hash(state);
     }
 }
+*/
 
 impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
     type Target = SeqSlice<A>;
@@ -55,7 +57,7 @@ impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A>> for SeqArray<A
         self
     }
 }
-
+/*
 impl<A: Codec, const N: usize> From<&SeqArray<A, N, 1>> for usize {
     fn from(slice: &SeqArray<A, N, 1>) -> usize {
         slice.bs.load_le::<usize>()
@@ -97,3 +99,4 @@ impl<A: Codec, const N: usize, const W: usize> BitOr for &SeqArray<A, N, W> {
         }
     }
 }
+*/
