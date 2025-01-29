@@ -72,9 +72,13 @@ pub enum Iupac {
 impl ComplementMut for Iupac {
     /// This representation can be complemented by reversing the bit pattern
     fn comp(&mut self) {
-        // reverse the bits
+        let bits = self.to_bits();
         *self = Self::unsafe_from_bits(
-            ((self.to_bits() as usize * 0x0202).rotate_right(8) & 0b1111) as u8,
+            ((bits & 0b10000) >> 4)
+                | ((bits & 0b01000) >> 2)
+                | (bits & 0b00100)
+                | ((bits & 0b00010) << 2)
+                | ((bits & 0b00001) << 4),
         );
     }
 }
@@ -100,12 +104,26 @@ mod tests {
     use crate::codec::masked;
     use crate::prelude::*;
 
-    #[ignore]
     #[test]
     fn mask_iupac_seq() {
-        let seq = Seq::<masked::Iupac>::try_from("A.TCGCgtcataN--A").unwrap();
+        let mut seq = Seq::<masked::Iupac>::try_from("A.TCGCgtcataN--A").unwrap();
 
-        assert_ne!(seq.to_mask().to_string(), "a.tcgcGTGATAN--a".to_string());
-        assert_eq!(seq.to_mask().to_string(), "a.tcgcGTCATAn--a".to_string());
+        assert_eq!(seq.to_mask().to_string(), "a.tcgcgtcatan..a".to_string());
+
+        seq.mask();
+        assert_eq!(seq.to_unmask().to_string(), "A-TCGCGTCATAN--A".to_string());
+        seq.unmask();
+        assert_eq!(seq.to_mask().to_string(), "a.tcgcgtcatan..a".to_string());
+    }
+
+    #[test]
+    fn comp_iupac_seq() {
+        let mut seq = Seq::<masked::Iupac>::try_from("A.TCGCgtcataN--A").unwrap();
+
+        assert_ne!(seq.to_comp().to_string(), "A.TCGCgtcataN--A".to_string());
+        assert_eq!(seq.to_comp().to_string(), "T.AGCGcagtatN--T".to_string());
+
+        seq.comp();
+        assert_eq!(seq.to_comp().to_string(), "A.TCGCgtcataN--A".to_string());
     }
 }

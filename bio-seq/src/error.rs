@@ -51,13 +51,16 @@ mod tests {
 
     #[test]
     fn test_parse_error() {
-        let seq = Seq::<Dna>::from_str("ACGTx");
-        assert_eq!(seq, Err(ParseBioError::UnrecognisedBase(b'x')));
+        let seq = Seq::<Dna>::from_str("ACGTx").unwrap_err();
+        assert_eq!(
+            format!("{seq}"),
+            "Unrecognised character: 'x' (0x78)".to_string()
+        );
 
-        let seq = Seq::<Dna>::from_str("ACGT\n");
-        assert_eq!(seq, Err(ParseBioError::UnrecognisedBase(10)));
+        let seq = Seq::<Dna>::from_str("ACGT\n").unwrap_err();
+        assert_eq!(format!("{seq}"), "Unrecognised character: 0x0A".to_string());
 
-        let err: std::io::Error = seq.unwrap_err().into();
+        let err: std::io::Error = seq.into();
         assert_eq!(err.kind(), std::io::ErrorKind::Other);
 
         let seq = Seq::<Dna>::from_str("ACGTT");
@@ -67,11 +70,11 @@ mod tests {
     #[test]
     fn test_mismatched_length() {
         let seq: &SeqSlice<Dna> = dna!("ACGTGAT");
-        let kmer = Kmer::<Dna, 14>::try_from(seq);
-        assert_eq!(kmer, Err(ParseBioError::MismatchedLength(14, 7)));
+        let kmer = Kmer::<Dna, 14>::try_from(seq).unwrap_err();
+        assert_eq!(format!("{kmer}"), "Expected length 7, got 14".to_string());
 
-        let kmer = Kmer::<Dna, 6>::try_from(seq);
-        assert_eq!(kmer, Err(ParseBioError::MismatchedLength(6, 7)));
+        let kmer = Kmer::<Dna, 6>::try_from(seq).unwrap_err();
+        assert_eq!(format!("{kmer}"), "Expected length 7, got 6".to_string());
 
         let kmer = Kmer::<Dna, 7>::try_from(seq);
         assert!(kmer.is_ok());
@@ -80,9 +83,9 @@ mod tests {
     #[test]
     fn test_size_error() {
         let seq = dna!("ACGTACGTACGTACGTACGTACGTACGTACGTA");
-        let int = TryInto::<usize>::try_into(seq);
+        let int = TryInto::<usize>::try_into(seq).unwrap_err();
 
-        assert_eq!(int, Err(ParseBioError::SequenceTooLong(33, 32)));
+        assert_eq!(format!("{int}"), "Expected length <= 32, got 33");
 
         let good = TryInto::<usize>::try_into(&seq[..32]);
         assert!(good.is_ok());
