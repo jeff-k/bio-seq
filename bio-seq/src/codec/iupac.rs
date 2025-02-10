@@ -54,32 +54,29 @@
 //! ```
 use crate::codec::{dna::Dna, Codec};
 use crate::seq::{Seq, SeqArray, SeqSlice};
-//use crate::{Complement, Reverse, ReverseComplement};
+use crate::{Complement, ComplementMut};
 
-/*
-const LTABLE: [u8; 256] = {
-    let mut table = [0; 256];
+const IUPAC_COMPLEMENT_TABLE: [u8; 16] = {
+    let mut table = [0; 16];
 
-    table[b'A' as usize] = 0b1000;
-    table[b'C' as usize] = 0b0100;
-    table[b'G' as usize] = 0b0010;
-    table[b'T' as usize] = 0b0001;
-    table[b'R' as usize] = 0b1010;
-    table[b'Y' as usize] = 0b0101;
-    table[b'S' as usize] = 0b0110;
-    table[b'W' as usize] = 0b1001;
-    table[b'K' as usize] = 0b0011;
-    table[b'M' as usize] = 0b1100;
-    table[b'B' as usize] = 0b0111;
-    table[b'D' as usize] = 0b1011;
-    table[b'H' as usize] = 0b1101;
-    table[b'V' as usize] = 0b1110;
-    table[b'N' as usize] = 0b1111;
-    table[b'-' as usize] = 0b0000;
+    table[Iupac::A as usize] = Iupac::T as u8;
+    table[Iupac::C as usize] = Iupac::G as u8;
+    table[Iupac::G as usize] = Iupac::C as u8;
+    table[Iupac::T as usize] = Iupac::A as u8;
+    table[Iupac::Y as usize] = Iupac::R as u8;
+    table[Iupac::R as usize] = Iupac::Y as u8;
+    table[Iupac::W as usize] = Iupac::W as u8;
+    table[Iupac::S as usize] = Iupac::S as u8;
+    table[Iupac::K as usize] = Iupac::M as u8;
+    table[Iupac::M as usize] = Iupac::K as u8;
+    table[Iupac::D as usize] = Iupac::H as u8;
+    table[Iupac::V as usize] = Iupac::B as u8;
+    table[Iupac::H as usize] = Iupac::D as u8;
+    table[Iupac::B as usize] = Iupac::V as u8;
+    table[Iupac::N as usize] = Iupac::N as u8;
 
     table
 };
-*/
 
 impl From<Iupac> for u8 {
     fn from(b: Iupac) -> u8 {
@@ -149,24 +146,28 @@ impl SeqSlice<Iupac> {
     }
 }
 
-/*
 /// The complement of an IUPAC base is the reverse of the bit-pattern
-impl Complement for Iupac {
-    type Output = Self;
-
-    /// Clever bit-twiddling hack to reverse a pattern of 4 bits:
-    /// `(b * 0x11) >> 4 & 0x0f`
+impl ComplementMut for Iupac {
     fn comp(&mut self) {
-        *self = Iupac::unsafe_from_bits((*self as u8 * 0x11) >> 4 & 0x0f);
-    }
+        // Below are two methods:
+        // 1. Using a lookup table.
+        // 2. The 7 operation from https://graphics.stanford.edu/~seander/bithacks.html
+        // See: https://stackoverflow.com/questions/3587826/is-there-a-built-in-function-to-reverse-bit-order
 
-    fn to_comp(&self) -> Self::Output {
-        let mut new = Iupac::unsafe_from_bits(*self as u8);
-        new.comp();
-        new
+        // Use a lookup table
+        *self = Iupac::unsafe_from_bits(IUPAC_COMPLEMENT_TABLE[*self as usize]);
+
+        // Use the The 7 operation from
+        // let b = *self as u32;
+        // *self = Iupac::unsafe_from_bits(
+        //     ((((((b * 0x0802u32) & 0x22110u32) | ((b * 0x8020u32) & 0x88440u32)) * 0x10101u32)
+        //         >> 20) // 16 + 4
+        //         & 0x0f) as u8,
+        // );
     }
 }
-    */
+
+impl Complement for Iupac {}
 
 /*
 impl Complement for Seq<Iupac> {
@@ -212,6 +213,14 @@ mod tests {
             .filter(|w| pattern.contains(w))
             .collect();
 
-        assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")])
+        assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")]);
+    }
+
+    #[test]
+    fn iupac_complement() {
+        assert_eq!(
+            iupac!("AGCTYRWSKMDVHBN").to_comp(),
+            iupac!("TCGARYWSMKHBDVN")
+        );
     }
 }
