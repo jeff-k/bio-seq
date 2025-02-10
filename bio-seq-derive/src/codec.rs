@@ -36,7 +36,7 @@ pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Resul
                 }
                 Err(err) => Err(err),
             };
-        };
+        }
     }
     Ok(min_width)
 }
@@ -141,7 +141,7 @@ pub(crate) fn parse_variants(
                     alts.push(quote! { #d => Some(Self::#ident) });
                     unsafe_alts.push(quote! { #d => Self::#ident });
                 }
-            };
+            }
         }
 
         to_chars.push(quote! { Self::#ident => #char_repr });
