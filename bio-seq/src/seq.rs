@@ -190,17 +190,20 @@ impl<A: Codec> Seq<A> {
         self.bv.extend_from_bitslice(&other.bs);
     }
 
-    /// Remove a range and replace it with a slice
-    /// ```
-    /// # use bio_seq::prelude::*;
-    /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
-    /// seq.splice(4..6, dna!("TTTT"));
-    /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
-    /// ```
-    pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
-        let (s, e) = self.bit_range(range);
-        self.bv.splice(s..e, other.bs.iter().by_vals());
-    }
+    /*
+        /// Remove a range and replace it with a slice
+        /// ```
+        /// # use bio_seq::prelude::*;
+        /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
+        /// seq.splice(4..6, dna!("TTTT"));
+        /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
+        /// ```
+        pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
+            let (s, e) = self.bit_range(range);
+            self.bv
+                .splice(s..e, other.bs.iter().by_vals())
+        }
+    */
 
     /// Insert a slice into a sequence
     /// ```
@@ -1252,13 +1255,35 @@ mod tests {
         assert_eq!(&seq, dna!(""));
     }
 
+    /*
+    #[test]
+    fn test_long_splice() {
+        let mut seq: Seq<Dna> = dna!("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT").into();
+        let insertion = dna!("CCCCCCC");
+
+        seq.splice(32..38, insertion);
+        assert_eq!(
+            &seq,
+            dna!("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTCCCCCCCTTTTTTTTTTT")
+        );
+
+        seq.splice(1..=1, dna!("AAA"));
+        assert_eq!(
+            &seq,
+            dna!("TAAATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+        );
+
+        seq.splice(10.., dna!("GGGG"));
+        assert_eq!(&seq, dna!("TTTTTTTTTTGGGG"));
+    }
+
     #[test]
     fn test_splice() {
-        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCG").into();
+        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCGT").into();
         let insertion = dna!("CCCCC");
 
         seq.splice(4..6, insertion);
-        assert_eq!(&seq, dna!("TCAGCCCCCTCGATCAATCG"));
+        assert_eq!(&seq, dna!("TCAGCCCCCTCGATCAATCGT"));
 
         seq.splice(1..=1, dna!("AAA"));
         assert_eq!(&seq, dna!("TAAAAGCCCCCTCGATCAATCG"));
@@ -1266,4 +1291,5 @@ mod tests {
         seq.splice(10.., dna!("TTTT"));
         assert_eq!(&seq, dna!("TAAAAGCCCCTTTT"));
     }
+    */
 }
