@@ -853,4 +853,19 @@ mod wasm_tests {
         assert_eq!(kmer_b_64, kmer_cx_64);
         assert_ne!(kmer_b_64, kmer_dx_64);
     }
+
+    #[wasm_bindgen_test]
+    fn test_splice() {
+        let mut seq: Seq<Dna> = dna!("TCAGCATCGATCAATCG").into();
+        let insertion = dna!("CCCCC");
+
+        seq.splice(4..6, insertion);
+        assert_eq!(&seq, dna!("TCAGCCCCCTCGATCAATCG"));
+
+        seq.splice(1..=1, dna!("AAA"));
+        assert_eq!(&seq, dna!("TAAAAGCCCCCTCGATCAATCG"));
+
+        seq.splice(10.., dna!("TTTT"));
+        assert_eq!(&seq, dna!("TAAAAGCCCCTTTT"));
+    }
 }
