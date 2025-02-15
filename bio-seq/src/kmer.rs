@@ -49,8 +49,8 @@ use core::str::FromStr;
 //#[cfg(target_feature(enable = "avx2,bmi2"))]
 //pub mod avx2;
 
-#[cfg(target_arch = "wasm32")]
-pub mod wasm;
+//#[cfg(target_arch = "wasm32")]
+//pub mod wasm;
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
@@ -583,6 +583,9 @@ macro_rules! kmer {
     ($seq:expr) => {
         Kmer::<Dna, { $seq.len() }>::unsafe_from_seqslice(dna!($seq))
     };
+    ($seq:expr, $storage:ty) => {
+        Kmer::<Dna, { $seq.len() }, $storage>::unsafe_from_seqslice(dna!($seq))
+    };
 }
 
 #[cfg(test)]
@@ -659,6 +662,7 @@ mod tests {
         }
         assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA"), kmer);
     }
+
     #[test]
     fn amino_kmer_iter() {
         for (kmer, target) in Seq::<Amino>::try_from("SSLMNHKKL")
