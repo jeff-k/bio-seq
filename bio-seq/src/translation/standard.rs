@@ -6,7 +6,7 @@ use crate::codec::Codec;
 use crate::codec::{amino::Amino, dna::Dna, iupac::Iupac};
 use crate::iupac;
 use crate::prelude::{Seq, SeqArray, SeqSlice};
-use crate::prelude::{__bio_seq_Lsb0, __bio_seq_bitarr};
+use crate::prelude::{__bio_seq_Lsb0, __bio_seq_bitarr, __bio_seq_count_words};
 use crate::translation::{PartialTranslationTable, TranslationError, TranslationTable};
 
 pub struct Standard;

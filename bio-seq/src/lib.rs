@@ -88,9 +88,10 @@
 #![allow(clippy::module_name_repetitions)]
 // the lint doesn't seem to recognise our implementations
 #![allow(clippy::into_iter_without_iter)]
-
-#[cfg(not(target_pointer_width = "64"))]
-compile_error!("bio-seq currently only supports 64-bit platforms");
+//#[cfg(not(target_pointer_width = "64"))]
+//compile_error!("bio-seq currently only supports 64-bit platforms");
+//#![feature(simd_wasm64)]
+//#![feature(portable_simd)]
 
 use bitvec::prelude::*;
 
@@ -142,6 +143,8 @@ pub mod prelude {
     pub use crate::__bio_seq_Lsb0;
     #[doc(hidden)]
     pub use crate::__bio_seq_bitarr;
+    #[doc(hidden)]
+    pub use crate::__bio_seq_count_words;
 }
 
 /// Nucleotide bases and sequences can be complemented
@@ -236,6 +239,13 @@ where
 }
 
 //impl<T: MaskableMut + ToOwned> Maskable for T where <T as ToOwned>::Owned: MaskableMut {}
+
+#[macro_export]
+macro_rules! __bio_seq_count_words {
+    ($len:expr) => {{
+        $len.div_ceil(usize::BITS) as usize
+    }};
+}
 
 #[cfg(test)]
 mod tests {
@@ -696,5 +706,151 @@ mod tests {
         //        assert_ne!(kmer_b_64, seq_d);
         //        assert_ne!(kmer_b_64, slice_d);
         //        assert_ne!(kmer_b_64, array_d);
+    }
+}
+
+#[cfg(test)]
+#[cfg(target_arch = "wasm32")]
+mod wasm_tests {
+    use crate::prelude::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn sequence_type_equality() {
+        let raw_a = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA";
+        let raw_b = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
+        let raw_c = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
+        let raw_d = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAAA";
+
+        assert_eq!(raw_a.len(), 63);
+        assert_eq!(raw_b.len(), 64);
+        assert_eq!(raw_d.len(), 65);
+
+        assert_eq!(raw_c, raw_b);
+        assert_eq!(raw_c, &raw_b[..]);
+
+        assert_ne!(raw_b, raw_d);
+        assert_ne!(raw_a, raw_b);
+
+        // Seq
+
+        let seq_a: Seq<Dna> = raw_a.try_into().unwrap();
+        let seq_b: Seq<Dna> = raw_b.try_into().unwrap();
+        let seq_c: Seq<Dna> = raw_c.try_into().unwrap();
+        let seq_d: Seq<Dna> = raw_d.try_into().unwrap();
+
+        assert_eq!(seq_a.len(), raw_a.len());
+        assert_eq!(seq_d.len(), raw_d.len());
+
+        assert_eq!(seq_c, seq_b);
+        assert_eq!(seq_c, &seq_b);
+
+        assert_ne!(seq_a, &seq_b);
+        assert_ne!(seq_a, seq_b);
+        assert_ne!(seq_c, seq_d);
+
+        // SeqSlice
+
+        let slice_a: &SeqSlice<Dna> = &seq_a;
+        let slice_b: &SeqSlice<Dna> = &seq_b;
+        let slice_c: &SeqSlice<Dna> = &seq_c;
+        let slice_d: &SeqSlice<Dna> = &seq_d;
+
+        assert_eq!(slice_a.len(), raw_a.len());
+        assert_eq!(slice_d.len(), raw_d.len());
+
+        assert_eq!(slice_c, slice_b);
+        assert_eq!(slice_c, &slice_b[..]);
+
+        assert_ne!(slice_a, slice_b);
+        assert_ne!(slice_c, slice_d);
+        assert_ne!(slice_c, &slice_d[..]);
+
+        // SeqArray references
+
+        let array_a = dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA");
+        let array_b = dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
+        let array_c: &'static SeqSlice<Dna> =
+            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA");
+        let array_d: &'static SeqSlice<Dna> =
+            dna!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAAA");
+
+        assert_eq!(array_a.len(), raw_a.len());
+        assert_eq!(array_d.len(), raw_d.len());
+
+        assert_eq!(array_c, array_b);
+
+        assert_ne!(array_a, array_b);
+        assert_ne!(array_c, array_d);
+
+        assert_eq!(seq_c, slice_b);
+        assert_eq!(seq_c, *array_b);
+
+        assert_eq!(&seq_c, slice_b);
+        assert_eq!(&seq_c, array_b);
+
+        assert_eq!(slice_c, seq_b);
+        assert_eq!(slice_c, &seq_b);
+        assert_eq!(&slice_c, array_b);
+
+        assert_eq!(array_c, &seq_b);
+        assert_eq!(array_c, seq_b);
+        assert_eq!(array_c, slice_b);
+        // Cross-type inequality (shorter):
+
+        assert_ne!(&seq_a, slice_b);
+        assert_ne!(&seq_a, array_b);
+        assert_ne!(seq_a, slice_b);
+        assert_ne!(seq_a, array_b);
+        assert_ne!(slice_a, &seq_b);
+        assert_ne!(slice_a, seq_b);
+        assert_ne!(&slice_a, array_b);
+
+        assert_ne!(array_a, &seq_b);
+        assert_ne!(array_a, seq_b);
+        assert_ne!(array_a, slice_b);
+        // Cross-type inequality (longer):
+
+        assert_ne!(seq_d, slice_b);
+        assert_ne!(seq_d, array_b);
+        assert_ne!(&seq_d, slice_b);
+        assert_ne!(&seq_d, array_b);
+
+        assert_ne!(slice_d, &seq_b);
+        assert_ne!(slice_d, seq_b);
+        assert_ne!(&slice_d, array_b);
+
+        assert_ne!(array_d, &seq_b);
+        assert_ne!(array_d, seq_b);
+
+        assert_ne!(slice_b, array_d);
+        assert_ne!(array_d, slice_b);
+    }
+
+    #[wasm_bindgen_test]
+    fn wasm_kmers() {
+        //let raw_a = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA";
+        let raw_b = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
+        //let raw_c = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
+        let raw_d = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAAA";
+
+        let kmer_ax_32: Kmer<Dna, 32, u64> = kmer!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAG", u64);
+        let kmer_bx_32 = Kmer::<Dna, 32, u64>::from_str(&raw_b[..32]).unwrap();
+
+        let kmer_x_32: Kmer<Dna, 32, u64> = kmer!("AATTGTGGGTTCGTCTGCGCCTCCGCCCTTAG", u64);
+
+        assert_eq!(kmer_ax_32.len(), 32);
+
+        assert_eq!(kmer_ax_32, kmer_bx_32);
+        assert_ne!(kmer_ax_32, kmer_x_32);
+
+        let kmer_b_64 = Kmer::<Dna, 64, u128>::from_str(&raw_b).unwrap();
+        let kmer_cx_64 = Kmer::<Dna, 64, u128>::from_str(&raw_d[..64]).unwrap();
+        let kmer_dx_64 = Kmer::<Dna, 64, u128>::from_str(&raw_d[1..]).unwrap();
+
+        assert_eq!(kmer_cx_64.len(), 64);
+
+        assert_eq!(kmer_b_64, kmer_cx_64);
+        assert_ne!(kmer_b_64, kmer_dx_64);
     }
 }
