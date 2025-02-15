@@ -16,14 +16,15 @@ pub(crate) fn gen_seqarray(
     len: usize,
     bits: &[u8],
 ) -> proc_macro2::TokenStream {
-    let num_words: usize = bits.len().div_ceil(usize::BITS as usize);
+    //let num_words: usize = bits.len().div_ceil(usize::BITS.try_into().unwrap());
+    let bits_len: u32 = bits.len().try_into().unwrap();
 
     let seq_name_ident = syn::Ident::new(seq_name, proc_macro2::Span::call_site());
 
     quote! {
     {
     type Lsb0 = __bio_seq_Lsb0;
-    static #seq_name_ident: SeqArray<#codec, #len, #num_words> = SeqArray {
+    static #seq_name_ident: SeqArray<#codec, #len, { __bio_seq_count_words!(#bits_len) }> = SeqArray {
         _p: core::marker::PhantomData,
         ba: __bio_seq_bitarr![const usize, Lsb0; #(#bits),*]
     };
