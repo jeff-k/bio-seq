@@ -58,6 +58,7 @@ impl<A: Codec> From<Seq<A>> for usize {
 impl<A: Codec> Hash for Seq<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ref().hash(state);
+        //self.len().hash(state);
     }
 }
 

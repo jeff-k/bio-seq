@@ -123,12 +123,12 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
     }
 }
 
+/// Warning! hashes are not currently stable between platforms/version
 impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bs.hash(state);
         // prepend length to make robust against matching prefixes
-        // (automatic in nightly?)
-        //self.len().hash(state);
+        self.len().hash(state);
     }
 }
 
