@@ -20,7 +20,7 @@ Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 
 ```toml
 [dependencies]
-bio-seq = "0.13"
+bio-seq = "0.14"
 ```
 
 Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s of a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
