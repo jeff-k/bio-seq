@@ -41,17 +41,17 @@ impl<C: Codec, const K: usize> Histogram<C, K> {
         }
     }
 
-    fn add(&mut self, kmer: Kmer<C, K>) {
+    fn add(&mut self, kmer: Kmer<C, K, usize>) {
         self.counts[usize::from(&kmer)] += 1;
     }
 
     /*
-        fn get(&self, kmer: Kmer<C, K>) -> usize {
+        fn get(&self, kmer: Kmer<C, K, usize>) -> usize {
             self.counts[usize::from(&kmer)]
         }
     */
 
-    fn items(&self) -> impl Iterator<Item = (Kmer<C, K>, usize)> + '_ {
+    fn items(&self) -> impl Iterator<Item = (Kmer<C, K, usize>, usize)> + '_ {
         self.counts
             .iter()
             .enumerate()

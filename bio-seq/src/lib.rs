@@ -402,10 +402,12 @@ mod tests {
     fn hash_minimiser() {
         use core::cmp::min;
 
-        fn hash<T: Hash>(seq: T) -> u64 {
-            let mut hasher = DefaultHasher::new();
-            seq.hash(&mut hasher);
-            hasher.finish()
+        fn hash(seq: &SeqSlice<Dna>) -> u64 {
+            if seq == dna!("GGCTCTCTCTCCTCCA") {
+                0
+            } else {
+                1
+            }
         }
 
         let seq =
@@ -439,6 +441,7 @@ mod tests {
 
         println!("{minimiser_rc} {min_hash_rc}\n{minimiser} {min_hash}\n{canonical_minimiser} {canonical_hash}");
         assert_eq!(min_hash_rc, canonical_hash);
+        assert_ne!(min_hash, canonical_hash);
         assert_eq!(minimiser_rc, canonical_minimiser.to_revcomp());
     }
 
@@ -467,10 +470,10 @@ mod tests {
         let l3_b: &SeqSlice<Dna> = &q4[..32];
         let l4: &SeqSlice<Dna> = &q4;
 
-        let k1: Kmer<Dna, 32> = s1.try_into().unwrap();
-        let k1_a: Kmer<Dna, 32> = s1.try_into().unwrap();
+        let k1: Kmer<Dna, 32, u64> = s1.try_into().unwrap();
+        let k1_a: Kmer<Dna, 32, u64> = s1.try_into().unwrap();
 
-        let k3: Kmer<Dna, 32> = s3.try_into().unwrap();
+        let k3: Kmer<Dna, 32, u64> = s3.try_into().unwrap();
 
         assert_eq!(hash(&l3), hash(q3));
         assert_eq!(hash(&l3), hash(&l3_a));
@@ -507,7 +510,7 @@ mod tests {
         let seq_arr: &SeqSlice<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
         let seq: Seq<Dna> = seq_arr.into();
         let seq_slice: &SeqSlice<Dna> = &seq;
-        let kmer: Kmer<Dna, 32> = seq_arr.try_into().unwrap();
+        let kmer: Kmer<Dna, 32, u64> = seq_arr.try_into().unwrap();
 
         assert_eq!(hash(&seq_arr), hash(&seq));
         assert_eq!(hash(&seq), hash(&seq_slice));
@@ -613,10 +616,10 @@ mod tests {
 
         // Kmers
 
-        let kmer_ax_32: Kmer<Dna, 32> = kmer!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAG");
-        let kmer_bx_32 = Kmer::<Dna, 32>::from_str(&raw_b[..32]).unwrap();
+        let kmer_ax_32: Kmer<Dna, 32, u64> = kmer!("AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAG", u64);
+        let kmer_bx_32 = Kmer::<Dna, 32, u64>::from_str(&raw_b[..32]).unwrap();
 
-        let kmer_x_32: Kmer<Dna, 32> = kmer!("AATTGTGGGTTCGTCTGCGCCTCCGCCCTTAG");
+        let kmer_x_32: Kmer<Dna, 32, u64> = kmer!("AATTGTGGGTTCGTCTGCGCCTCCGCCCTTAG", u64);
 
         assert_eq!(kmer_ax_32.len(), 32);
 

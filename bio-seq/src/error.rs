@@ -85,9 +85,14 @@ mod tests {
         let seq = dna!("ACGTACGTACGTACGTACGTACGTACGTACGTA");
         let int = TryInto::<usize>::try_into(seq).unwrap_err();
 
-        assert_eq!(format!("{int}"), "Expected length <= 32, got 33");
+        let expected_size = usize::BITS / Dna::BITS as u32;
 
-        let good = TryInto::<usize>::try_into(&seq[..32]);
+        assert_eq!(
+            format!("{int}"),
+            format!("Expected length <= {expected_size}, got 33")
+        );
+
+        let good = TryInto::<usize>::try_into(&seq[..expected_size as usize]);
         assert!(good.is_ok());
     }
 }
