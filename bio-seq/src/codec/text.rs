@@ -1,7 +1,7 @@
 //! 8-bit ASCII representation of nucleotides
 //!
 //! This encoding is a literal interpretation of bytes of text as DNA
-use crate::codec::{dna, Codec};
+use crate::codec::{Codec, dna};
 use crate::error::ParseBioError;
 //use crate::{Complement, Reverse, ReverseComplement};
 

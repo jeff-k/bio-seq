@@ -118,10 +118,10 @@ pub use bitvec::prelude::Lsb0 as __bio_seq_Lsb0;
 pub mod translation;
 
 pub mod prelude {
+    pub use crate::codec::Codec;
     pub use crate::codec::amino::Amino;
     pub use crate::codec::dna::Dna;
     pub use crate::codec::iupac::Iupac;
-    pub use crate::codec::Codec;
     pub use crate::{
         Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
         ReverseComplementMut, ReverseMut,
@@ -242,9 +242,7 @@ where
 
 #[macro_export]
 macro_rules! __bio_seq_count_words {
-    ($len:expr) => {{
-        $len.div_ceil(usize::BITS) as usize
-    }};
+    ($len:expr) => {{ $len.div_ceil(usize::BITS) as usize }};
 }
 
 #[cfg(test)]
@@ -439,7 +437,9 @@ mod tests {
             .min_by_key(|&(_, hash)| hash)
             .unwrap();
 
-        println!("{minimiser_rc} {min_hash_rc}\n{minimiser} {min_hash}\n{canonical_minimiser} {canonical_hash}");
+        println!(
+            "{minimiser_rc} {min_hash_rc}\n{minimiser} {min_hash}\n{canonical_minimiser} {canonical_hash}"
+        );
         assert_eq!(min_hash_rc, canonical_hash);
         assert_ne!(min_hash, canonical_hash);
         assert_eq!(minimiser_rc, canonical_minimiser.to_revcomp());

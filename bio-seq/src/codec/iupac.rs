@@ -52,7 +52,7 @@
 //! // ACG matches pattern
 //! // ATG matches pattern
 //! ```
-use crate::codec::{dna::Dna, Codec};
+use crate::codec::{Codec, dna::Dna};
 use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::{Complement, ComplementMut};
 

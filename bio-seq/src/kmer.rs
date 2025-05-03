@@ -30,10 +30,10 @@
 // permit truncations that may happen on 32-bit platforms which are unsupported anyway
 #![allow(clippy::cast_possible_truncation)]
 
+use crate::Bs;
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
 use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::Bs;
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };

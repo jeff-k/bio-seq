@@ -1,5 +1,5 @@
-use crate::codec::Codec;
 use crate::ComplementMut;
+use crate::codec::Codec;
 
 /// 1-bit encoding for `S`trong (`G`/`C`) and `W`eak (`A`/`T`) binding nucleotides
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

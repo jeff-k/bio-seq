@@ -2,7 +2,7 @@
 name = "bio-seq"
 version = "0.14.2"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
-edition = "2021"
+edition = "2024"
 description = "Bit packed and well-typed biological sequences"
 repository = "https://github.com/jeff-k/bio-seq"
 documentation = "https://docs.rs/bio-seq"
@@ -10,7 +10,7 @@ license = "MIT"
 keywords = ["bioinformatics", "genomics", "kmer", "dna", "sequence"]
 categories = ["science::bioinformatics", "science::bioinformatics::genomics", "science::bioinformatics::proteomics", "science::bioinformatics::sequence-analysis"]
 readme = "../README.md"
-rust-version = "1.79"
+rust-version = "1.85"
 
 [dev-dependencies]
 clap = { version="4", features=["derive"] }
@@ -23,7 +23,7 @@ wasm-bindgen-test = "0.3"
 
 [dependencies]
 bitvec = "1"
-bio-seq-derive = { path = "../bio-seq-derive", version="4.10" }
+bio-seq-derive = { path = "../bio-seq-derive", version="4.11" }
 serde = { version = "1", optional = true, features=["derive"] }
 serde_derive = { version = "1", optional = true }
 

@@ -38,7 +38,7 @@ impl fmt::Display for ParseBioError {
 
 impl From<ParseBioError> for std::io::Error {
     fn from(err: ParseBioError) -> Self {
-        std::io::Error::new(std::io::ErrorKind::Other, err)
+        std::io::Error::other(err)
     }
 }
 

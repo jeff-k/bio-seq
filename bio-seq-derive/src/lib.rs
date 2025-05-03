@@ -12,12 +12,12 @@
 mod codec;
 mod seqarray;
 
-use crate::codec::{parse_variants, parse_width, CodecVariants};
+use crate::codec::{CodecVariants, parse_variants, parse_width};
 use crate::seqarray::{dna_seq, gen_seqarray, iupac_seq};
 use quote::quote;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use syn::parse_macro_input;
 use syn::LitStr;
+use syn::parse_macro_input;
 
 #[proc_macro_derive(Codec, attributes(bits, display, alt))]
 pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

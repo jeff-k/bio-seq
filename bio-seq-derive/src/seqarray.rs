@@ -47,7 +47,7 @@ pub(crate) fn dna_seq(seq: &LitStr) -> Result<(usize, Vec<u8>), syn::Error> {
                 return Err(syn::Error::new_spanned(
                     seq.value(),
                     format!("Invalid DNA base at position {i}: {c}"),
-                ))
+                ));
             }
         }
         bases += 1;
@@ -85,7 +85,7 @@ pub(crate) fn iupac_seq(seq: &LitStr) -> Result<(usize, Vec<u8>), syn::Error> {
                 return Err(syn::Error::new_spanned(
                     seq.value(),
                     format!("Invalid IUPAC code at position {i}: {c}"),
-                ))
+                ));
             }
         }
         bases += 1;

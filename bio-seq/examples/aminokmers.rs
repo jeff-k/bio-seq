@@ -55,7 +55,7 @@ impl<C: Codec, const K: usize> Histogram<C, K> {
         self.counts
             .iter()
             .enumerate()
-            .filter(|(_, &count)| count > 0)
+            .filter(|&(_, &count)| count > 0)
             .map(|(i, &count)| (Kmer::<C, K>::from(i), count))
     }
 }

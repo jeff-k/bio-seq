@@ -7,8 +7,8 @@ use proc_macro2::TokenStream;
 
 use quote::quote;
 
-use syn::punctuated::Punctuated;
 use syn::Token;
+use syn::punctuated::Punctuated;
 
 /// Allow the user to request more bits than used by their encodings
 pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
@@ -111,7 +111,7 @@ pub(crate) fn parse_variants(
                     return Err(syn::Error::new_spanned(
                         ident,
                         "Codec derivations require byte or integer discriminants",
-                    ))
+                    ));
                 }
             };
 
