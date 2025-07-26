@@ -1,15 +1,15 @@
 use crate::ComplementMut;
 use crate::codec::Codec;
 
-/// 1-bit encoding for `S`trong (`G`/`C`) and `W`eak (`A`/`T`) binding nucleotides
+/// 1-bit encoding for nucleotides with a**M**ino (`A`/`C`) and **K**etone (`T`/`G`) functional groups.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
-pub enum Dna {
-    W = 0b0,
-    S = 0b1,
+pub enum MK {
+    M = 0b0,
+    K = 0b1,
 }
 
-impl Codec for Dna {
+impl Codec for MK {
     const BITS: u8 = 1;
 
     /// Transmute a `u8` into a degenerate 1-bit nucleotide
@@ -23,7 +23,7 @@ impl Codec for Dna {
     /// Valid values are `0` and `1`
     fn try_from_bits(b: u8) -> Option<Self> {
         if b < 2 {
-            Some(unsafe { std::mem::transmute::<u8, Dna>(b) })
+            Some(unsafe { std::mem::transmute::<u8, MK>(b) })
         } else {
             None
         }
@@ -36,16 +36,16 @@ impl Codec for Dna {
 
     fn try_from_ascii(c: u8) -> Option<Self> {
         match c {
-            b'S' | b'C' | b'G' => Some(Dna::S),
-            b'W' | b'A' | b'T' => Some(Dna::W),
+            b'M' | b'A' | b'C' => Some(MK::M),
+            b'K' | b'T' | b'G' => Some(MK::K),
             _ => None,
         }
     }
 
     fn to_char(self) -> char {
         match self {
-            Dna::S => 'S',
-            Dna::W => 'W',
+            MK::M => 'M',
+            MK::K => 'K',
         }
     }
 
@@ -54,13 +54,15 @@ impl Codec for Dna {
     }
 
     fn items() -> impl Iterator<Item = Self> {
-        vec![Dna::S, Dna::W].into_iter()
+        vec![MK::M, MK::K].into_iter()
     }
 }
 
-impl ComplementMut for Dna {
-    /// This representation erases complements, so this is the identify function
-    fn comp(&mut self) {}
+impl ComplementMut for MK {
+    /// This representation preserves complementarity, `M = comp(K)`
+    fn comp(&mut self) {
+        *self = unsafe { std::mem::transmute(*self as u8 ^ 1) };
+    }
 }
 
 #[cfg(test)]
@@ -70,8 +72,8 @@ mod tests {
 
     #[test]
     fn test_1bit() {
-        let seq = Seq::<degenerate::Dna>::from_str("SSSWWWSW").unwrap();
-        let seq_rc: Seq<degenerate::Dna> = seq.to_revcomp();
-        assert_eq!("WSWWWSSS", String::from(seq_rc));
+        let seq = Seq::<degenerate::MK>::from_str("MKMKKMKKKKKMMMMKM").unwrap();
+        let seq_rc: Seq<degenerate::MK> = seq.to_revcomp();
+        assert_eq!("KMKKKKMMMMMKMMKMK", String::from(seq_rc));
     }
 }

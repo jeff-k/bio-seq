@@ -1,12 +1,12 @@
-//! Experimental encodings for degenerate representations (eg 1-bit)
+//! Encodings for degenerate 1-bit nucleotide encodings.
 
-pub mod dna;
+pub mod mk;
+pub mod ry;
+pub mod ws;
 
-// TODO
-//pub mod iupac;
-
-pub use dna::Dna;
-//pub use iupac::Iupac;
+pub use mk::MK;
+pub use ry::RY;
+pub use ws::WS;
 
 //#[cfg(test)]
 //mod tests {

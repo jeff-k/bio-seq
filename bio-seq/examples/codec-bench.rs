@@ -20,7 +20,7 @@ use clap::{Parser, ValueEnum};
 enum CodecType {
     Dna,
     Iupac,
-    DegenerateDna,
+    DegenerateWS,
     Amino,
     Text,
 }
@@ -95,7 +95,7 @@ fn main() -> io::Result<()> {
     let mut counts: Box<dyn KmerCounter> = match args.codec {
         CodecType::Dna => Box::new(KmerCounts::<Dna>::new(k)),
         CodecType::Iupac => Box::new(KmerCounts::<Iupac>::new(k)),
-        CodecType::DegenerateDna => Box::new(KmerCounts::<codec::degenerate::Dna>::new(k)),
+        CodecType::DegenerateWS => Box::new(KmerCounts::<codec::degenerate::WS>::new(k)),
         CodecType::Amino => Box::new(KmerCounts::<Amino>::new(k)),
         CodecType::Text => Box::new(KmerCounts::<codec::text::Dna>::new(k)),
     };
