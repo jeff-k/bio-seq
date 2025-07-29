@@ -32,7 +32,6 @@ jobs:
         with:
           components: llvm-tools
       - uses: taiki-e/install-action@cargo-llvm-cov
-      - uses: Swatinem/rust-cache@v2
       - run: cargo llvm-cov --features=translation,extra_codecs --workspace --lcov --output-path lcov.info
       - uses: codecov/codecov-action@v5
         with:
