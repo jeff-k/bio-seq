@@ -3,7 +3,7 @@
 use crate::codec::Codec;
 //use crate::kmer::Kmer;
 //use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::{Complement, ComplementMut};
+use crate::{Bv, Complement, ComplementMut};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
@@ -15,6 +15,7 @@ pub enum Dna {
 }
 
 impl Codec for Dna {
+    type Store = Bv;
     const BITS: u8 = 2;
 
     /// Transmute a `u8` into a nucleotide

@@ -10,6 +10,8 @@ use crate::error::ParseBioError;
 pub struct Dna(u8);
 
 impl Codec for Dna {
+    type Store = Vec<u8>;
+
     const BITS: u8 = 8;
 
     fn unsafe_from_bits(b: u8) -> Self {

@@ -11,9 +11,11 @@ pub mod iterators;
 
 mod array;
 mod slice;
+mod storage;
 
 pub use array::SeqArray;
 pub use slice::SeqSlice;
+pub use storage::SeqStorage;
 
 use crate::codec::{Codec, text};
 use crate::error::ParseBioError;
