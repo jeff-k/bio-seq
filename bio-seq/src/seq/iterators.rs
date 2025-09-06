@@ -36,7 +36,7 @@ impl<'a, A: Codec> SeqSlice<A> {
     }
 
     /// Iterate over sliding windows of length K
-    pub fn kmers<const K: usize>(&self) -> KmerIter<A, K> {
+    pub fn kmers<const K: usize>(&self) -> KmerIter<'_, A, K> {
         KmerIter::<A, K> {
             slice: self,
             index: 0,
@@ -46,7 +46,7 @@ impl<'a, A: Codec> SeqSlice<A> {
     }
 
     /// Iterate over the sequence in reverse order
-    pub fn rev_iter(&self) -> RevIter<A> {
+    pub fn rev_iter(&self) -> RevIter<'_, A> {
         RevIter {
             slice: self,
             index: self.len(),
@@ -62,7 +62,7 @@ impl<'a, A: Codec> SeqSlice<A> {
     /// let windows: Vec<String> = seq.windows(3).map(String::from).collect();
     /// assert_eq!(windows, vec!["ACT", "CTG", "TGA", "GAT", "ATC", "TCG"]);
     /// ```
-    pub fn windows(&self, width: usize) -> SeqChunks<A> {
+    pub fn windows(&self, width: usize) -> SeqChunks<'_, A> {
         SeqChunks {
             slice: self,
             width,
@@ -83,7 +83,7 @@ impl<'a, A: Codec> SeqSlice<A> {
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
     /// assert_eq!(chunks, vec![dna!("ACT"), dna!("GAT")]);
     /// ```
-    pub fn chunks(&self, width: usize) -> SeqChunks<A> {
+    pub fn chunks(&self, width: usize) -> SeqChunks<'_, A> {
         SeqChunks {
             slice: self,
             width,
