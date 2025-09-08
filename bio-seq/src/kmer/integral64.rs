@@ -1,6 +1,6 @@
-use crate::kmer::{REV_2BIT, sealed};
 use bitvec::field::BitField;
 
+use crate::kmer::storage::{REV_2BIT, sealed};
 use crate::{Ba, Bs};
 
 impl sealed::KmerStorage for usize {

@@ -14,6 +14,10 @@ pub trait SeqStorage: Sized {
     fn len(&self) -> usize;
     fn with_capacity(cap: usize) -> Self;
     fn is_empty(&self) -> bool;
+
+    fn as_slice(&self) -> &Self::Slice<'_>;
+
+    fn push(&mut self, bits: u8);
 }
 
 impl SeqStorage for Bv {
@@ -34,6 +38,14 @@ impl SeqStorage for Bv {
     fn is_empty(&self) -> bool {
         todo!()
     }
+
+    fn as_slice(&self) -> &Self::Slice<'_> {
+        todo!()
+    }
+
+    fn push(&mut self, _bits: u8) {
+        todo!()
+    }
 }
 
 impl SeqStorage for Vec<u8> {
@@ -52,6 +64,14 @@ impl SeqStorage for Vec<u8> {
     }
 
     fn is_empty(&self) -> bool {
+        todo!()
+    }
+
+    fn as_slice(&self) -> &Self::Slice<'_> {
+        todo!()
+    }
+
+    fn push(&mut self, _bits: u8) {
         todo!()
     }
 }
