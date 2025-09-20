@@ -7,15 +7,15 @@
 //!
 //! `Seq` and `&SeqSlice` are analogous to `String` and `&str`. A `Seq` owns its data and a `SeqSlice` is a read-only window into a `Seq`.
 pub mod index;
-pub mod iterators;
+//pub mod iterators;
 
-mod array;
-mod slice;
+//mod array;
+//mod slice;
 mod storage;
 
-pub use array::SeqArray;
-pub use slice::SeqSlice;
-pub use storage::SeqStorage;
+//pub use array::SeqArray;
+//pub use slice::SeqSlice;
+pub(crate) use storage::SeqStorage;
 
 use crate::codec::{Codec, text};
 use crate::error::ParseBioError;
@@ -24,7 +24,7 @@ use crate::{
     ReverseComplementMut, ReverseMut,
 };
 
-use crate::{Bs, Bv, Order};
+//use crate::{Bs, Bv, Order};
 
 use bitvec::field::BitField;
 use bitvec::view::BitView;
@@ -45,37 +45,43 @@ use core::{fmt, ptr, str};
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Seq<A: Codec> {
+pub struct Seq<A: Codec, S: SeqStorage> {
     pub(crate) _p: PhantomData<A>,
-    pub(crate) bv: Bv,
+    pub(crate) store: S,
 }
 
-impl<A: Codec> From<Seq<A>> for usize {
-    fn from(slice: Seq<A>) -> usize {
-        debug_assert!(slice.bv.len() <= usize::BITS as usize);
-        slice.bv.load_le::<usize>() //.wrapping_shr(shift)
+impl<A: Codec, S: SeqStorage> From<Seq<A, S>> for usize {
+    fn from(slice: Seq<A, S>) -> usize {
+        debug_assert!(slice.store.len() <= usize::BITS as usize);
+        slice.store.to_usize() //.wrapping_shr(shift)
     }
 }
 
-impl<A: Codec> Hash for Seq<A> {
+/*
+impl<A: Codec, S: SeqStorage> Hash for Seq<A, S> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ref().hash(state);
         //self.len().hash(state);
     }
 }
+*/
 
-impl<A: Codec> Default for Seq<A> {
+impl<A: Codec, S: SeqStorage> Default for Seq<A, S> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<A: Codec> Seq<A> {
+impl<A: Codec, S: SeqStorage> Seq<A, S> {
     pub fn new() -> Self {
         Seq {
             _p: PhantomData,
-            bv: Bv::new(),
+            store: S::new(),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        todo!()
     }
 
     fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> (usize, usize) {
@@ -120,23 +126,27 @@ impl<A: Codec> Seq<A> {
             .rposition(|&byte| A::try_from_ascii(byte).is_some())
             .map_or(start, |pos| start + pos + 1);
 
+/*
         v[start..end]
             .iter()
             .map(|&byte| A::try_from_ascii(byte).ok_or(ParseBioError::UnrecognisedBase(byte)))
             .collect()
+            */
+            todo!()
     }
 
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
-            bv: Bv::with_capacity(len * A::BITS as usize),
+            store: S::with_capacity(len * A::BITS as usize),
         }
     }
 
-    pub fn bit_and(self, rhs: Seq<A>) -> Seq<A> {
-        Seq::<A> {
+/*
+    pub fn bit_and(self, rhs: Seq<A, S>) -> Seq<A, S> {
+        Seq::<A, S> {
             _p: PhantomData,
-            bv: Bv::from_bitslice(&(self.bv & rhs.bv)),
+            store: S::from_bitslice(&(self.bv & rhs.bv)),
         }
     }
 
@@ -146,17 +156,21 @@ impl<A: Codec> Seq<A> {
             bv: Bv::from_bitslice(&(self.bv | rhs.bv)),
         }
     }
+*/
 
+/*
     pub fn push(&mut self, item: A) {
         let byte: u8 = item.to_bits();
-        self.bv
+        self.store
             .extend_from_bitslice(&byte.view_bits::<Order>()[..A::BITS as usize]);
     }
+*/
 
     pub fn clear(&mut self) {
-        self.bv.clear();
+        self.store.clear();
     }
 
+/*
     /// Truncate a sequence
     /// ```
     /// # use bio_seq::prelude::*;
@@ -178,10 +192,12 @@ impl<A: Codec> Seq<A> {
     pub fn prepend(&mut self, other: &SeqSlice<A>) {
         let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
         bv.extend_from_bitslice(&other.bs);
-        bv.extend_from_bitslice(&self.bv);
-        self.bv = bv;
+        bv.extend_from_bitslice(&self.store);
+        self.store = store;
     }
+    */
 
+/*
     /// Append a slice
     /// ```
     /// # use bio_seq::prelude::*;
@@ -267,7 +283,9 @@ impl<A: Codec> Seq<A> {
             })
         }
     }
+*/
 
+/*
     /// **Experimental** Access raw sequence data as `&[usize]`
     /// ```
     /// # use bio_seq::prelude::*;
@@ -279,8 +297,10 @@ impl<A: Codec> Seq<A> {
     pub fn into_raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
     }
+    */
 }
 
+/*
 impl<A: Codec> ReverseMut for Seq<A> {
     fn rev(&mut self) {
         self.bv.reverse();
@@ -341,25 +361,27 @@ impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
         self.as_ref() == other
     }
 }
-
-impl<A: Codec> PartialEq<&SeqSlice<A>> for Seq<A> {
-    fn eq(&self, other: &&SeqSlice<A>) -> bool {
-        self.as_ref() == *other
+*/
+impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<A, S>> for Seq<A, S> {
+    fn eq(&self, other: &&SeqSlice<A, S>) -> bool {
+        //self.as_ref() == *other
+        todo!()
     }
 }
 
-impl<A: Codec> PartialEq<Seq<A>> for &Seq<A> {
-    fn eq(&self, other: &Seq<A>) -> bool {
+impl<A: Codec, S: SeqStorage> PartialEq<Seq<A, S>> for &Seq<A, S> {
+    fn eq(&self, other: &Seq<A, S>) -> bool {
         **self == *other
     }
 }
 
-impl<A: Codec> PartialEq<&Seq<A>> for Seq<A> {
-    fn eq(&self, other: &&Seq<A>) -> bool {
+impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
+    fn eq(&self, other: &&Seq<A, S>) -> bool {
         *self == **other
     }
 }
 
+/*
 /// Borrow a `Seq<A>` as a `SeqSlice<A>`.
 ///
 /// The `Borrow` trait to is used to obtain a reference to a `SeqSlice` from a `Seq`, allowing it to be used wherever a `SeqSlice` is expected.
@@ -416,7 +438,9 @@ impl<A: Codec> Deref for Seq<A> {
         unsafe { &*(bs as *const SeqSlice<A>) }
     }
 }
+*/
 
+/*
 /// A Seq can be borrowed as a `SeqSlice` through generic constraints.
 ///
 /// ```
@@ -435,6 +459,7 @@ impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
         self
     }
 }
+*/
 
 /// Creates a deep copy of the sequence.
 ///
@@ -448,15 +473,16 @@ impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
 /// assert_ne!(seq1, seq2);
 /// ```
 ///
-impl<A: Codec> Clone for Seq<A> {
+impl<A: Codec, S: SeqStorage> Clone for Seq<A, S> {
     fn clone(&self) -> Self {
         Self {
             _p: PhantomData,
-            bv: self.bv.clone(),
+            store: self.store.clone(),
         }
     }
 }
 
+/*
 impl<A: Codec> FromIterator<A> for Seq<A> {
     fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
         let i = iter.into_iter();
@@ -465,15 +491,17 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
         seq
     }
 }
+*/
 
-impl<A: Codec> From<&Vec<A>> for Seq<A> {
+impl<A: Codec, S: SeqStorage> From<&Vec<A>> for Seq<A, S> {
     fn from(vec: &Vec<A>) -> Self {
         // for a general conversion: vec.iter().copied().map(Into::into).collect()
 
-        vec.iter().copied().collect()
+//        vec.iter().copied().collect()
+    todo!()
     }
 }
-
+/*
 impl<A: Codec, B: Codec> From<&SeqSlice<A>> for Seq<B>
 where
     A: Into<B>,
@@ -491,7 +519,9 @@ where
         slice.iter().map(Into::into).collect()
     }
 }
+*/
 
+/*
 impl<A: Codec, B: Codec, const N: usize, const W: usize> From<SeqArray<A, N, W>> for Seq<B>
 where
     A: Into<B>,
@@ -500,40 +530,41 @@ where
         slice.iter().map(Into::into).collect()
     }
 }
+*/
 
-impl<A: Codec> TryFrom<&str> for Seq<A> {
+impl<A: Codec, S: SeqStorage> TryFrom<&str> for Seq<A, S> {
     type Error = ParseBioError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Seq::<A>::try_from(s.as_bytes())
+        Seq::<A, S>::try_from(s.as_bytes())
     }
 }
 
-impl<A: Codec> TryFrom<String> for Seq<A> {
+impl<A: Codec, S: SeqStorage> TryFrom<String> for Seq<A, S> {
     type Error = ParseBioError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        Seq::<A>::try_from(s.as_str())
+        Seq::<A, S>::try_from(s.as_str())
     }
 }
 
-impl<A: Codec> TryFrom<&String> for Seq<A> {
+impl<A: Codec, S: SeqStorage> TryFrom<&String> for Seq<A, S> {
     type Error = ParseBioError;
 
     fn try_from(s: &String) -> Result<Self, Self::Error> {
-        Seq::<A>::try_from(s.as_str())
+        Seq::<A, S>::try_from(s.as_str())
     }
 }
 
-impl<A: Codec> FromStr for Seq<A> {
+impl<A: Codec, S: SeqStorage> FromStr for Seq<A, S> {
     type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Seq::<A>::try_from(s)
+        Seq::<A, S>::try_from(s)
     }
 }
 
-impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
+impl<A: Codec, S: SeqStorage> TryFrom<&[u8]> for Seq<A, S> {
     type Error = ParseBioError;
 
     fn try_from(v: &[u8]) -> Result<Self, Self::Error> {
@@ -541,44 +572,52 @@ impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
     }
 }
 
-impl<A: Codec> TryFrom<Vec<u8>> for Seq<A> {
+impl<A: Codec, S: SeqStorage> TryFrom<Vec<u8>> for Seq<A, S> {
     type Error = ParseBioError;
 
     fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
         // potentional optimisation: with an extra allocation we could
         // .collect::<Result<Vec<A>, _>>()
         // .map(|v| { let mut seq = Self::with_capacity etc.
+        /*
         v.into_iter()
             .map(|byte| A::try_from_ascii(byte).ok_or(ParseBioError::UnrecognisedBase(byte)))
             .collect()
+            */
+            todo!()
     }
 }
 
-impl<A: Codec> From<Seq<A>> for String {
-    fn from(seq: Seq<A>) -> Self {
+/*
+impl<A: Codec, S: SeqStorage> From<Seq<A, S>> for String {
+    fn from(seq: Seq<A, S>) -> Self {
         String::from(seq.as_ref())
     }
 }
 
-impl<A: Codec> From<&Seq<A>> for String {
-    fn from(seq: &Seq<A>) -> Self {
+impl<A: Codec, S: SeqStorage> From<&Seq<A, S>> for String {
+    fn from(seq: &Seq<A, S>) -> Self {
         String::from(seq.as_ref())
     }
 }
 
-impl<A: Codec> fmt::Display for Seq<A> {
+impl<A: Codec, S: SeqStorage> fmt::Display for Seq<A, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.as_ref(), f)
     }
 }
+*/
 
+/*
 impl<A: Codec> Extend<A> for Seq<A> {
     fn extend<T: IntoIterator<Item = A>>(&mut self, iter: T) {
         self.extend(iter);
     }
 }
+*/
 
-impl From<Vec<usize>> for Seq<text::Dna> {
+/*
+impl From<Vec<usize>> for Seq<text::Dna, Vec<u8.> {
     fn from(vec: Vec<usize>) -> Self {
         Seq {
             _p: PhantomData,
@@ -586,7 +625,9 @@ impl From<Vec<usize>> for Seq<text::Dna> {
         }
     }
 }
+*/
 
+/*
 /// **Unstable** construct a `Seq` from a bitslice. This may change in the future.
 impl<A: Codec> From<&Bs> for Seq<A> {
     fn from(bs: &Bs) -> Self {
@@ -596,7 +637,9 @@ impl<A: Codec> From<&Bs> for Seq<A> {
         }
     }
 }
+*/
 
+/*
 /// **Unstable** construct a `Seq` from a bitvec. This may change in the future.
 impl<A: Codec> From<Bv> for Seq<A> {
     fn from(bv: Bv) -> Self {
@@ -606,6 +649,7 @@ impl<A: Codec> From<Bv> for Seq<A> {
         }
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
