@@ -7,8 +7,8 @@ use crate::seq::storage::SeqStorage;
 use crate::codec::Codec;
 use crate::seq::SeqSlice;
 
-impl<A: Codec, S: SeqStorage> Index<Range<usize>> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<Range<usize>> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, range: Range<usize>) -> &Self::Output {
         todo!()
@@ -21,8 +21,8 @@ impl<A: Codec, S: SeqStorage> Index<Range<usize>> for SeqSlice<A, S> {
     }
 }
 
-impl<A: Codec, S: SeqStorage> Index<RangeTo<usize>> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<RangeTo<usize>> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
         todo!()
@@ -34,8 +34,8 @@ impl<A: Codec, S: SeqStorage> Index<RangeTo<usize>> for SeqSlice<A, S> {
     }
 }
 
-impl<A: Codec, S: SeqStorage> Index<RangeToInclusive<usize>> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<RangeToInclusive<usize>> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
         todo!()
@@ -47,8 +47,8 @@ impl<A: Codec, S: SeqStorage> Index<RangeToInclusive<usize>> for SeqSlice<A, S> 
     }
 }
 
-impl<A: Codec, S: SeqStorage> Index<RangeInclusive<usize>> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<RangeInclusive<usize>> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
         todo!()
@@ -62,8 +62,8 @@ impl<A: Codec, S: SeqStorage> Index<RangeInclusive<usize>> for SeqSlice<A, S> {
     }
 }
 
-impl<A: Codec, S: SeqStorage> Index<RangeFrom<usize>> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<RangeFrom<usize>> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
         todo!()
@@ -75,8 +75,8 @@ impl<A: Codec, S: SeqStorage> Index<RangeFrom<usize>> for SeqSlice<A, S> {
     }
 }
 
-impl<A: Codec, S: SeqStorage> Index<RangeFull> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<RangeFull> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, _range: RangeFull) -> &Self::Output {
         todo!()
@@ -87,8 +87,8 @@ impl<A: Codec, S: SeqStorage> Index<RangeFull> for SeqSlice<A, S> {
     }
 }
 
-impl<A: Codec, S: SeqStorage> Index<usize> for SeqSlice<A, S> {
-    type Output = SeqSlice<A, S>;
+impl<'a, A: Codec, S: SeqStorage> Index<usize> for SeqSlice<'a, A, S> {
+    type Output = SeqSlice<'a, A, S>;
 
     fn index(&self, i: usize) -> &Self::Output {
         todo!()

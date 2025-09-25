@@ -357,7 +357,7 @@ impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
     }
 }
 */
-impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<A, S>> for Seq<A, S> {
+impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<'_, A, S>> for Seq<A, S> {
     fn eq(&self, other: &&SeqSlice<A, S>) -> bool {
         //self.as_ref() == *other
         todo!()
@@ -401,14 +401,14 @@ impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
 ///        println!("{query}: {value}");
 /// }
 /// ```
-impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for Seq<A, S> {
-    fn borrow(&self) -> &SeqSlice<A, S> {
+impl<'a, A: Codec, S: SeqStorage> Borrow<SeqSlice<'a, A, S>> for Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<'a, A, S> {
         self.as_ref()
     }
 }
 
-impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for &Seq<A, S> {
-    fn borrow(&self) -> &SeqSlice<A, S> {
+impl<'a, A: Codec, S: SeqStorage> Borrow<SeqSlice<'a, A, S>> for &Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<'a, A, S> {
         self.as_ref()
     }
 }
@@ -451,10 +451,9 @@ impl<A: Codec> Deref for Seq<A> {
 /// assert_eq!(count, 12);
 /// ```
 ///
-impl<A: Codec, S: SeqStorage> AsRef<SeqSlice<A, S>> for Seq<A, S> {
-    fn as_ref(&self) -> &SeqSlice<A, S> {
+impl<'a, A: Codec, S: SeqStorage> AsRef<SeqSlice<'a, A, S>> for Seq<A, S> {
+    fn as_ref(&self) -> &SeqSlice<'a, A, S> {
         todo!()
-//        self
     }
 }
 

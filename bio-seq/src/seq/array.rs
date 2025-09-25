@@ -40,8 +40,8 @@ impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {
 }
 */
 
-impl<A: Codec, const N: usize, Storage: SeqStorage> Deref for SeqArray<A, N, Storage> {
-    type Target = SeqSlice<A, Storage>;
+impl<A: Codec, const N: usize, Storage: SeqStorage + 'static> Deref for SeqArray<A, N, Storage> {
+    type Target = SeqSlice<'static, A, Storage>;
 
     fn deref(&self) -> &Self::Target {
         todo!()
@@ -52,8 +52,8 @@ impl<A: Codec, const N: usize, Storage: SeqStorage> Deref for SeqArray<A, N, Sto
     }
 }
 
-impl<A: Codec, const N: usize, Storage: SeqStorage> AsRef<SeqSlice<A, Storage>> for SeqArray<A, N, Storage> {
-    fn as_ref(&self) -> &SeqSlice<A, Storage> {
+impl<A: Codec, const N: usize, Storage: SeqStorage> AsRef<SeqSlice<'static, A, Storage>> for SeqArray<A, N, Storage> {
+    fn as_ref(&self) -> &SeqSlice<'static, A, Storage> {
         self
     }
 }
