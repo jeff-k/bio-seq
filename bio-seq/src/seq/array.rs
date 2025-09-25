@@ -6,11 +6,8 @@
 use crate::codec::Codec;
 
 use crate::seq::slice::SeqSlice;
+use crate::seq::SeqStorage;
 //use crate::seq::Seq;
-
-use crate::{Ba, Bs};
-
-//use bitvec::field::BitField;
 
 //use core::fmt;
 use core::marker::PhantomData;
@@ -29,9 +26,9 @@ use core::ptr;
 /// ```
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct SeqArray<A: Codec, const N: usize, const W: usize> {
+pub struct SeqArray<A: Codec, const N: usize, Storage: SeqStorage> {
     pub _p: PhantomData<A>,
-    pub ba: Ba<W>,
+    pub ba: Storage,
 }
 
 /*
@@ -43,17 +40,20 @@ impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {
 }
 */
 
-impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
-    type Target = SeqSlice<A>;
+impl<A: Codec, const N: usize, Storage: SeqStorage> Deref for SeqArray<A, N, Storage> {
+    type Target = SeqSlice<A, Storage>;
 
     fn deref(&self) -> &Self::Target {
+        todo!()
+        /*
         let bs: *const Bs = ptr::from_ref::<Bs>(&self.ba[..N * A::BITS as usize]);
         unsafe { &*(bs as *const SeqSlice<A>) }
+        */
     }
 }
 
-impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A>> for SeqArray<A, N, W> {
-    fn as_ref(&self) -> &SeqSlice<A> {
+impl<A: Codec, const N: usize, Storage: SeqStorage> AsRef<SeqSlice<A, Storage>> for SeqArray<A, N, Storage> {
+    fn as_ref(&self) -> &SeqSlice<A, Storage> {
         self
     }
 }

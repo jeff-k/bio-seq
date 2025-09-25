@@ -9,9 +9,7 @@ use crate::seq::Seq;
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };
-
-use crate::Bs;
-use bitvec::field::BitField;
+use crate::seq::storage::SeqStorage;
 
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -23,15 +21,17 @@ use core::ops::{BitAnd, BitOr};
 /// An unsized, read-only window into part of a sequence
 #[derive(Debug, Eq)]
 #[repr(transparent)]
-pub struct SeqSlice<A: Codec> {
+pub struct SeqSlice<A: Codec, Storage: SeqStorage> {
     pub(crate) _p: PhantomData<A>,
-    pub(crate) bs: Bs,
+    pub(crate) bs: Storage,
 }
 
-impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
+impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<A, S>> for usize {
     type Error = ParseBioError;
 
-    fn try_from(slice: &SeqSlice<A>) -> Result<usize, Self::Error> {
+    fn try_from(slice: &SeqSlice<A, S>) -> Result<usize, Self::Error> {
+        todo!()
+        /*
         if slice.bs.len() <= usize::BITS as usize {
             Ok(slice.bs.load_le::<usize>())
         } else {
@@ -39,52 +39,67 @@ impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
             let expected: usize = usize::BITS as usize / A::BITS as usize;
             Err(ParseBioError::SequenceTooLong(len, expected))
         }
+        */
     }
 }
 
+/*
 impl<A: Codec> From<&SeqSlice<A>> for u8 {
     fn from(slice: &SeqSlice<A>) -> u8 {
+        todo!()
+        /*
         debug_assert!(slice.bs.len() <= u8::BITS as usize);
         slice.bs.load_le::<u8>()
+        */
     }
 }
 
 impl<A: Codec> SeqSlice<A> {
     /// unsafely index into the `i`th position of a sequence
     pub fn nth(&self, i: usize) -> A {
-        A::unsafe_from_bits(self[i].into())
+        todo!()
+        //A::unsafe_from_bits(self[i].into())
     }
 
     pub fn len(&self) -> usize {
-        self.bs.len() / A::BITS as usize
+        todo!()
+        //self.bs.len() / A::BITS as usize
     }
 
     /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
     pub fn get(&self, i: usize) -> Option<A> {
+        todo!()
+        /*
         if i >= self.bs.len() / A::BITS as usize {
             None
         } else {
             Some(A::unsafe_from_bits(self[i].into()))
         }
+        */
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        todo!()
+        //self.len() == 0
     }
 }
-
+*/
+/*
 impl<A: Codec> From<&SeqSlice<A>> for String {
     fn from(seq: &SeqSlice<A>) -> Self {
         seq.into_iter().map(Codec::to_char).collect()
     }
 }
+*/
 
-impl<A: Codec> PartialEq<SeqSlice<A>> for SeqSlice<A> {
-    fn eq(&self, other: &SeqSlice<A>) -> bool {
-        self.bs == other.bs
+impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for SeqSlice<A, S> {
+    fn eq(&self, other: &SeqSlice<A, S>) -> bool {
+        todo!()
+        //self.bs == other.bs
     }
 }
 
+/*
 impl<A: Codec> PartialEq<SeqSlice<A>> for &SeqSlice<A> {
     fn eq(&self, other: &SeqSlice<A>) -> bool {
         self.bs == other.bs
@@ -122,13 +137,17 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
         true
     }
 }
+*/
 
 /// Warning! hashes are not currently stable between platforms/version
-impl<A: Codec> Hash for SeqSlice<A> {
+impl<A: Codec, S: SeqStorage> Hash for SeqSlice<A, S> {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        todo!()
+        /*
         self.bs.hash(state);
         // prepend length to make robust against matching prefixes
         self.len().hash(state);
+        */
     }
 }
 
@@ -144,29 +163,34 @@ impl<A: Codec> Hash for SeqSlice<A> {
 /// assert_eq!(&owned, &seq[2..7]);
 /// ```
 ///
-impl<A: Codec> ToOwned for SeqSlice<A> {
-    type Owned = Seq<A>;
+impl<A: Codec, S: SeqStorage> ToOwned for SeqSlice<A, S> {
+    type Owned = Seq<A, S>;
 
     fn to_owned(&self) -> Self::Owned {
+        todo!()
+        /*
         Seq {
             _p: PhantomData,
             bv: self.bs.into(),
         }
+        */
     }
 }
 
-impl<A: Codec> AsRef<SeqSlice<A>> for SeqSlice<A> {
-    fn as_ref(&self) -> &SeqSlice<A> {
+impl<A: Codec, S: SeqStorage> AsRef<SeqSlice<A, S>> for SeqSlice<A, S> {
+    fn as_ref(&self) -> &SeqSlice<A, S> {
         self
     }
 }
 
-impl<A: Codec> fmt::Display for SeqSlice<A> {
+impl<A: Codec, S: SeqStorage> fmt::Display for SeqSlice<A, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", String::from(self))
+        todo!()
+        //write!(f, "{}", String::from(self))
     }
 }
 
+/*
 impl<A: Codec> BitAnd for &SeqSlice<A> {
     type Output = Seq<A>;
 
@@ -193,7 +217,9 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
         }
     }
 }
+*/
 
+/*
 impl<A: Codec> ReverseMut for SeqSlice<A> {
     fn rev(&mut self) {
         self.bs.reverse();
@@ -214,7 +240,9 @@ impl<A: Codec + ComplementMut> ComplementMut for SeqSlice<A> {
         }
     }
 }
+*/
 
+/*
 impl<A: Codec + ComplementMut> ReverseComplementMut for SeqSlice<A> where
     SeqSlice<A>: ComplementMut + ReverseMut
 {
@@ -228,3 +256,4 @@ impl<A: Codec + ComplementMut> ReverseComplement for SeqSlice<A> where
     SeqSlice<A>: ComplementMut + ReverseMut
 {
 }
+*/

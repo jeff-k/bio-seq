@@ -30,7 +30,6 @@
 // permit truncations that may happen on 32-bit platforms which are unsupported anyway
 #![allow(clippy::cast_possible_truncation)]
 
-use crate::Bs;
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
 use crate::seq::{Seq, SeqArray, SeqSlice};
@@ -97,9 +96,8 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
 
     pub fn rotated_left(&self, n: u32) -> Self {
         let n: usize = (n as usize % K) * A::BITS as usize;
-        let mut ba = self.bs.to_bitarray();
-        let bs: &mut Bs = ba.as_mut();
-        bs[..Self::BITS].rotate_left(n);
+
+        let bs = todo!();
 
         Kmer {
             _p: PhantomData,

@@ -9,13 +9,13 @@
 pub mod index;
 //pub mod iterators;
 
-//mod array;
-//mod slice;
+mod array;
+mod slice;
 mod storage;
 
-//pub use array::SeqArray;
-//pub use slice::SeqSlice;
-pub(crate) use storage::SeqStorage;
+pub use array::SeqArray;
+pub use slice::SeqSlice;
+pub(crate) use storage::{SeqStorage, BitVecStorage, BitSliceStorage};
 
 use crate::codec::{Codec, text};
 use crate::error::ParseBioError;
@@ -23,11 +23,6 @@ use crate::{
     Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
     ReverseComplementMut, ReverseMut,
 };
-
-//use crate::{Bs, Bv, Order};
-
-use bitvec::field::BitField;
-use bitvec::view::BitView;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -45,7 +40,7 @@ use core::{fmt, ptr, str};
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Seq<A: Codec, S: SeqStorage> {
+pub struct Seq<A: Codec, S: SeqStorage = BitVecStorage> {
     pub(crate) _p: PhantomData<A>,
     pub(crate) store: S,
 }
@@ -371,17 +366,18 @@ impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<A, S>> for Seq<A, S> {
 
 impl<A: Codec, S: SeqStorage> PartialEq<Seq<A, S>> for &Seq<A, S> {
     fn eq(&self, other: &Seq<A, S>) -> bool {
-        **self == *other
+        //**self == *other
+        todo!()
     }
 }
 
 impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
     fn eq(&self, other: &&Seq<A, S>) -> bool {
-        *self == **other
+        //*self == **other
+        todo!()
     }
 }
 
-/*
 /// Borrow a `Seq<A>` as a `SeqSlice<A>`.
 ///
 /// The `Borrow` trait to is used to obtain a reference to a `SeqSlice` from a `Seq`, allowing it to be used wherever a `SeqSlice` is expected.
@@ -405,17 +401,19 @@ impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
 ///        println!("{query}: {value}");
 /// }
 /// ```
-impl<A: Codec> Borrow<SeqSlice<A>> for Seq<A> {
-    fn borrow(&self) -> &SeqSlice<A> {
+impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<A, S> {
         self.as_ref()
     }
 }
 
-impl<A: Codec> Borrow<SeqSlice<A>> for &Seq<A> {
-    fn borrow(&self) -> &SeqSlice<A> {
+impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for &Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<A, S> {
         self.as_ref()
     }
 }
+
+/*
 
 /// Automatic dereferencing of `Seq<A>` to `SeqSlice<A>`.
 ///
@@ -440,7 +438,6 @@ impl<A: Codec> Deref for Seq<A> {
 }
 */
 
-/*
 /// A Seq can be borrowed as a `SeqSlice` through generic constraints.
 ///
 /// ```
@@ -454,12 +451,12 @@ impl<A: Codec> Deref for Seq<A> {
 /// assert_eq!(count, 12);
 /// ```
 ///
-impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
-    fn as_ref(&self) -> &SeqSlice<A> {
-        self
+impl<A: Codec, S: SeqStorage> AsRef<SeqSlice<A, S>> for Seq<A, S> {
+    fn as_ref(&self) -> &SeqSlice<A, S> {
+        todo!()
+//        self
     }
 }
-*/
 
 /// Creates a deep copy of the sequence.
 ///
@@ -475,10 +472,13 @@ impl<A: Codec> AsRef<SeqSlice<A>> for Seq<A> {
 ///
 impl<A: Codec, S: SeqStorage> Clone for Seq<A, S> {
     fn clone(&self) -> Self {
+        todo!()
+        /*
         Self {
             _p: PhantomData,
             store: self.store.clone(),
         }
+        */
     }
 }
 

@@ -16,7 +16,7 @@ const fn make_2bit_table() -> [u8; 256] {
 pub(crate) const REV_2BIT: [u8; 256] = make_2bit_table();
 
 pub(crate) mod sealed {
-    use crate::Bs;
+//    use crate::Bs;
 
     pub trait KmerStorage: Copy + Clone + PartialEq + std::fmt::Debug {
         const BITS: usize;

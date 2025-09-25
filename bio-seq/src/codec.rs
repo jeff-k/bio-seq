@@ -113,13 +113,12 @@
 //!
 //! ```
 
-use crate::seq::SeqStorage;
 use core::fmt;
 use core::hash::Hash;
 
-pub mod amino;
+//pub mod amino;
 pub mod dna;
-pub mod iupac;
+//pub mod iupac;
 
 #[cfg(feature = "extra_codecs")]
 pub mod masked;
@@ -137,7 +136,6 @@ pub use bio_seq_derive::Codec;
 ///
 /// The intended representation is an `Enum`, transparently represented as a `u8`.
 pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
-    type Store: SeqStorage;
 
     /// The number of bits used to encode the symbols. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
     const BITS: u8;
