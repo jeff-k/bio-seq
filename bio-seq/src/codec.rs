@@ -136,7 +136,6 @@ pub use bio_seq_derive::Codec;
 ///
 /// The intended representation is an `Enum`, transparently represented as a `u8`.
 pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
-
     /// The number of bits used to encode the symbols. e.g. `Dna::BITS` = 2, `Iupac::BITS` = 4.
     const BITS: u8;
 

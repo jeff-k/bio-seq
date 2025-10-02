@@ -1,5 +1,8 @@
 use bitvec::prelude::*;
 
+use core::ops::Deref;
+use core::ptr;
+
 type Order = Lsb0;
 type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
@@ -11,17 +14,18 @@ use bitvec::view::BitView;
 use crate::seq::SeqStorage;
 
 #[derive(Clone, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct BitVecStorage {
     pub(crate) bv: Bv,
 }
 
-pub struct BitSliceStorage<'a> {
-    pub(crate) bs: &'a Bs,
+#[repr(transparent)]
+pub struct BitSliceStorage {
+    pub(crate) bs: Bs,
 }
 
-
 impl SeqStorage for BitVecStorage {
-    type Slice<'a> = BitSliceStorage<'a>;
+    //    type Slice<'a> = BitSliceStorage where Self: 'a;
     type Array<const A: usize, const B: usize> = ();
 
     fn new() -> Self {
@@ -33,16 +37,13 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn with_capacity(len: usize) -> Self {
-        BitVecStorage { bv: Bv::with_capacity(len) }
+        BitVecStorage {
+            bv: Bv::with_capacity(len),
+        }
     }
 
     fn is_empty(&self) -> bool {
         self.bv.is_empty()
-    }
-
-    fn as_slice(&self) -> &Self::Slice<'_> {
-        todo!()
-        //&Self::Slice { bs: self.bv.as_slice() }
     }
 
     fn push(&mut self, bit: u8) {
@@ -56,6 +57,13 @@ impl SeqStorage for BitVecStorage {
     fn clear(&mut self) {
         self.bv.clear()
     }
-
 }
 
+impl Deref for BitVecStorage {
+    type Target = BitSliceStorage;
+
+    fn deref(&self) -> &Self::Target {
+        let bs: *const Bs = ptr::from_ref(self.bv.as_bitslice());
+        unsafe { &*(bs as *const BitSliceStorage) }
+    }
+}

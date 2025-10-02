@@ -112,15 +112,15 @@ pub mod translation;
 
 pub mod prelude {
     pub use crate::codec::Codec;
-//    pub use crate::codec::amino::Amino;
+    //    pub use crate::codec::amino::Amino;
     pub use crate::codec::dna::Dna;
-//    pub use crate::codec::iupac::Iupac;
+    //    pub use crate::codec::iupac::Iupac;
     pub use crate::{
         Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
         ReverseComplementMut, ReverseMut,
     };
 
-//    pub use crate::kmer::Kmer;
+    //    pub use crate::kmer::Kmer;
     pub use crate::seq::{Seq, SeqArray, SeqSlice};
 
     #[cfg(feature = "translation")]
@@ -130,9 +130,9 @@ pub mod prelude {
 
     pub use crate::error::ParseBioError;
 
-//    pub use crate::{dna, iupac, kmer};
+    //    pub use crate::{dna, iupac, kmer};
 
-/*
+    /*
     #[doc(hidden)]
     pub use crate::__bio_seq_Lsb0;
     #[doc(hidden)]

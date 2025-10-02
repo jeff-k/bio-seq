@@ -6,10 +6,10 @@
 use crate::codec::Codec;
 use crate::error::ParseBioError;
 use crate::seq::Seq;
+use crate::seq::storage::SeqStorage;
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };
-use crate::seq::storage::SeqStorage;
 
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -21,15 +21,15 @@ use core::ops::{BitAnd, BitOr};
 /// An unsized, read-only window into part of a sequence
 #[derive(Debug, Eq)]
 #[repr(transparent)]
-pub struct SeqSlice<'a, A: Codec, S: SeqStorage + 'a> {
+pub struct SeqSlice<A: Codec, S: SeqStorage> {
     pub(crate) _p: PhantomData<A>,
-    pub(crate) bs: S::Slice<'a>,
+    pub(crate) bs: S::Target,
 }
 
-impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<'_, A, S>> for usize {
+impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<A, S>> for usize {
     type Error = ParseBioError;
 
-    fn try_from(_slice: &SeqSlice<'_, A, S>) -> Result<usize, Self::Error> {
+    fn try_from(_slice: &SeqSlice<A, S>) -> Result<usize, Self::Error> {
         todo!()
         /*
         if slice.bs.len() <= usize::BITS as usize {
@@ -92,8 +92,8 @@ impl<A: Codec> From<&SeqSlice<A>> for String {
 }
 */
 
-impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<'_, A, S>> for SeqSlice<'_, A, S> {
-    fn eq(&self, _other: &SeqSlice<'_, A, S>) -> bool {
+impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for SeqSlice<A, S> {
+    fn eq(&self, _other: &SeqSlice<A, S>) -> bool {
         todo!()
         //self.bs == other.bs
     }
@@ -140,7 +140,7 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
 */
 
 /// Warning! hashes are not currently stable between platforms/version
-impl<A: Codec, S: SeqStorage> Hash for SeqSlice<'_, A, S> {
+impl<A: Codec, S: SeqStorage> Hash for SeqSlice<A, S> {
     fn hash<H: Hasher>(&self, _state: &mut H) {
         todo!()
         /*
@@ -163,7 +163,8 @@ impl<A: Codec, S: SeqStorage> Hash for SeqSlice<'_, A, S> {
 /// assert_eq!(&owned, &seq[2..7]);
 /// ```
 ///
-impl<A: Codec, S: SeqStorage> ToOwned for SeqSlice<'_, A, S> {
+/*
+impl<A: Codec, S: SeqStorage> ToOwned for SeqSlice<A, S> {
     type Owned = Seq<A, S>;
 
     fn to_owned(&self) -> Self::Owned {
@@ -176,14 +177,15 @@ impl<A: Codec, S: SeqStorage> ToOwned for SeqSlice<'_, A, S> {
         */
     }
 }
+*/
 
-impl<'a, A: Codec, S: SeqStorage> AsRef<SeqSlice<'a, A, S>> for SeqSlice<'a, A, S> {
-    fn as_ref(&self) -> &SeqSlice<'a, A, S> {
+impl<A: Codec, S: SeqStorage> AsRef<SeqSlice<A, S>> for SeqSlice<A, S> {
+    fn as_ref(&self) -> &SeqSlice<A, S> {
         self
     }
 }
 
-impl<A: Codec, S: SeqStorage> fmt::Display for SeqSlice<'_, A, S> {
+impl<A: Codec, S: SeqStorage> fmt::Display for SeqSlice<A, S> {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
         //write!(f, "{}", String::from(self))

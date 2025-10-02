@@ -5,13 +5,11 @@
 
 mod bv;
 
-pub use bv::{BitVecStorage, BitSliceStorage};
+use core::ops::Deref;
 
-pub trait SeqStorage: Sized + Clone + PartialEq {
-    type Slice<'a>: 'a + ?Sized
-    where
-        Self: 'a;
+pub use bv::{BitSliceStorage, BitVecStorage};
 
+pub trait SeqStorage: Sized + Clone + PartialEq + Deref {
     type Array<const N: usize, const W: usize>;
 
     fn new() -> Self;
@@ -19,7 +17,6 @@ pub trait SeqStorage: Sized + Clone + PartialEq {
     fn with_capacity(cap: usize) -> Self;
     fn is_empty(&self) -> bool;
 
-    fn as_slice(&self) -> &Self::Slice<'_>;
     fn to_usize(&self) -> usize;
     fn push(&mut self, bits: u8);
     fn clear(&mut self);
