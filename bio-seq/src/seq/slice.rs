@@ -19,7 +19,7 @@ use core::str;
 use core::ops::{BitAnd, BitOr};
 
 /// An unsized, read-only window into part of a sequence
-#[derive(Debug, Eq)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec, S: SeqStorage> {
     pub(crate) _p: PhantomData<A>,
@@ -40,6 +40,12 @@ impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<A, S>> for usize {
             Err(ParseBioError::SequenceTooLong(len, expected))
         }
         */
+    }
+}
+
+impl<A: Codec, S: SeqStorage> PartialEq for SeqSlice<A, S> {
+    fn eq(&self, other: &Self) -> bool {
+        &self.store == &other.store
     }
 }
 
@@ -92,12 +98,13 @@ impl<A: Codec> From<&SeqSlice<A>> for String {
 }
 */
 
+/*
 impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for SeqSlice<A, S> {
-    fn eq(&self, _other: &SeqSlice<A, S>) -> bool {
-        todo!()
-        //self.bs == other.bs
+    fn eq(&self, other: &SeqSlice<A, S>) -> bool {
+        self.bs == other.bs
     }
 }
+*/
 
 /*
 impl<A: Codec> PartialEq<SeqSlice<A>> for &SeqSlice<A> {

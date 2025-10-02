@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use core::ops::Deref;
+use core::ops::{Deref, Range};
 use core::ptr;
 
 type Order = Lsb0;
@@ -56,6 +56,22 @@ impl SeqStorage for BitVecStorage {
 
     fn clear(&mut self) {
         self.bv.clear()
+    }
+
+    fn truncate(&mut self, len: usize) {
+        todo!()
+    }
+
+    fn extend(&mut self, other: &Self::Target) {
+        todo!()
+    }
+
+    fn prepend(&mut self, other: &Self::Target) {
+        todo!()
+    }
+
+    fn drain(&mut self, range: Range<usize>) {
+        todo!()
     }
 }
 

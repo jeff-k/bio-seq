@@ -353,30 +353,28 @@ impl<A: Codec + ComplementMut> Complement for Seq<A> {}
 
 impl<A: Codec + ComplementMut> ReverseComplement for Seq<A> where Seq<A>: ComplementMut + ReverseMut {}
 
-impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
-    fn eq(&self, other: &SeqSlice<A>) -> bool {
+*/
+impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for Seq<A, S> {
+    fn eq(&self, other: &SeqSlice<A, S>) -> bool {
         self.as_ref() == other
     }
 }
-*/
+
 impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<A, S>> for Seq<A, S> {
-    fn eq(&self, _other: &&SeqSlice<A, S>) -> bool {
-        //self.as_ref() == *other
-        todo!()
+    fn eq(&self, other: &&SeqSlice<A, S>) -> bool {
+        self.as_ref() == *other
     }
 }
 
 impl<A: Codec, S: SeqStorage> PartialEq<Seq<A, S>> for &Seq<A, S> {
-    fn eq(&self, _other: &Seq<A, S>) -> bool {
-        //**self == *other
-        todo!()
+    fn eq(&self, other: &Seq<A, S>) -> bool {
+        **self == *other
     }
 }
 
 impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
-    fn eq(&self, _other: &&Seq<A, S>) -> bool {
-        //*self == **other
-        todo!()
+    fn eq(&self, other: &&Seq<A, S>) -> bool {
+        *self == **other
     }
 }
 
@@ -403,19 +401,17 @@ impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
 ///        println!("{query}: {value}");
 /// }
 /// ```
-/*
-impl<'a, A: Codec, S: SeqStorage> Borrow<SeqSlice<'a, A, S>> for Seq<A, S> {
-    fn borrow(&self) -> &SeqSlice<'a, A, S> {
+impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<A, S> {
         self.as_ref()
     }
 }
 
-impl<'a, A: Codec, S: SeqStorage> Borrow<SeqSlice<'a, A, S>> for &Seq<A, S> {
-    fn borrow(&self) -> &SeqSlice<'a, A, S> {
+impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for &Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<A, S> {
         self.as_ref()
     }
 }
-*/
 
 /// Automatic dereferencing of `Seq<A>` to `SeqSlice<A>`.
 ///
