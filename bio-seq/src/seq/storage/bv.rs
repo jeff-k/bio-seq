@@ -25,27 +25,28 @@ impl SeqStorage for BitVecStorage {
     type Array<const A: usize, const B: usize> = ();
 
     fn new() -> Self {
-        todo!()
+        BitVecStorage { bv: Bv::new() }
     }
 
     fn len(&self) -> usize {
-        todo!()
+        self.bv.len()
     }
 
-    fn with_capacity(_len: usize) -> Self {
-        todo!()
+    fn with_capacity(len: usize) -> Self {
+        BitVecStorage { bv: Bv::with_capacity(len) }
     }
 
     fn is_empty(&self) -> bool {
-        todo!()
+        self.bv.is_empty()
     }
 
     fn as_slice(&self) -> &Self::Slice<'_> {
         todo!()
+        //&Self::Slice { bs: self.bv.as_slice() }
     }
 
-    fn push(&mut self, _bits: u8) {
-        todo!()
+    fn push(&mut self, bit: u8) {
+        Bv::push(&mut self.bv, bit & 1 != 0);
     }
 
     fn to_usize(&self) -> usize {
@@ -53,7 +54,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn clear(&mut self) {
-        todo!()
+        self.bv.clear()
     }
 
 }

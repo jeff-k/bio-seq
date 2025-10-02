@@ -10,7 +10,7 @@ use crate::seq::SeqSlice;
 impl<'a, A: Codec, S: SeqStorage> Index<Range<usize>> for SeqSlice<'a, A, S> {
     type Output = SeqSlice<'a, A, S>;
 
-    fn index(&self, range: Range<usize>) -> &Self::Output {
+    fn index(&self, _range: Range<usize>) -> &Self::Output {
         todo!()
         /*
         let s = range.start * A::BITS as usize;
@@ -24,7 +24,7 @@ impl<'a, A: Codec, S: SeqStorage> Index<Range<usize>> for SeqSlice<'a, A, S> {
 impl<'a, A: Codec, S: SeqStorage> Index<RangeTo<usize>> for SeqSlice<'a, A, S> {
     type Output = SeqSlice<'a, A, S>;
 
-    fn index(&self, range: RangeTo<usize>) -> &Self::Output {
+    fn index(&self, _range: RangeTo<usize>) -> &Self::Output {
         todo!()
         /*
         let e = range.end * A::BITS as usize;
@@ -37,7 +37,7 @@ impl<'a, A: Codec, S: SeqStorage> Index<RangeTo<usize>> for SeqSlice<'a, A, S> {
 impl<'a, A: Codec, S: SeqStorage> Index<RangeToInclusive<usize>> for SeqSlice<'a, A, S> {
     type Output = SeqSlice<'a, A, S>;
 
-    fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
+    fn index(&self, _range: RangeToInclusive<usize>) -> &Self::Output {
         todo!()
         /*
         let e = (range.end + 1) * A::BITS as usize;
@@ -50,7 +50,7 @@ impl<'a, A: Codec, S: SeqStorage> Index<RangeToInclusive<usize>> for SeqSlice<'a
 impl<'a, A: Codec, S: SeqStorage> Index<RangeInclusive<usize>> for SeqSlice<'a, A, S> {
     type Output = SeqSlice<'a, A, S>;
 
-    fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
+    fn index(&self, _range: RangeInclusive<usize>) -> &Self::Output {
         todo!()
         /*
         let s = range.start() * A::BITS as usize;
@@ -65,7 +65,7 @@ impl<'a, A: Codec, S: SeqStorage> Index<RangeInclusive<usize>> for SeqSlice<'a, 
 impl<'a, A: Codec, S: SeqStorage> Index<RangeFrom<usize>> for SeqSlice<'a, A, S> {
     type Output = SeqSlice<'a, A, S>;
 
-    fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
+    fn index(&self, _range: RangeFrom<usize>) -> &Self::Output {
         todo!()
         /*
         let s = range.start * A::BITS as usize;
@@ -90,7 +90,7 @@ impl<'a, A: Codec, S: SeqStorage> Index<RangeFull> for SeqSlice<'a, A, S> {
 impl<'a, A: Codec, S: SeqStorage> Index<usize> for SeqSlice<'a, A, S> {
     type Output = SeqSlice<'a, A, S>;
 
-    fn index(&self, i: usize) -> &Self::Output {
+    fn index(&self, _i: usize) -> &Self::Output {
         todo!()
         /*
         let s = i * A::BITS as usize;

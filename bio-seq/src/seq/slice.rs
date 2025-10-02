@@ -29,7 +29,7 @@ pub struct SeqSlice<'a, A: Codec, S: SeqStorage + 'a> {
 impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<'_, A, S>> for usize {
     type Error = ParseBioError;
 
-    fn try_from(slice: &SeqSlice<'_, A, S>) -> Result<usize, Self::Error> {
+    fn try_from(_slice: &SeqSlice<'_, A, S>) -> Result<usize, Self::Error> {
         todo!()
         /*
         if slice.bs.len() <= usize::BITS as usize {
@@ -93,7 +93,7 @@ impl<A: Codec> From<&SeqSlice<A>> for String {
 */
 
 impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<'_, A, S>> for SeqSlice<'_, A, S> {
-    fn eq(&self, other: &SeqSlice<'_, A, S>) -> bool {
+    fn eq(&self, _other: &SeqSlice<'_, A, S>) -> bool {
         todo!()
         //self.bs == other.bs
     }
@@ -141,7 +141,7 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
 
 /// Warning! hashes are not currently stable between platforms/version
 impl<A: Codec, S: SeqStorage> Hash for SeqSlice<'_, A, S> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, _state: &mut H) {
         todo!()
         /*
         self.bs.hash(state);
@@ -184,7 +184,7 @@ impl<'a, A: Codec, S: SeqStorage> AsRef<SeqSlice<'a, A, S>> for SeqSlice<'a, A, 
 }
 
 impl<A: Codec, S: SeqStorage> fmt::Display for SeqSlice<'_, A, S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
         //write!(f, "{}", String::from(self))
     }

@@ -3,9 +3,9 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-mod bitvec;
+mod bv;
 
-pub  use bitvec::{BitVecStorage, BitSliceStorage};
+pub use bv::{BitVecStorage, BitSliceStorage};
 
 pub trait SeqStorage: Sized + Clone + PartialEq {
     type Slice<'a>: 'a + ?Sized

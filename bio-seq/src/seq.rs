@@ -28,7 +28,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 use core::borrow::Borrow;
-use core::hash::{Hash, Hasher};
+//use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::{Bound, Deref, RangeBounds};
 use core::str::FromStr;
@@ -76,9 +76,10 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     }
 
     pub fn len(&self) -> usize {
-        todo!()
+        self.store.len() * A::BITS as usize
     }
 
+/*
     fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> (usize, usize) {
         let s = match range.start_bound() {
             Bound::Included(&n) => n,
@@ -97,6 +98,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
 
         (s * A::BITS as usize, e * A::BITS as usize)
     }
+    */
 
     /// Trim leading and trailing characters that don't match bases/symbols
     /// ```
@@ -116,7 +118,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
             .position(|&byte| A::try_from_ascii(byte).is_some())
             .unwrap_or(v.len());
 
-        let end = v[start..]
+        let _end = v[start..]
             .iter()
             .rposition(|&byte| A::try_from_ascii(byte).is_some())
             .map_or(start, |pos| start + pos + 1);
@@ -358,21 +360,21 @@ impl<A: Codec> PartialEq<SeqSlice<A>> for Seq<A> {
 }
 */
 impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<'_, A, S>> for Seq<A, S> {
-    fn eq(&self, other: &&SeqSlice<A, S>) -> bool {
+    fn eq(&self, _other: &&SeqSlice<A, S>) -> bool {
         //self.as_ref() == *other
         todo!()
     }
 }
 
 impl<A: Codec, S: SeqStorage> PartialEq<Seq<A, S>> for &Seq<A, S> {
-    fn eq(&self, other: &Seq<A, S>) -> bool {
+    fn eq(&self, _other: &Seq<A, S>) -> bool {
         //**self == *other
         todo!()
     }
 }
 
 impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
-    fn eq(&self, other: &&Seq<A, S>) -> bool {
+    fn eq(&self, _other: &&Seq<A, S>) -> bool {
         //*self == **other
         todo!()
     }
@@ -413,8 +415,6 @@ impl<'a, A: Codec, S: SeqStorage> Borrow<SeqSlice<'a, A, S>> for &Seq<A, S> {
     }
 }
 
-/*
-
 /// Automatic dereferencing of `Seq<A>` to `SeqSlice<A>`.
 ///
 /// ```
@@ -428,12 +428,14 @@ impl<'a, A: Codec, S: SeqStorage> Borrow<SeqSlice<'a, A, S>> for &Seq<A, S> {
 /// assert_eq!(count, 12);
 /// ```
 ///
-impl<A: Codec> Deref for Seq<A> {
-    type Target = SeqSlice<A>;
+/*
+impl<'a, A: Codec, S: SeqStorage + 'a> Deref for Seq<A, S> {
+    type Target = SeqSlice<'a, A, S>;
 
     fn deref(&self) -> &Self::Target {
-        let bs: *const Bs = ptr::from_ref::<Bs>(&self.bv);
-        unsafe { &*(bs as *const SeqSlice<A>) }
+        todo!()
+        //let bs: *const Bs = ptr::from_ref::<Bs>(&self.bv);
+        //unsafe { &*(bs as *const SeqSlice<A>) }
     }
 }
 */
@@ -451,7 +453,7 @@ impl<A: Codec> Deref for Seq<A> {
 /// assert_eq!(count, 12);
 /// ```
 ///
-impl<'a, A: Codec, S: SeqStorage> AsRef<SeqSlice<'a, A, S>> for Seq<A, S> {
+impl<'a, A: Codec, S: SeqStorage + 'a> AsRef<SeqSlice<'a, A, S>> for Seq<A, S> {
     fn as_ref(&self) -> &SeqSlice<'a, A, S> {
         todo!()
     }
@@ -471,13 +473,10 @@ impl<'a, A: Codec, S: SeqStorage> AsRef<SeqSlice<'a, A, S>> for Seq<A, S> {
 ///
 impl<A: Codec, S: SeqStorage> Clone for Seq<A, S> {
     fn clone(&self) -> Self {
-        todo!()
-        /*
         Self {
             _p: PhantomData,
             store: self.store.clone(),
         }
-        */
     }
 }
 
@@ -493,7 +492,7 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
 */
 
 impl<A: Codec, S: SeqStorage> From<&Vec<A>> for Seq<A, S> {
-    fn from(vec: &Vec<A>) -> Self {
+    fn from(_vec: &Vec<A>) -> Self {
         // for a general conversion: vec.iter().copied().map(Into::into).collect()
 
 //        vec.iter().copied().collect()
@@ -574,7 +573,7 @@ impl<A: Codec, S: SeqStorage> TryFrom<&[u8]> for Seq<A, S> {
 impl<A: Codec, S: SeqStorage> TryFrom<Vec<u8>> for Seq<A, S> {
     type Error = ParseBioError;
 
-    fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
+    fn try_from(_v: Vec<u8>) -> Result<Self, Self::Error> {
         // potentional optimisation: with an extra allocation we could
         // .collect::<Result<Vec<A>, _>>()
         // .map(|v| { let mut seq = Self::with_capacity etc.
