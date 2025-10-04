@@ -7,7 +7,7 @@
 //!
 //! `Seq` and `&SeqSlice` are analogous to `String` and `&str`. A `Seq` owns its data and a `SeqSlice` is a read-only window into a `Seq`.
 pub mod index;
-//pub mod iterators;
+pub mod iterators;
 
 mod array;
 mod slice;
