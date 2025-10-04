@@ -430,8 +430,8 @@ impl<A: Codec, S: SeqStorage> Deref for Seq<A, S> {
     type Target = SeqSlice<A, S>;
 
     fn deref(&self) -> &Self::Target {
-        let slice: &S::Target = &*self.store;
-        let ptr: *const S::Target = ptr::from_ref(slice);
+        let slice: &S::Slice = &*self.store;
+        let ptr: *const S::Slice = ptr::from_ref(slice);
         unsafe { &*(ptr as *const SeqSlice<A, S>) }
     }
 }

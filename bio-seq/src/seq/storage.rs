@@ -9,10 +9,8 @@ use core::ops::{Deref, Range};
 
 pub use bv::{BitSliceStorage, BitVecStorage};
 
-pub trait SeqStorage: Sized + Clone + PartialEq + Deref
-where
-    Self::Target: PartialEq + Eq,
-{
+pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
+    type Slice: ?Sized + PartialEq + Eq;
     type Array<const N: usize, const W: usize>;
 
     fn new() -> Self;
@@ -25,7 +23,7 @@ where
     fn clear(&mut self);
 
     fn truncate(&mut self, len: usize);
-    fn prepend(&mut self, other: &Self::Target);
-    fn extend(&mut self, other: &Self::Target);
+    fn prepend(&mut self, other: &Self::Slice);
+    fn extend(&mut self, other: &Self::Slice);
     fn drain(&mut self, range: Range<usize>);
 }

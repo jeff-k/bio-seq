@@ -24,8 +24,17 @@ pub struct BitSliceStorage {
     pub(crate) bs: Bs,
 }
 
+impl PartialEq for BitSliceStorage {
+    fn eq(&self, other: &Self) -> bool {
+        self.bs == other.bs
+    }
+}
+
+impl Eq for BitSliceStorage {}
+
 impl SeqStorage for BitVecStorage {
     //    type Slice<'a> = BitSliceStorage where Self: 'a;
+    type Slice = BitSliceStorage;
     type Array<const A: usize, const B: usize> = ();
 
     fn new() -> Self {
@@ -62,11 +71,11 @@ impl SeqStorage for BitVecStorage {
         todo!()
     }
 
-    fn extend(&mut self, other: &Self::Target) {
+    fn extend(&mut self, other: &Self::Slice) {
         todo!()
     }
 
-    fn prepend(&mut self, other: &Self::Target) {
+    fn prepend(&mut self, other: &Self::Slice) {
         todo!()
     }
 

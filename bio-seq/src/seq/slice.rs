@@ -23,7 +23,7 @@ use core::ops::{BitAnd, BitOr};
 #[repr(transparent)]
 pub struct SeqSlice<A: Codec, S: SeqStorage> {
     pub(crate) _p: PhantomData<A>,
-    pub(crate) bs: S::Target,
+    pub(crate) bs: S::Slice,
 }
 
 impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<A, S>> for usize {
@@ -45,7 +45,7 @@ impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<A, S>> for usize {
 
 impl<A: Codec, S: SeqStorage> PartialEq for SeqSlice<A, S> {
     fn eq(&self, other: &Self) -> bool {
-        &self.store == &other.store
+        &self.bs == &other.bs
     }
 }
 
