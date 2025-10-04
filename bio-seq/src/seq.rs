@@ -15,7 +15,8 @@ mod storage;
 
 pub use array::SeqArray;
 pub use slice::SeqSlice;
-pub(crate) use storage::{BitSliceStorage, BitVecStorage, SeqStorage};
+//pub(crate) use storage::{BitSliceStorage, BitVecStorage, SeqStorage};
+use storage::{BitVecStorage, SeqSliceStorage, SeqStorage};
 
 use crate::codec::{Codec, text};
 use crate::error::ParseBioError;
@@ -30,7 +31,7 @@ use serde::{Deserialize, Serialize};
 use core::borrow::Borrow;
 //use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::{Bound, Deref, RangeBounds};
+use core::ops::{Bound, Deref, Range, RangeBounds};
 use core::str::FromStr;
 use core::{fmt, ptr, str};
 
@@ -79,8 +80,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         self.store.len() * A::BITS as usize
     }
 
-    /*
-    fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> (usize, usize) {
+    fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> Range<usize> {
         let s = match range.start_bound() {
             Bound::Included(&n) => n,
             Bound::Excluded(&n) => n + 1,
@@ -96,9 +96,8 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         debug_assert!(s <= e, "Start of range must be less than or equal to end");
         debug_assert!(e <= self.len(), "Range out of bounds");
 
-        (s * A::BITS as usize, e * A::BITS as usize)
+        s * A::BITS as usize..e * A::BITS as usize
     }
-    */
 
     /// Trim leading and trailing characters that don't match bases/symbols
     /// ```
@@ -167,7 +166,6 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         self.store.clear();
     }
 
-    /*
     /// Truncate a sequence
     /// ```
     /// # use bio_seq::prelude::*;
@@ -176,7 +174,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// assert_eq!(&seq, dna!("CC"));
     /// ```
     pub fn truncate(&mut self, len: usize) {
-        self.bv.truncate(len * A::BITS as usize);
+        self.store.truncate(len * A::BITS as usize);
     }
 
     /// Prepend a slice
@@ -186,64 +184,46 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// seq.prepend(dna!("TTTT"));
     /// assert_eq!(&seq, dna!("TTTTCCCCC"));
     /// ```
-    pub fn prepend(&mut self, other: &SeqSlice<A>) {
-        let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
-        bv.extend_from_bitslice(&other.bs);
-        bv.extend_from_bitslice(&self.store);
-        self.store = store;
+    pub fn prepend(&mut self, other: &SeqSlice<A, S>) {
+        self.store.prepend(&other.bs)
     }
-    */
 
+    /// Append a slice
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("CCCCC").into();
+    /// seq.append(dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("CCCCCTTTT"));
+    /// ```
+    pub fn append(&mut self, other: &SeqSlice<A, S>) {
+        self.store.extend(&other.bs);
+    }
+
+    /// Remove a range and replace it with a slice
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
+    /// seq.splice(4..6, dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
+    /// ```
+    pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A, S>) {
+        self.store.splice(range, &other.bs)
+    }
+
+    /// Insert a slice into a sequence
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("AAAAA").into();
+    /// seq.insert(3, dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("AAATTTTAA"));
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if index out of bounds
+    pub fn insert(&mut self, index: usize, other: &SeqSlice<A, S>) {
+        self.store.insert(index * A::BITS as usize, &other.bs);
+    }
     /*
-        /// Append a slice
-        /// ```
-        /// # use bio_seq::prelude::*;
-        /// let mut seq: Seq<Dna> = dna!("CCCCC").into();
-        /// seq.append(dna!("TTTT"));
-        /// assert_eq!(&seq, dna!("CCCCCTTTT"));
-        /// ```
-        pub fn append(&mut self, other: &SeqSlice<A>) {
-            self.bv.extend_from_bitslice(&other.bs);
-        }
-
-        /*
-            /// Remove a range and replace it with a slice
-            /// ```
-            /// # use bio_seq::prelude::*;
-            /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
-            /// seq.splice(4..6, dna!("TTTT"));
-            /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
-            /// ```
-            pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
-                let (s, e) = self.bit_range(range);
-                self.bv
-                    .splice(s..e, other.bs.iter().by_vals())
-            }
-        */
-
-        /// Insert a slice into a sequence
-        /// ```
-        /// # use bio_seq::prelude::*;
-        /// let mut seq: Seq<Dna> = dna!("AAAAA").into();
-        /// seq.insert(3, dna!("TTTT"));
-        /// assert_eq!(&seq, dna!("AAATTTTAA"));
-        /// ```
-        ///
-        /// # Panics
-        /// Panics if index out of bounds
-        pub fn insert(&mut self, index: usize, other: &SeqSlice<A>) {
-            assert!(index <= self.len(), "Index out of bounds");
-
-            let i = index * A::BITS as usize;
-            let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
-
-            bv.extend_from_bitslice(&self.bs[..i]);
-            bv.extend_from_bitslice(&other.bs);
-            bv.extend_from_bitslice(&self.bs[i..]);
-
-            self.bv = bv;
-        }
-
         /// Remove a region of a sequence
         /// ```
         /// # use bio_seq::prelude::*;
@@ -582,7 +562,6 @@ impl<A: Codec, S: SeqStorage> TryFrom<Vec<u8>> for Seq<A, S> {
     }
 }
 
-/*
 impl<A: Codec, S: SeqStorage> From<Seq<A, S>> for String {
     fn from(seq: Seq<A, S>) -> Self {
         String::from(seq.as_ref())
@@ -600,7 +579,6 @@ impl<A: Codec, S: SeqStorage> fmt::Display for Seq<A, S> {
         fmt::Display::fmt(self.as_ref(), f)
     }
 }
-*/
 
 /*
 impl<A: Codec> Extend<A> for Seq<A> {

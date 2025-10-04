@@ -6,7 +6,7 @@
 use crate::codec::Codec;
 use crate::error::ParseBioError;
 use crate::seq::Seq;
-use crate::seq::storage::SeqStorage;
+use crate::seq::storage::{SeqSliceStorage, SeqStorage};
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };
@@ -59,44 +59,39 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
         */
     }
 }
+*/
 
-impl<A: Codec> SeqSlice<A> {
+impl<A: Codec, S: SeqStorage> SeqSlice<A, S> {
     /// unsafely index into the `i`th position of a sequence
     pub fn nth(&self, i: usize) -> A {
         todo!()
-        //A::unsafe_from_bits(self[i].into())
+        //        A::unsafe_from_bits(self[i])
     }
 
     pub fn len(&self) -> usize {
-        todo!()
-        //self.bs.len() / A::BITS as usize
+        self.bs.len() / A::BITS as usize
     }
 
     /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
     pub fn get(&self, i: usize) -> Option<A> {
-        todo!()
-        /*
         if i >= self.bs.len() / A::BITS as usize {
             None
         } else {
-            Some(A::unsafe_from_bits(self[i].into()))
+            Some(self.nth(i))
         }
-        */
     }
 
     pub fn is_empty(&self) -> bool {
+        self.bs.len() == 0
+    }
+}
+
+impl<A: Codec, S: SeqStorage> From<&SeqSlice<A, S>> for String {
+    fn from(seq: &SeqSlice<A, S>) -> Self {
         todo!()
-        //self.len() == 0
+        //        seq.into_iter().map(Codec::to_char).collect()
     }
 }
-*/
-/*
-impl<A: Codec> From<&SeqSlice<A>> for String {
-    fn from(seq: &SeqSlice<A>) -> Self {
-        seq.into_iter().map(Codec::to_char).collect()
-    }
-}
-*/
 
 /*
 impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for SeqSlice<A, S> {

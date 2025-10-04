@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use core::ops::{Deref, Range};
+use core::ops::{Deref, Range, RangeBounds};
 use core::ptr;
 
 type Order = Lsb0;
@@ -11,7 +11,7 @@ type Ba<const W: usize> = BitArray<[usize; W], Order>;
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 
-use crate::seq::SeqStorage;
+use crate::seq::storage::{SeqSliceStorage, SeqStorage};
 
 #[derive(Clone, PartialEq, Eq)]
 #[repr(transparent)]
@@ -22,6 +22,17 @@ pub struct BitVecStorage {
 #[repr(transparent)]
 pub struct BitSliceStorage {
     pub(crate) bs: Bs,
+}
+
+impl SeqSliceStorage for BitSliceStorage {
+    fn nth(&self, i: usize) -> u8 {
+        todo!()
+        //        self[i]
+    }
+
+    fn len(&self) -> usize {
+        self.bs.len()
+    }
 }
 
 impl PartialEq for BitSliceStorage {
@@ -72,15 +83,35 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn extend(&mut self, other: &Self::Slice) {
-        todo!()
+        self.bv.extend_from_bitslice(&other.bs)
     }
 
     fn prepend(&mut self, other: &Self::Slice) {
-        todo!()
+        let mut bv = Bv::with_capacity(self.len() + other.bs.len());
+        bv.extend(&other.bs);
+        bv.extend_from_bitslice(&self.bv);
+        self.bv = bv;
     }
 
     fn drain(&mut self, range: Range<usize>) {
         todo!()
+    }
+
+    fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &Self::Slice) {
+        self.bv.splice(range, other.bs.iter().by_vals());
+        todo!()
+    }
+
+    fn insert(&mut self, index: usize, other: &Self::Slice) {
+        assert!(index <= self.len(), "Index out of bounds");
+
+        let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
+
+        bv.extend_from_bitslice(&self.bs[..index]);
+        bv.extend_from_bitslice(&other.bs);
+        bv.extend_from_bitslice(&self.bs[index..]);
+
+        self.bv = bv;
     }
 }
 
