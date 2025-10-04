@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Jeff Knaggs
+// Copyright 2021-2025 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -96,7 +96,7 @@
 pub mod codec;
 pub mod error;
 //#[macro_use]
-//pub mod kmer;
+pub mod kmer;
 pub mod seq;
 
 pub use bio_seq_derive::{dna, iupac};

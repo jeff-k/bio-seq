@@ -6,7 +6,7 @@ use core::ptr;
 type Order = Lsb0;
 type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
-type Ba<const W: usize> = BitArray<[usize; W], Order>;
+//type Ba<const W: usize> = BitArray<[usize; W], Order>;
 
 use bitvec::field::BitField;
 use bitvec::view::BitView;

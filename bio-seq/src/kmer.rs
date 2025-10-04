@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Jeff Knaggs
+// Copyright 2021-2025 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -32,7 +32,9 @@
 
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
-use crate::seq::{Seq, SeqArray, SeqSlice};
+//use crate::seq::{Seq, SeqArray, SeqSlice};
+use crate::seq::{Seq, SeqSlice};
+use crate::seq::storage::{SeqStorage, SeqSliceStorage};
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };
@@ -155,7 +157,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     }
 
     /// Create Kmer from sequence without checking length
-    pub fn unsafe_from_seqslice(seq: &SeqSlice<A>) -> Self {
+    pub fn unsafe_from_seqslice(seq: &SeqSlice<A, Q>) -> Self {
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
@@ -219,17 +221,17 @@ impl<S: KmerStorage + Into<usize>, A: Codec, const K: usize> From<&Kmer<A, K, S>
 }
 
 impl<A: Codec, const K: usize> Deref for Kmer<A, K, usize> {
-    type Target = SeqSlice<A>;
+    type Target = SeqSlice<A, Q>;
 
     fn deref(&self) -> &Self::Target {
         let bs: &Bs = &self.bs.view_bits()[0..(K * A::BITS as usize)];
         let bs: *const Bs = ptr::from_ref::<Bs>(bs);
-        unsafe { &*(bs as *const SeqSlice<A>) }
+        unsafe { &*(bs as *const SeqSlice<A, Q>) }
     }
 }
 
-impl<A: Codec, const K: usize> AsRef<SeqSlice<A>> for Kmer<A, K, usize> {
-    fn as_ref(&self) -> &SeqSlice<A> {
+impl<A: Codec, Q: SeqStorage, const K: usize> AsRef<SeqSlice<A, Q>> for Kmer<A, K, usize> {
+    fn as_ref(&self) -> &SeqSlice<A, Q> {
         self
     }
 }
@@ -248,8 +250,8 @@ impl<A: Codec, const K: usize, S: KmerStorage> fmt::Display for Kmer<A, K, S> {
 }
 
 /// An iterator over all kmers of a sequence with a specified length
-pub struct KmerIter<'a, A: Codec, const K: usize> {
-    pub slice: &'a SeqSlice<A>,
+pub struct KmerIter<'a, A: Codec, Q: SeqStorage, const K: usize> {
+    pub slice: &'a SeqSlice<A, Q>,
     pub index: usize,
     pub len: usize,
     pub _p: PhantomData<A>,
@@ -265,7 +267,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     }
 }
 
-impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
+impl<A: Codec, const K: usize, Q: SeqSliceStorage> Iterator for KmerIter<'_, A, K, Q> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
         let i = self.index;
@@ -300,10 +302,10 @@ impl<A: Codec, const K: usize, S: KmerStorage> Hash for Kmer<A, K, S> {
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage> TryFrom<&SeqSlice<A>> for Kmer<A, K, S> {
+impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> TryFrom<&SeqSlice<A, Q>> for Kmer<A, K, S> {
     type Error = ParseBioError;
 
-    fn try_from(seq: &SeqSlice<A>) -> Result<Self, Self::Error> {
+    fn try_from(seq: &SeqSlice<A, Q>) -> Result<Self, Self::Error> {
         if seq.len() == K {
             Ok(Kmer::<A, K, S>::unsafe_from(&seq[0..K]))
         } else {
@@ -312,14 +314,15 @@ impl<A: Codec, const K: usize, S: KmerStorage> TryFrom<&SeqSlice<A>> for Kmer<A,
     }
 }
 
-impl<A: Codec, const K: usize> TryFrom<Seq<A>> for Kmer<A, K> {
+impl<A: Codec, const K: usize, Q: SeqStorage> TryFrom<Seq<A, Q>> for Kmer<A, K> {
     type Error = ParseBioError;
 
-    fn try_from(seq: Seq<A>) -> Result<Self, Self::Error> {
+    fn try_from(seq: Seq<A, Q>) -> Result<Self, Self::Error> {
         Self::try_from(seq.as_ref())
     }
 }
 
+/*
 impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<SeqArray<A, K, 1>> for Kmer<A, K, S> {
     fn eq(&self, seq: &SeqArray<A, K, 1>) -> bool {
         if seq.len() != K {
@@ -337,6 +340,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<&SeqArray<A, K, 1>> for
         &Kmer::<A, K, S>::unsafe_from(seq.as_ref()) == self
     }
 }
+*/
 
 impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     fn eq(&self, seq: &Seq<A>) -> bool {
@@ -347,8 +351,8 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<SeqSlice<A>> for Kmer<A, K, S> {
-    fn eq(&self, seq: &SeqSlice<A>) -> bool {
+impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> PartialEq<SeqSlice<A, Q>> for Kmer<A, K, S> {
+    fn eq(&self, seq: &SeqSlice<A, Q>) -> bool {
         if seq.len() != K {
             return false;
         }
@@ -356,8 +360,8 @@ impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<SeqSlice<A>> for Kmer<A
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage> PartialEq<&SeqSlice<A>> for Kmer<A, K, S> {
-    fn eq(&self, seq: &&SeqSlice<A>) -> bool {
+impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> PartialEq<&SeqSlice<A, Q>> for Kmer<A, K, S> {
+    fn eq(&self, seq: &&SeqSlice<A, Q>) -> bool {
         if seq.len() != K {
             return false;
         }

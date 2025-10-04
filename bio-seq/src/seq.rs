@@ -11,7 +11,7 @@ pub mod iterators;
 
 mod array;
 mod slice;
-mod storage;
+pub(crate) mod storage;
 
 pub use array::SeqArray;
 pub use slice::SeqSlice;
@@ -220,7 +220,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     pub fn insert(&mut self, index: usize, other: &SeqSlice<A, S>) {
         self.store.insert(index * A::BITS as usize, &other.bs);
     }
-    /*
+
         /// Remove a region of a sequence
         /// ```
         /// # use bio_seq::prelude::*;
@@ -229,14 +229,15 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         /// assert_eq!(&seq, dna!("ACCGT"));
         /// ```
         pub fn remove<R: RangeBounds<usize>>(&mut self, range: R) {
-            let (s, e) = self.bit_range(range);
-            self.bv.drain(s..e);
+            self.store.drain(self.bit_range(range));
         }
 
         pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
             iter.into_iter().for_each(|base| self.push(base));
         }
 
+
+        /*
         /// **Experimental** Decode sequence from raw `usize` array. This requires the exact length of the target sequence to be known.
         /// ```
         /// # use bio_seq::prelude::*;
