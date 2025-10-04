@@ -22,7 +22,7 @@ pub(crate) trait SeqStorage:
     fn is_empty(&self) -> bool;
 
     fn to_usize(&self) -> usize;
-    fn push(&mut self, bits: u8);
+    fn push(&mut self, byte: u8, bits: usize);
     fn clear(&mut self);
 
     fn truncate(&mut self, len: usize);
@@ -35,6 +35,6 @@ pub(crate) trait SeqStorage:
 }
 
 pub(crate) trait SeqSliceStorage: PartialEq + Eq {
-    fn nth(&self, index: usize) -> u8;
+    fn get(&self, start: usize, end: usize) -> u8;
     fn len(&self) -> usize;
 }

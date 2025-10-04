@@ -15,7 +15,6 @@ mod storage;
 
 pub use array::SeqArray;
 pub use slice::SeqSlice;
-//pub(crate) use storage::{BitSliceStorage, BitVecStorage, SeqStorage};
 use storage::{BitVecStorage, SeqSliceStorage, SeqStorage};
 
 use crate::codec::{Codec, text};
@@ -154,13 +153,11 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         }
     */
 
-    /*
-        pub fn push(&mut self, item: A) {
-            let byte: u8 = item.to_bits();
-            self.store
-                .extend_from_bitslice(&byte.view_bits::<Order>()[..A::BITS as usize]);
-        }
-    */
+    pub fn push(&mut self, item: A) {
+        let byte: u8 = item.to_bits();
+        self.store.push(byte, A::BITS as usize);
+        //&byte.view_bits::<Order>()[..A::BITS as usize]);
+    }
 
     pub fn clear(&mut self) {
         self.store.clear();

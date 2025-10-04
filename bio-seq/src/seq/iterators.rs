@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Jeff Knaggs
+// Copyright 2021, 2022, 2025 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -6,6 +6,7 @@
 use crate::codec::Codec;
 use crate::kmer::KmerIter;
 use crate::seq::{Seq, SeqSlice};
+use crate::storage::{SeqStorage, SeqSliceStorage};
 use core::iter::Chain;
 use core::marker::PhantomData;
 

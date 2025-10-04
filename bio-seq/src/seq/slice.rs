@@ -64,8 +64,9 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 impl<A: Codec, S: SeqStorage> SeqSlice<A, S> {
     /// unsafely index into the `i`th position of a sequence
     pub fn nth(&self, i: usize) -> A {
-        todo!()
-        //        A::unsafe_from_bits(self[i])
+        let s: usize = i * A::BITS as usize;
+        let e: usize = s + A::BITS as usize;
+        A::unsafe_from_bits(self.bs.get(s, e))
     }
 
     pub fn len(&self) -> usize {

@@ -25,9 +25,8 @@ pub struct BitSliceStorage {
 }
 
 impl SeqSliceStorage for BitSliceStorage {
-    fn nth(&self, i: usize) -> u8 {
-        todo!()
-        //        self[i]
+    fn get(&self, start: usize, end: usize) -> u8 {
+        self.bs[start..end].load_le::<u8>()
     }
 
     fn len(&self) -> usize {
@@ -66,8 +65,9 @@ impl SeqStorage for BitVecStorage {
         self.bv.is_empty()
     }
 
-    fn push(&mut self, bit: u8) {
-        Bv::push(&mut self.bv, bit & 1 != 0);
+    fn push(&mut self, byte: u8, bits: usize) {
+        let bs = &byte.view_bits::<Order>()[..bits];
+        self.bv.extend_from_bitslice(&bs[..bits]);
     }
 
     fn to_usize(&self) -> usize {
@@ -79,7 +79,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn truncate(&mut self, len: usize) {
-        todo!()
+        self.bv.truncate(len);
     }
 
     fn extend(&mut self, other: &Self::Slice) {
@@ -94,7 +94,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn drain(&mut self, range: Range<usize>) {
-        todo!()
+        self.bv.drain(range);
     }
 
     fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &Self::Slice) {
