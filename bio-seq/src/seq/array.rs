@@ -12,7 +12,7 @@ use crate::seq::slice::SeqSlice;
 //use core::fmt;
 use core::marker::PhantomData;
 use core::ops::Deref;
-use core::ptr;
+//use core::ptr;
 
 //use core::ops::{BitAnd, BitOr};
 //use std::hash::{Hash, Hasher};

@@ -7,11 +7,9 @@ mod bv;
 
 use core::ops::{Deref, Range, RangeBounds};
 
-pub(crate) use bv::{BitSliceStorage, BitVecStorage};
+pub use bv::{BitSliceStorage, BitVecStorage};
 
-pub(crate) trait SeqStorage:
-    Sized + Clone + PartialEq + Deref<Target = Self::Slice>
-{
+pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
     //    type Slice: ?Sized + PartialEq + Eq;
     type Slice: ?Sized + SeqSliceStorage;
     type Array<const N: usize, const W: usize>;
@@ -34,7 +32,8 @@ pub(crate) trait SeqStorage:
     fn insert(&mut self, index: usize, other: &Self::Slice);
 }
 
-pub(crate) trait SeqSliceStorage: PartialEq + Eq {
+pub trait SeqSliceStorage: PartialEq + Eq {
     fn get(&self, start: usize, end: usize) -> u8;
     fn len(&self) -> usize;
+    fn is_empty(&self) -> bool;
 }

@@ -32,6 +32,10 @@ impl SeqSliceStorage for BitSliceStorage {
     fn len(&self) -> usize {
         self.bs.len()
     }
+
+    fn is_empty(&self) -> bool {
+        self.bs.is_empty()
+    }
 }
 
 impl PartialEq for BitSliceStorage {
@@ -75,7 +79,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn clear(&mut self) {
-        self.bv.clear()
+        self.bv.clear();
     }
 
     fn truncate(&mut self, len: usize) {
@@ -83,7 +87,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn extend(&mut self, other: &Self::Slice) {
-        self.bv.extend_from_bitslice(&other.bs)
+        self.bv.extend_from_bitslice(&other.bs);
     }
 
     fn prepend(&mut self, other: &Self::Slice) {

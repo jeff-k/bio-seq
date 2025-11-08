@@ -33,18 +33,16 @@
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
 //use crate::seq::{Seq, SeqArray, SeqSlice};
+use crate::seq::storage::SeqStorage;
 use crate::seq::{Seq, SeqSlice};
-use crate::seq::storage::{SeqStorage, SeqSliceStorage};
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };
-use bitvec::field::BitField;
-use bitvec::view::BitView;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::Deref;
-use core::ptr;
+//use core::ops::Deref;
+//use core::ptr;
 use core::str::FromStr;
 
 //#[cfg(target_feature(enable = "avx2,bmi2"))]
@@ -60,8 +58,8 @@ use crate::kmer::storage::KmerStorage;
 #[cfg(target_pointer_width = "64")]
 pub(crate) mod integral64;
 
-#[cfg(target_pointer_width = "32")]
-pub(crate) mod integral32;
+//#[cfg(target_pointer_width = "32")]
+//pub(crate) mod integral32;
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
@@ -96,27 +94,12 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         false
     }
 
-    pub fn rotated_left(&self, n: u32) -> Self {
-        let n: usize = (n as usize % K) * A::BITS as usize;
-
-        let bs = todo!();
-
-        Kmer {
-            _p: PhantomData,
-            bs: S::from_bitslice(&bs[..Self::BITS]),
-        }
+    pub fn rotated_left(&self, _n: u32) -> Self {
+        todo!()
     }
 
-    pub fn rotated_right(&self, n: u32) -> Self {
-        let n: usize = (n as usize % K) * A::BITS as usize;
-        let mut ba = self.bs.to_bitarray();
-        let bs: &mut Bs = ba.as_mut();
-        bs[..Self::BITS].rotate_right(n);
-
-        Kmer {
-            _p: PhantomData,
-            bs: S::from_bitslice(&bs[..Self::BITS]),
-        }
+    pub fn rotated_right(&self, _n: u32) -> Self {
+        todo!()
     }
 
     /// Shift bases to the right and push a base onto the end.
@@ -128,40 +111,21 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     /// let k = kmer!("ACGAT");
     /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
     /// ```
-    pub fn pushr(self, base: A) -> Self {
-        let mut ba = self.rotated_left(1).bs.to_bitarray();
-        let bs: &mut Bs = ba.as_mut();
-
-        let start = Self::BITS - A::BITS as usize;
-        let end = start + A::BITS as usize;
-
-        bs[start..end].store(base.to_bits());
-
-        Kmer {
-            _p: PhantomData,
-            bs: S::from_bitslice(bs),
-        }
+    pub fn pushr(self, _base: A) -> Self {
+        todo!()
     }
 
     /// Push a base from the left
-    pub fn pushl(self, base: A) -> Self {
-        let mut ba = self.rotated_right(1).bs.to_bitarray();
-        let bs: &mut Bs = ba.as_mut();
-
-        bs[..A::BITS as usize].store(base.to_bits());
-
-        Kmer {
-            _p: PhantomData,
-            bs: S::from_bitslice(bs),
-        }
+    pub fn pushl(self, _base: A) -> Self {
+        todo!()
     }
 
     /// Create Kmer from sequence without checking length
-    pub fn unsafe_from_seqslice(seq: &SeqSlice<A, Q>) -> Self {
+    pub fn unsafe_from_seqslice<Q: SeqStorage>(seq: &SeqSlice<A, Q>) -> Self {
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
-            bs: S::from_bitslice(&seq.bs),
+            bs: S::from_slice::<Q::Slice>(&seq.bs),
         }
     }
 
@@ -170,9 +134,12 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     }
 
     fn rev_blocks_2(&mut self) {
+        /*
         // TODO: assert K == 2
         self.bs.rev_blocks_2();
         self.bs.shiftr((S::BITS - (A::BITS as usize * K)) as u32);
+        */
+        todo!()
     }
 }
 
@@ -185,6 +152,7 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
     }
 }
 
+/*
 impl<A: Codec, const K: usize> From<u64> for Kmer<A, K, u64> {
     fn from(i: u64) -> Kmer<A, K, u64> {
         Kmer {
@@ -202,6 +170,7 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, u64> {
         }
     }
 }
+*/
 
 /*
 impl<A: Codec, const K: usize, S: KmerStorage> From<&SeqSlice<A>> for Kmer<A, K, S> {
@@ -220,24 +189,31 @@ impl<S: KmerStorage + Into<usize>, A: Codec, const K: usize> From<&Kmer<A, K, S>
     }
 }
 
+/*
 impl<A: Codec, const K: usize> Deref for Kmer<A, K, usize> {
     type Target = SeqSlice<A, Q>;
 
     fn deref(&self) -> &Self::Target {
+        /*
         let bs: &Bs = &self.bs.view_bits()[0..(K * A::BITS as usize)];
         let bs: *const Bs = ptr::from_ref::<Bs>(bs);
         unsafe { &*(bs as *const SeqSlice<A, Q>) }
+        */
+        todo!()
     }
 }
+*/
 
 impl<A: Codec, Q: SeqStorage, const K: usize> AsRef<SeqSlice<A, Q>> for Kmer<A, K, usize> {
     fn as_ref(&self) -> &SeqSlice<A, Q> {
-        self
+        todo!()
+        //self
     }
 }
 
 impl<A: Codec, const K: usize, S: KmerStorage> fmt::Display for Kmer<A, K, S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        /*
         let mut s = String::new();
         let ba = self.bs.to_bitarray();
         let bs: &Bs = &ba.as_ref()[0..(K * A::BITS as usize)];
@@ -246,9 +222,12 @@ impl<A: Codec, const K: usize, S: KmerStorage> fmt::Display for Kmer<A, K, S> {
             s.push(A::unsafe_from_bits(chunk.load_le::<u8>()).to_char());
         });
         write!(f, "{s}")
+        */
+        todo!()
     }
 }
 
+/*
 /// An iterator over all kmers of a sequence with a specified length
 pub struct KmerIter<'a, A: Codec, Q: SeqStorage, const K: usize> {
     pub slice: &'a SeqSlice<A, Q>,
@@ -256,7 +235,9 @@ pub struct KmerIter<'a, A: Codec, Q: SeqStorage, const K: usize> {
     pub len: usize,
     pub _p: PhantomData<A>,
 }
+*/
 
+/*
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     fn unsafe_from(seq: &SeqSlice<A>) -> Self {
         debug_assert!(K == seq.len(), "K != seq.len()");
@@ -266,7 +247,9 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         }
     }
 }
+*/
 
+/*
 impl<A: Codec, const K: usize, Q: SeqSliceStorage> Iterator for KmerIter<'_, A, K, Q> {
     type Item = Kmer<A, K>;
     fn next(&mut self) -> Option<Kmer<A, K>> {
@@ -278,6 +261,7 @@ impl<A: Codec, const K: usize, Q: SeqSliceStorage> Iterator for KmerIter<'_, A, 
         Some(Kmer::<A, K>::unsafe_from(&self.slice[i..i + K]))
     }
 }
+*/
 
 /// ```
 /// use bio_seq::prelude::*;
@@ -294,20 +278,19 @@ impl<A: Codec, const K: usize, Q: SeqSliceStorage> Iterator for KmerIter<'_, A, 
 /// assert_ne!(hash1, hash2);
 /// ```
 impl<A: Codec, const K: usize, S: KmerStorage> Hash for Kmer<A, K, S> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let ba = self.bs.to_bitarray();
-        let bs: &Bs = ba.as_ref();
-        bs.hash(state);
-        K.hash(state);
+    fn hash<H: Hasher>(&self, _state: &mut H) {
+        todo!()
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> TryFrom<&SeqSlice<A, Q>> for Kmer<A, K, S> {
+impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> TryFrom<&SeqSlice<A, Q>>
+    for Kmer<A, K, S>
+{
     type Error = ParseBioError;
 
     fn try_from(seq: &SeqSlice<A, Q>) -> Result<Self, Self::Error> {
         if seq.len() == K {
-            Ok(Kmer::<A, K, S>::unsafe_from(&seq[0..K]))
+            Ok(Kmer::<A, K, S>::unsafe_from_seqslice(&seq[0..K]))
         } else {
             Err(ParseBioError::MismatchedLength(K, seq.len()))
         }
@@ -347,25 +330,29 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
         if seq.len() != K {
             return false;
         }
-        &Kmer::<A, K>::unsafe_from(seq.as_ref()) == self
+        &Kmer::<A, K>::unsafe_from_seqslice(seq.as_ref()) == self
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> PartialEq<SeqSlice<A, Q>> for Kmer<A, K, S> {
+impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> PartialEq<SeqSlice<A, Q>>
+    for Kmer<A, K, S>
+{
     fn eq(&self, seq: &SeqSlice<A, Q>) -> bool {
         if seq.len() != K {
             return false;
         }
-        &Kmer::<A, K, S>::unsafe_from(seq) == self
+        &Kmer::<A, K, S>::unsafe_from_seqslice(seq) == self
     }
 }
 
-impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> PartialEq<&SeqSlice<A, Q>> for Kmer<A, K, S> {
+impl<A: Codec, const K: usize, S: KmerStorage, Q: SeqStorage> PartialEq<&SeqSlice<A, Q>>
+    for Kmer<A, K, S>
+{
     fn eq(&self, seq: &&SeqSlice<A, Q>) -> bool {
         if seq.len() != K {
             return false;
         }
-        &Kmer::<A, K, S>::unsafe_from(seq) == self
+        &Kmer::<A, K, S>::unsafe_from_seqslice(seq) == self
     }
 }
 
@@ -387,6 +374,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> FromStr for Kmer<A, K, S> {
     }
 }
 
+/*
 impl<A: Codec, const K: usize> From<Kmer<A, K, usize>> for Seq<A> {
     fn from(kmer: Kmer<A, K, usize>) -> Self {
         let mut seq: Seq<A> = Seq::with_capacity(K);
@@ -394,6 +382,7 @@ impl<A: Codec, const K: usize> From<Kmer<A, K, usize>> for Seq<A> {
         seq
     }
 }
+*/
 
 impl<const K: usize> ComplementMut for Kmer<codec::dna::Dna, K, usize> {
     fn comp(&mut self) {

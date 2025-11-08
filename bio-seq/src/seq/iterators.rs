@@ -5,10 +5,10 @@
 
 use crate::codec::Codec;
 //use crate::kmer::KmerIter;
-use crate::seq::storage::{SeqSliceStorage, SeqStorage};
+use crate::seq::storage::SeqStorage;
 use crate::seq::{Seq, SeqSlice};
 use core::iter::Chain;
-use core::marker::PhantomData;
+//use core::marker::PhantomData;
 
 /// An iterator over fixed-size non-overlapping chunks of a sequence
 pub struct SeqChunks<'a, A: Codec, S: SeqStorage> {

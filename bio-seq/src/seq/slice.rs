@@ -5,18 +5,18 @@
 
 use crate::codec::Codec;
 use crate::error::ParseBioError;
-use crate::seq::Seq;
+//use crate::seq::Seq;
 use crate::seq::storage::{SeqSliceStorage, SeqStorage};
-use crate::{
-    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
-};
+//use crate::{
+//    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
+//};
 
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::str;
+//use core::str;
 
-use core::ops::{BitAnd, BitOr};
+//use core::ops::{BitAnd, BitOr};
 
 /// An unsized, read-only window into part of a sequence
 #[derive(Debug)]
@@ -45,7 +45,7 @@ impl<A: Codec, S: SeqStorage> TryFrom<&SeqSlice<A, S>> for usize {
 
 impl<A: Codec, S: SeqStorage> PartialEq for SeqSlice<A, S> {
     fn eq(&self, other: &Self) -> bool {
-        &self.bs == &other.bs
+        self.bs == other.bs
     }
 }
 
@@ -88,7 +88,7 @@ impl<A: Codec, S: SeqStorage> SeqSlice<A, S> {
 }
 
 impl<A: Codec, S: SeqStorage> From<&SeqSlice<A, S>> for String {
-    fn from(seq: &SeqSlice<A, S>) -> Self {
+    fn from(_seq: &SeqSlice<A, S>) -> Self {
         todo!()
         //        seq.into_iter().map(Codec::to_char).collect()
     }
@@ -154,6 +154,7 @@ impl<A: Codec, S: SeqStorage> Hash for SeqSlice<A, S> {
     }
 }
 
+/*
 /// Clone a borrowed slice of a sequence into an owned version.
 ///
 /// ```
@@ -165,8 +166,7 @@ impl<A: Codec, S: SeqStorage> Hash for SeqSlice<A, S> {
 ///
 /// assert_eq!(&owned, &seq[2..7]);
 /// ```
-///
-/*
+
 impl<A: Codec, S: SeqStorage> ToOwned for SeqSlice<A, S> {
     type Owned = Seq<A, S>;
 
