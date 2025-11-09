@@ -12,7 +12,8 @@ use core::ops::{Deref, Range, RangeBounds};
 
 pub use bv::{BitSliceStorage, BitVecStorage};
 
-pub trait PrimitiveStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
+pub trait PrimitiveStorage: Sized + Clone + PartialEq {
+    // Deref<Target = Self::Slice> {
     const BITS: usize;
     type Slice: ?Sized + SeqSliceStorage;
 

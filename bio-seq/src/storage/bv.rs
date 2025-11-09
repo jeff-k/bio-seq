@@ -11,7 +11,7 @@ type Bv = BitVec<usize, Order>;
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 
-use crate::storage::{PrimitiveStorage, SeqSliceStorage, SeqStorage};
+use crate::storage::{SeqSliceStorage, SeqStorage};
 
 #[derive(Clone, PartialEq, Eq)]
 #[repr(transparent)]

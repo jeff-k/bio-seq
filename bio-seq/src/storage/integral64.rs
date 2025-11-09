@@ -1,6 +1,6 @@
-use crate::storage::BitSliceStorage;
+//use crate::storage::BitSliceStorage;
 use crate::storage::PrimitiveStorage;
-use crate::storage::SeqSliceStorage;
+//use crate::storage::SeqSliceStorage;
 use crate::storage::bv;
 
 impl PrimitiveStorage for usize {
@@ -57,7 +57,7 @@ impl PrimitiveStorage for usize {
         todo!()
     }
 
-    fn unsafe_from_slice(slice: Self::Slice) -> Self {
+    fn unsafe_from_slice(_slice: &Self::Slice) -> Self {
         todo!()
     }
 }
