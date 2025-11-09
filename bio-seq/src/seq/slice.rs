@@ -6,7 +6,7 @@
 use crate::codec::Codec;
 use crate::error::ParseBioError;
 //use crate::seq::Seq;
-use crate::seq::storage::{SeqSliceStorage, SeqStorage};
+use crate::storage::{SeqSliceStorage, SeqStorage};
 //use crate::{
 //    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 //};

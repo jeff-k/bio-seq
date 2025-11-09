@@ -11,7 +11,7 @@ type Bv = BitVec<usize, Order>;
 use bitvec::field::BitField;
 use bitvec::view::BitView;
 
-use crate::seq::storage::{SeqSliceStorage, SeqStorage};
+use crate::storage::{PrimitiveStorage, SeqSliceStorage, SeqStorage};
 
 #[derive(Clone, PartialEq, Eq)]
 #[repr(transparent)]
@@ -47,16 +47,12 @@ impl PartialEq for BitSliceStorage {
 impl Eq for BitSliceStorage {}
 
 impl SeqStorage for BitVecStorage {
-    //    type Slice<'a> = BitSliceStorage where Self: 'a;
+    //    type Array<const A: usize, const B: usize> = ();
+    type Unit = usize;
     type Slice = BitSliceStorage;
-    type Array<const A: usize, const B: usize> = ();
 
     fn new() -> Self {
         BitVecStorage { bv: Bv::new() }
-    }
-
-    fn len(&self) -> usize {
-        self.bv.len()
     }
 
     fn with_capacity(len: usize) -> Self {
@@ -65,17 +61,9 @@ impl SeqStorage for BitVecStorage {
         }
     }
 
-    fn is_empty(&self) -> bool {
-        self.bv.is_empty()
-    }
-
     fn push(&mut self, byte: u8, bits: usize) {
         let bs = &byte.view_bits::<Order>()[..bits];
         self.bv.extend_from_bitslice(&bs[..bits]);
-    }
-
-    fn to_usize(&self) -> usize {
-        self.bv.load_le::<usize>()
     }
 
     fn clear(&mut self) {
@@ -116,6 +104,10 @@ impl SeqStorage for BitVecStorage {
         bv.extend_from_bitslice(&self.bs[index..]);
 
         self.bv = bv;
+    }
+
+    fn pop_unit(&self) -> Self::Unit {
+        self.bs.load_le::<usize>()
     }
 }
 

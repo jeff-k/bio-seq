@@ -11,11 +11,10 @@ pub mod iterators;
 
 mod array;
 mod slice;
-pub mod storage;
 
+use crate::storage::{BitVecStorage, SeqSliceStorage, SeqStorage};
 pub use array::SeqArray;
 pub use slice::SeqSlice;
-use storage::{BitVecStorage, SeqStorage};
 
 use crate::codec::Codec;
 use crate::error::ParseBioError;
@@ -45,10 +44,10 @@ pub struct Seq<A: Codec, S: SeqStorage = BitVecStorage> {
     pub(crate) store: S,
 }
 
-impl<A: Codec, S: SeqStorage> From<Seq<A, S>> for usize {
+impl<A: Codec, S: SeqStorage<Unit = usize>> From<Seq<A, S>> for usize {
     fn from(slice: Seq<A, S>) -> usize {
         debug_assert!(slice.store.len() <= usize::BITS as usize);
-        slice.store.to_usize() //.wrapping_shr(shift)
+        slice.store.pop_unit() //.wrapping_shr(shift)
     }
 }
 

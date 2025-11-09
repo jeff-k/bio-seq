@@ -13,19 +13,34 @@ const fn make_2bit_table() -> [u8; 256] {
     table
 }
 
-pub(crate) const REV_2BIT: [u8; 256] = make_2bit_table();
+const fn make_4bit_table() -> [u8; 256] {
+    let mut table = [0u8; 256];
+    let mut i: usize = 0;
+    while i < 256 {
+        let b0: u8 = (i as u8 & 0b11_11_00_00) >> 4;
+        let b1: u8 = (i as u8 & 0b00_00_11_11) << 4;
 
+        table[i] = b1 | b0;
+        i += 1;
+    }
+    table
+}
+
+pub(crate) const REV_2BIT: [u8; 256] = make_2bit_table();
+pub(crate) const REV_4BIT: [u8; 256] = make_4bit_table();
+
+/*
 pub(crate) mod sealed {
     //    use crate::Bs;
 
-    use crate::seq::storage::SeqSliceStorage;
+    use crate::storage::SeqSliceStorage;
 
     pub trait KmerStorage: Copy + Clone + PartialEq + std::fmt::Debug {
-        const BITS: usize;
+//        const BITS: usize;
         // type BaN: AsRef<Bs> + AsMut<Bs>;
 
         //fn to_bitarray(self) -> Self::BaN;
-        fn from_slice<Q: SeqSliceStorage + ?Sized>(bs: &Q) -> Self;
+        fn unsafe_from_slice<Q: SeqSliceStorage + ?Sized>(bs: &Q) -> Self;
 
         //        fn rotate_left(self, n: u32) -> Self;
         //        fn rotate_right(self, n: u32) -> Self;
@@ -40,10 +55,11 @@ pub(crate) mod sealed {
         fn rev_blocks_2(&mut self);
     }
 }
+*/
 
-pub trait KmerStorage: sealed::KmerStorage {}
+//pub trait KmerStorage: sealed::KmerStorage {}
 
-impl KmerStorage for usize {}
+//impl KmerStorage for usize {}
 
 //impl KmerStorage for u64 {}
 

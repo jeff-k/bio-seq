@@ -5,21 +5,42 @@
 
 mod bv;
 
+#[cfg(target_pointer_width = "64")]
+pub(crate) mod integral64;
+
 use core::ops::{Deref, Range, RangeBounds};
 
 pub use bv::{BitSliceStorage, BitVecStorage};
 
-pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
-    //    type Slice: ?Sized + PartialEq + Eq;
+pub trait PrimitiveStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
+    const BITS: usize;
     type Slice: ?Sized + SeqSliceStorage;
-    type Array<const N: usize, const W: usize>;
 
-    fn new() -> Self;
     fn len(&self) -> usize;
-    fn with_capacity(cap: usize) -> Self;
     fn is_empty(&self) -> bool;
 
     fn to_usize(&self) -> usize;
+
+    fn shiftr(&mut self, n: u32);
+
+    fn shiftl(&mut self, n: u32);
+
+    fn mask(&mut self, bits: usize);
+
+    fn complement(&mut self, mask: usize);
+    fn rev_blocks_2(&mut self);
+    fn reverse(&self) -> Self;
+
+    fn unsafe_from_slice(slice: &Self::Slice) -> Self;
+}
+
+pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
+    type Slice: ?Sized + SeqSliceStorage;
+    type Unit: PrimitiveStorage<Slice = Self::Slice>;
+
+    fn new() -> Self;
+    fn with_capacity(cap: usize) -> Self;
+
     fn push(&mut self, byte: u8, bits: usize);
     fn clear(&mut self);
 
@@ -30,6 +51,8 @@ pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
 
     fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &Self::Slice);
     fn insert(&mut self, index: usize, other: &Self::Slice);
+
+    fn pop_unit(&self) -> Self::Unit;
 }
 
 pub trait SeqSliceStorage: PartialEq + Eq {

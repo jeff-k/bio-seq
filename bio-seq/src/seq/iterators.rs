@@ -5,8 +5,8 @@
 
 use crate::codec::Codec;
 //use crate::kmer::KmerIter;
-use crate::seq::storage::SeqStorage;
 use crate::seq::{Seq, SeqSlice};
+use crate::storage::SeqStorage;
 use core::iter::Chain;
 //use core::marker::PhantomData;
 

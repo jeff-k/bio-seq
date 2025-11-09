@@ -98,6 +98,7 @@ pub mod error;
 //#[macro_use]
 pub mod kmer;
 pub mod seq;
+pub mod storage;
 
 pub use bio_seq_derive::{dna, iupac};
 

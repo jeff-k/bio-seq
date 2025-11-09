@@ -1,7 +1,7 @@
 use core::ops::{Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 //use core::ptr;
 
-use crate::seq::storage::SeqStorage;
+use crate::storage::SeqStorage;
 
 //use crate::Bs;
 use crate::codec::Codec;
