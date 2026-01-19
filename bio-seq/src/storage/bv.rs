@@ -14,6 +14,10 @@ use bitvec::view::BitView;
 
 use crate::storage::{SeqSliceStorage, SeqStorage};
 
+const _: () = {
+    assert!(core::mem::size_of::<&BitSliceStorage>() == core::mem::size_of::<&Bs>());
+};
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct BitVecStorage {

@@ -32,9 +32,9 @@
 
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
-//use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::seq::{Seq, SeqSlice};
+use crate::seq::{Seq, SeqArray, SeqSlice};
 use crate::storage::{PrimitiveStorage, SeqStorage};
+use bitvec::view::BitView;
 //use crate::storage::integral64;
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
@@ -42,8 +42,8 @@ use crate::{
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-//use core::ops::Deref;
-//use core::ptr;
+use core::ops::Deref;
+use core::ptr;
 use core::str::FromStr;
 
 //#[cfg(target_feature(enable = "avx2,bmi2"))]
