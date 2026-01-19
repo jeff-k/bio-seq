@@ -124,7 +124,9 @@ impl Seq<Iupac> {
             return false;
         }
 
-        self.as_ref() & rhs == rhs
+        self.iter()
+            .zip(rhs.iter())
+            .all(|(lhs, rhs)| (lhs.to_bits() & rhs.to_bits()) == rhs.to_bits())
     }
 }
 
@@ -133,7 +135,10 @@ impl<const N: usize, const W: usize> SeqArray<Iupac, N, W> {
         if N != rhs.len() {
             return false;
         }
-        self.as_ref() & rhs == rhs
+
+        self.iter()
+            .zip(rhs.iter())
+            .all(|(lhs, rhs)| (lhs.to_bits() & rhs.to_bits()) == rhs.to_bits())
     }
 }
 
@@ -142,7 +147,10 @@ impl SeqSlice<Iupac> {
         if self.len() != rhs.len() {
             return false;
         }
-        self & rhs == rhs
+
+        self.iter()
+            .zip(rhs.iter())
+            .all(|(lhs, rhs)| (lhs.to_bits() & rhs.to_bits()) == rhs.to_bits())
     }
 }
 

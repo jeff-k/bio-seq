@@ -8,8 +8,9 @@ mod bv;
 #[cfg(target_pointer_width = "64")]
 pub(crate) mod integral64;
 
-use core::ops::{Deref, Range, RangeBounds};
+use core::ops::{Deref, Index, Range, RangeBounds};
 
+pub(crate) use bv::{Ba, Bs};
 pub use bv::{BitSliceStorage, BitVecStorage};
 
 pub trait PrimitiveStorage: Sized + Clone + PartialEq {
@@ -56,7 +57,7 @@ pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
     fn pop_unit(&self) -> Self::Unit;
 }
 
-pub trait SeqSliceStorage: PartialEq + Eq {
+pub trait SeqSliceStorage: PartialEq + Eq + Index<Range<usize>, Output = Self> {
     fn get(&self, start: usize, end: usize) -> u8;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;

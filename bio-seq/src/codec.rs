@@ -116,9 +116,9 @@
 use core::fmt;
 use core::hash::Hash;
 
-//pub mod amino;
+pub mod amino;
 pub mod dna;
-//pub mod iupac;
+pub mod iupac;
 
 #[cfg(feature = "extra_codecs")]
 pub mod masked;

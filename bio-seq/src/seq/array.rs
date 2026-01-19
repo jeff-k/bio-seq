@@ -5,17 +5,20 @@
 
 use crate::codec::Codec;
 
-use crate::seq::SeqStorage;
+//use crate::seq::SeqStorage;
 use crate::seq::slice::SeqSlice;
 //use crate::seq::Seq;
 
 //use core::fmt;
 use core::marker::PhantomData;
 use core::ops::Deref;
-//use core::ptr;
+use core::ptr;
+
+use crate::storage::{Ba, Bs};
+use crate::storage::{BitSliceStorage, BitVecStorage};
 
 //use core::ops::{BitAnd, BitOr};
-//use std::hash::{Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 /// Static bit-packed sequence meant to be accessed as a `&'static SeqSlice`
 ///
@@ -26,9 +29,9 @@ use core::ops::Deref;
 /// ```
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct SeqArray<A: Codec, const N: usize, Storage: SeqStorage> {
+pub struct SeqArray<A: Codec, const N: usize, const W: usize> {
     pub _p: PhantomData<A>,
-    pub ba: Storage,
+    pub ba: Ba<W>,
 }
 
 /*
@@ -40,15 +43,12 @@ impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {
 }
 */
 
-impl<A: Codec, const N: usize, Storage: SeqStorage + 'static> Deref for SeqArray<A, N, Storage> {
-    type Target = SeqSlice<A, Storage>;
+impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
+    type Target = SeqSlice<A, BitVecStorage>;
 
     fn deref(&self) -> &Self::Target {
-        todo!()
-        /*
         let bs: *const Bs = ptr::from_ref::<Bs>(&self.ba[..N * A::BITS as usize]);
         unsafe { &*(bs as *const SeqSlice<A>) }
-        */
     }
 }
 

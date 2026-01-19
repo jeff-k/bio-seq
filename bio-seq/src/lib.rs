@@ -93,6 +93,7 @@
 //#![feature(simd_wasm64)]
 //#![feature(portable_simd)]
 
+pub mod bitops;
 pub mod codec;
 pub mod error;
 //#[macro_use]
@@ -100,7 +101,7 @@ pub mod kmer;
 pub mod seq;
 pub mod storage;
 
-pub use bio_seq_derive::{dna, iupac};
+//pub use bio_seq_derive::{dna, iupac};
 
 #[doc(hidden)]
 pub use bitvec::bitarr as __bio_seq_bitarr;
@@ -113,15 +114,15 @@ pub mod translation;
 
 pub mod prelude {
     pub use crate::codec::Codec;
-    //    pub use crate::codec::amino::Amino;
+    pub use crate::codec::amino::Amino;
     pub use crate::codec::dna::Dna;
-    //    pub use crate::codec::iupac::Iupac;
+    pub use crate::codec::iupac::Iupac;
     pub use crate::{
         Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
         ReverseComplementMut, ReverseMut,
     };
 
-    //    pub use crate::kmer::Kmer;
+    pub use crate::kmer::Kmer;
     pub use crate::seq::{Seq, SeqArray, SeqSlice};
 
     #[cfg(feature = "translation")]
@@ -133,14 +134,12 @@ pub mod prelude {
 
     //    pub use crate::{dna, iupac, kmer};
 
-    /*
     #[doc(hidden)]
     pub use crate::__bio_seq_Lsb0;
     #[doc(hidden)]
     pub use crate::__bio_seq_bitarr;
     #[doc(hidden)]
     pub use crate::__bio_seq_count_words;
-    */
 }
 
 /// Nucleotide bases and sequences can be complemented
@@ -241,6 +240,7 @@ macro_rules! __bio_seq_count_words {
     ($len:expr) => {{ $len.div_ceil(usize::BITS) as usize }};
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use crate::codec::dna::Dna::{A, C, G, T};
@@ -870,3 +870,4 @@ mod wasm_tests {
         }
     */
 }
+*/

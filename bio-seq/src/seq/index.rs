@@ -1,5 +1,5 @@
 use core::ops::{Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
-//use core::ptr;
+use core::ptr;
 
 use crate::storage::SeqStorage;
 
@@ -10,14 +10,11 @@ use crate::seq::SeqSlice;
 impl<A: Codec, S: SeqStorage> Index<Range<usize>> for SeqSlice<A, S> {
     type Output = SeqSlice<A, S>;
 
-    fn index(&self, _range: Range<usize>) -> &Self::Output {
-        todo!()
-        /*
+    fn index(&self, range: Range<usize>) -> &Self::Output {
         let s = range.start * A::BITS as usize;
         let e = range.end * A::BITS as usize;
-        let bs: *const Bs = ptr::from_ref::<Bs>(&self.bs[s..e]);
-        unsafe { &*(bs as *const SeqSlice<A>) }
-        */
+        let bs = &self.bs[s..e];
+        unsafe { &*(ptr::from_ref(bs) as *const SeqSlice<A, S>) }
     }
 }
 

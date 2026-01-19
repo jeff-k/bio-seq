@@ -14,14 +14,15 @@ mod slice;
 
 use crate::storage::{BitVecStorage, SeqSliceStorage, SeqStorage};
 pub use array::SeqArray;
+use bitvec::field::BitField;
 pub use slice::SeqSlice;
 
 use crate::codec::Codec;
 use crate::error::ParseBioError;
-//use crate::{
-//    Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
-//    ReverseComplementMut, ReverseMut,
-//};
+use crate::{
+    Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
+    ReverseComplementMut, ReverseMut,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -75,11 +76,11 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     }
 
     pub fn len(&self) -> usize {
-        self.store.len() * A::BITS as usize
+        self.store.len() / A::BITS as usize
     }
 
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.store.is_empty()
     }
 
     fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> Range<usize> {
@@ -119,18 +120,15 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
             .position(|&byte| A::try_from_ascii(byte).is_some())
             .unwrap_or(v.len());
 
-        let _end = v[start..]
+        let end = v[start..]
             .iter()
             .rposition(|&byte| A::try_from_ascii(byte).is_some())
             .map_or(start, |pos| start + pos + 1);
 
-        /*
         v[start..end]
             .iter()
             .map(|&byte| A::try_from_ascii(byte).ok_or(ParseBioError::UnrecognisedBase(byte)))
             .collect()
-            */
-        todo!()
     }
 
     pub fn with_capacity(len: usize) -> Self {
@@ -207,7 +205,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
     /// ```
     pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A, S>) {
-        self.store.splice(range, &other.bs);
+        self.store.splice(self.bit_range(range), &other.bs);
     }
 
     /// Insert a slice into a sequence
@@ -277,20 +275,24 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     */
 }
 
-/*
-impl<A: Codec> ReverseMut for Seq<A> {
+impl<A: Codec> ReverseMut for Seq<A, BitVecStorage> {
     fn rev(&mut self) {
-        self.bv.reverse();
-        for chunk in self.bv.rchunks_exact_mut(A::BITS as usize) {
+        self.store.bv.reverse();
+        for chunk in self.store.bv.rchunks_exact_mut(A::BITS as usize) {
             chunk.reverse();
         }
     }
 }
 
-impl<A: Codec + ComplementMut> ComplementMut for Seq<A> {
+impl<A: Codec + ComplementMut> ComplementMut for Seq<A, BitVecStorage> {
     fn comp(&mut self) {
         unsafe {
-            for base in self.bv.chunks_exact_mut(A::BITS as usize).remove_alias() {
+            for base in self
+                .store
+                .bv
+                .chunks_exact_mut(A::BITS as usize)
+                .remove_alias()
+            {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.comp();
                 base.store(bc.to_bits() as usize);
@@ -299,10 +301,15 @@ impl<A: Codec + ComplementMut> ComplementMut for Seq<A> {
     }
 }
 
-impl<A: Codec + MaskableMut> MaskableMut for Seq<A> {
+impl<A: Codec + MaskableMut> MaskableMut for Seq<A, BitVecStorage> {
     fn mask(&mut self) {
         unsafe {
-            for base in self.bv.chunks_exact_mut(A::BITS as usize).remove_alias() {
+            for base in self
+                .store
+                .bv
+                .chunks_exact_mut(A::BITS as usize)
+                .remove_alias()
+            {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.mask();
                 base.store(bc.to_bits() as usize);
@@ -311,7 +318,12 @@ impl<A: Codec + MaskableMut> MaskableMut for Seq<A> {
     }
     fn unmask(&mut self) {
         unsafe {
-            for base in self.bv.chunks_exact_mut(A::BITS as usize).remove_alias() {
+            for base in self
+                .store
+                .bv
+                .chunks_exact_mut(A::BITS as usize)
+                .remove_alias()
+            {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.unmask();
                 base.store(bc.to_bits() as usize);
@@ -320,20 +332,22 @@ impl<A: Codec + MaskableMut> MaskableMut for Seq<A> {
     }
 }
 
-impl<A: Codec + MaskableMut> Maskable for Seq<A> {}
+impl<A: Codec + MaskableMut> Maskable for Seq<A, BitVecStorage> {}
 
-impl<A: Codec + ComplementMut> ReverseComplementMut for Seq<A> where
-    Seq<A>: ComplementMut + ReverseMut
+impl<A: Codec + ComplementMut> ReverseComplementMut for Seq<A, BitVecStorage> where
+    Seq<A, BitVecStorage>: ComplementMut + ReverseMut
 {
 }
 
-impl<A: Codec> Reverse for Seq<A> {}
+impl<A: Codec> Reverse for Seq<A, BitVecStorage> {}
 
-impl<A: Codec + ComplementMut> Complement for Seq<A> {}
+impl<A: Codec + ComplementMut> Complement for Seq<A, BitVecStorage> {}
 
-impl<A: Codec + ComplementMut> ReverseComplement for Seq<A> where Seq<A>: ComplementMut + ReverseMut {}
+impl<A: Codec + ComplementMut> ReverseComplement for Seq<A, BitVecStorage> where
+    Seq<A, BitVecStorage>: ComplementMut + ReverseMut
+{
+}
 
-*/
 impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for Seq<A, S> {
     fn eq(&self, other: &SeqSlice<A, S>) -> bool {
         self.as_ref() == other
@@ -456,8 +470,7 @@ impl<A: Codec, S: SeqStorage> Clone for Seq<A, S> {
     }
 }
 
-/*
-impl<A: Codec> FromIterator<A> for Seq<A> {
+impl<A: Codec, S: SeqStorage> FromIterator<A> for Seq<A, S> {
     fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
         let i = iter.into_iter();
         let mut seq = Seq::with_capacity(i.size_hint().0);
@@ -465,22 +478,20 @@ impl<A: Codec> FromIterator<A> for Seq<A> {
         seq
     }
 }
-*/
 
 impl<A: Codec, S: SeqStorage> From<&Vec<A>> for Seq<A, S> {
-    fn from(_vec: &Vec<A>) -> Self {
-        // for a general conversion: vec.iter().copied().map(Into::into).collect()
-
-        //        vec.iter().copied().collect()
-        todo!()
+    fn from(vec: &Vec<A>) -> Self {
+        let mut seq = Seq::with_capacity(vec.len());
+        seq.extend(vec.iter().copied());
+        seq
     }
 }
-/*
-impl<A: Codec, B: Codec> From<&SeqSlice<A>> for Seq<B>
+
+impl<A: Codec, B: Codec, S: SeqStorage> From<&SeqSlice<A, S>> for Seq<B, S>
 where
     A: Into<B>,
 {
-    fn from(slice: &SeqSlice<A>) -> Self {
+    fn from(slice: &SeqSlice<A, S>) -> Self {
         slice.iter().map(Into::into).collect()
     }
 }
@@ -493,7 +504,6 @@ where
         slice.iter().map(Into::into).collect()
     }
 }
-*/
 
 /*
 impl<A: Codec, B: Codec, const N: usize, const W: usize> From<SeqArray<A, N, W>> for Seq<B>
@@ -876,7 +886,7 @@ mod tests {
         let mut bv: Bv = Default::default();
         bv.extend(&raw.view_bits::<Order>()[..(Dna::BITS as usize * 8)]);
         let s = Seq::<Dna> {
-            bv,
+            store: BitVecStorage { bv },
             _p: PhantomData,
         };
         assert_eq!(dna!("CACGTCTG").to_string(), "CACGTCTG");

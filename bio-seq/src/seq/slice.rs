@@ -6,7 +6,7 @@
 use crate::codec::Codec;
 use crate::error::ParseBioError;
 //use crate::seq::Seq;
-use crate::storage::{SeqSliceStorage, SeqStorage};
+use crate::storage::{BitVecStorage, SeqSliceStorage, SeqStorage};
 //use crate::{
 //    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 //};
@@ -21,7 +21,7 @@ use core::marker::PhantomData;
 /// An unsized, read-only window into part of a sequence
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct SeqSlice<A: Codec, S: SeqStorage> {
+pub struct SeqSlice<A: Codec, S: SeqStorage = BitVecStorage> {
     pub(crate) _p: PhantomData<A>,
     pub(crate) bs: S::Slice,
 }
