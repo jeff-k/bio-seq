@@ -93,7 +93,7 @@
 //#![feature(simd_wasm64)]
 //#![feature(portable_simd)]
 
-pub mod bitops;
+//pub mod bitops;
 pub mod codec;
 pub mod error;
 //#[macro_use]

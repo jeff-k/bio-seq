@@ -380,7 +380,7 @@ impl<A: Codec, const K: usize, S: PrimitiveStorage> FromStr for Kmer<A, K, S> {
         if s.len() != K {
             return Err(ParseBioError::MismatchedLength(K, s.len()));
         }
-        let seq: Seq<A> = Seq::from_str(s)?;
+        let seq: Seq<A, <S::Slice as SeqSliceStorage>::Owned> = Seq::from_str(s)?;
         Kmer::<A, K, S>::try_from(seq.as_ref())
     }
 }
