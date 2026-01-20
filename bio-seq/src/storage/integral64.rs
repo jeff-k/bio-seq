@@ -1,7 +1,7 @@
-use crate::bitops::REV_2BIT;
+//use crate::bitops::REV_2BIT;
 use crate::storage::PrimitiveStorage;
 use crate::storage::bv;
-use bitvec::field::BitField;
+//use bitvec::field::BitField;
 
 impl PrimitiveStorage for usize {
     //const BITS: usize = usize::BITS as usize;

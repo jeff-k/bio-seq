@@ -6,12 +6,13 @@
 use crate::codec::Codec;
 //use crate::kmer::KmerIter;
 use crate::seq::{Seq, SeqSlice};
-use crate::storage::SeqStorage;
+use crate::storage::{SeqSliceStorage, SeqStorage};
 use core::iter::Chain;
 //use core::marker::PhantomData;
+//use core::ops::{Index};
 
 /// An iterator over fixed-size non-overlapping chunks of a sequence
-pub struct SeqChunks<'a, A: Codec, S: SeqStorage> {
+pub struct SeqChunks<'a, A: Codec, S: SeqSliceStorage + ?Sized> {
     slice: &'a SeqSlice<A, S>,
     width: usize,
     skip: usize,
@@ -19,12 +20,12 @@ pub struct SeqChunks<'a, A: Codec, S: SeqStorage> {
 }
 
 /// An iterator over the elements of a sequence
-pub struct SeqIter<'a, A: Codec, S: SeqStorage> {
+pub struct SeqIter<'a, A: Codec, S: SeqSliceStorage + ?Sized> {
     slice: &'a SeqSlice<A, S>,
     index: usize,
 }
 
-impl<'a, A: Codec, S: SeqStorage> SeqSlice<A, S> {
+impl<'a, A: Codec, S: SeqSliceStorage + ?Sized> SeqSlice<A, S> {
     pub fn chain(
         self: &'a SeqSlice<A, S>,
         second: &'a SeqSlice<A, S>,
@@ -97,12 +98,12 @@ impl<'a, A: Codec, S: SeqStorage> SeqSlice<A, S> {
 }
 
 /// An iterator over the elements of a sequence in reverse order
-pub struct RevIter<'a, A: Codec, S: SeqStorage> {
+pub struct RevIter<'a, A: Codec, S: SeqSliceStorage + ?Sized> {
     pub slice: &'a SeqSlice<A, S>,
     pub index: usize,
 }
 
-impl<A: Codec, S: SeqStorage> Iterator for RevIter<'_, A, S> {
+impl<A: Codec, S: SeqSliceStorage + ?Sized> Iterator for RevIter<'_, A, S> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let i = self.index;
@@ -115,7 +116,9 @@ impl<A: Codec, S: SeqStorage> Iterator for RevIter<'_, A, S> {
     }
 }
 
-impl<'a, A: Codec + core::fmt::Debug, S: SeqStorage> Iterator for SeqChunks<'a, A, S> {
+impl<'a, A: Codec + core::fmt::Debug, S: SeqSliceStorage + ?Sized> Iterator
+    for SeqChunks<'a, A, S>
+{
     type Item = &'a SeqSlice<A, S>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -133,14 +136,14 @@ impl<'a, A: Codec + core::fmt::Debug, S: SeqStorage> Iterator for SeqChunks<'a, 
 
 impl<'a, A: Codec, S: SeqStorage> IntoIterator for &'a Seq<A, S> {
     type Item = A;
-    type IntoIter = SeqIter<'a, A, S>;
+    type IntoIter = SeqIter<'a, A, S::Slice>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.as_ref().into_iter()
     }
 }
 
-impl<'a, A: Codec, S: SeqStorage> IntoIterator for &'a SeqSlice<A, S> {
+impl<'a, A: Codec, S: SeqSliceStorage + ?Sized> IntoIterator for &'a SeqSlice<A, S> {
     type Item = A;
     type IntoIter = SeqIter<'a, A, S>;
 
@@ -152,13 +155,17 @@ impl<'a, A: Codec, S: SeqStorage> IntoIterator for &'a SeqSlice<A, S> {
     }
 }
 
-impl<'a, A: Codec, S: SeqStorage> FromIterator<&'a SeqSlice<A, S>> for Vec<Seq<A, S>> {
-    fn from_iter<T: IntoIterator<Item = &'a SeqSlice<A, S>>>(iter: T) -> Self {
+impl<'a, A: Codec, S: SeqSliceStorage + ?Sized> FromIterator<&'a SeqSlice<A, S>>
+    for Vec<Seq<A, S::Owned>>
+where
+    S::Owned: SeqStorage,
+{
+    fn from_iter<I: IntoIterator<Item = &'a SeqSlice<A, S>>>(iter: I) -> Self {
         iter.into_iter().collect()
     }
 }
 
-impl<A: Codec, S: SeqStorage> Iterator for SeqIter<'_, A, S> {
+impl<A: Codec, S: SeqSliceStorage + ?Sized> Iterator for SeqIter<'_, A, S> {
     type Item = A;
     fn next(&mut self) -> Option<A> {
         let i = self.index;

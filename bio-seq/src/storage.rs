@@ -37,7 +37,7 @@ pub trait PrimitiveStorage: Sized + Clone + PartialEq {
 }
 
 pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
-    type Slice: ?Sized + SeqSliceStorage;
+    type Slice: ?Sized + SeqSliceStorage<Owned = Self>;
     type Unit: PrimitiveStorage<Slice = Self::Slice>;
 
     fn new() -> Self;
@@ -58,6 +58,7 @@ pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
 }
 
 pub trait SeqSliceStorage: PartialEq + Eq + Index<Range<usize>, Output = Self> {
+    type Owned: SeqStorage<Slice = Self>;
     fn get(&self, start: usize, end: usize) -> u8;
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;

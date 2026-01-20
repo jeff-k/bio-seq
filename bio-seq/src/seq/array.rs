@@ -14,11 +14,11 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 use core::ptr;
 
+use crate::storage::BitSliceStorage;
 use crate::storage::{Ba, Bs};
-use crate::storage::{BitSliceStorage, BitVecStorage};
 
 //use core::ops::{BitAnd, BitOr};
-use std::hash::{Hash, Hasher};
+//use std::hash::{Hash, Hasher};
 
 /// Static bit-packed sequence meant to be accessed as a `&'static SeqSlice`
 ///
@@ -44,21 +44,21 @@ impl<A: Codec, const K: usize, const W: usize> Hash for SeqArray<A, K, W> {
 */
 
 impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
-    type Target = SeqSlice<A, BitVecStorage>;
+    type Target = SeqSlice<A, BitSliceStorage>;
 
     fn deref(&self) -> &Self::Target {
         let bs: *const Bs = ptr::from_ref::<Bs>(&self.ba[..N * A::BITS as usize]);
-        unsafe { &*(bs as *const SeqSlice<A>) }
+        unsafe { &*(bs as *const SeqSlice<A, BitSliceStorage>) }
     }
 }
 
-/*
-impl<A: Codec, const N: usize, Storage: SeqStorage> AsRef<SeqSlice<A, Storage>> for SeqArray<A, N, Storage> {
-    fn as_ref(&self) -> &SeqSlice<A, Storage> {
+impl<A: Codec, const N: usize, const W: usize> AsRef<SeqSlice<A, BitSliceStorage>>
+    for SeqArray<A, N, W>
+{
+    fn as_ref(&self) -> &SeqSlice<A, BitSliceStorage> {
         self
     }
 }
-*/
 
 /*
 impl<A: Codec, const N: usize> From<&SeqArray<A, N, 1>> for usize {

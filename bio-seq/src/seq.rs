@@ -182,7 +182,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// seq.prepend(dna!("TTTT"));
     /// assert_eq!(&seq, dna!("TTTTCCCCC"));
     /// ```
-    pub fn prepend(&mut self, other: &SeqSlice<A, S>) {
+    pub fn prepend(&mut self, other: &SeqSlice<A, S::Slice>) {
         self.store.prepend(&other.bs);
     }
 
@@ -193,7 +193,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// seq.append(dna!("TTTT"));
     /// assert_eq!(&seq, dna!("CCCCCTTTT"));
     /// ```
-    pub fn append(&mut self, other: &SeqSlice<A, S>) {
+    pub fn append(&mut self, other: &SeqSlice<A, S::Slice>) {
         self.store.extend(&other.bs);
     }
 
@@ -204,7 +204,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// seq.splice(4..6, dna!("TTTT"));
     /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
     /// ```
-    pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A, S>) {
+    pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A, S::Slice>) {
         self.store.splice(self.bit_range(range), &other.bs);
     }
 
@@ -218,7 +218,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     ///
     /// # Panics
     /// Panics if index out of bounds
-    pub fn insert(&mut self, index: usize, other: &SeqSlice<A, S>) {
+    pub fn insert(&mut self, index: usize, other: &SeqSlice<A, S::Slice>) {
         self.store.insert(index * A::BITS as usize, &other.bs);
     }
 
@@ -348,14 +348,14 @@ impl<A: Codec + ComplementMut> ReverseComplement for Seq<A, BitVecStorage> where
 {
 }
 
-impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S>> for Seq<A, S> {
-    fn eq(&self, other: &SeqSlice<A, S>) -> bool {
+impl<A: Codec, S: SeqStorage> PartialEq<SeqSlice<A, S::Slice>> for Seq<A, S> {
+    fn eq(&self, other: &SeqSlice<A, S::Slice>) -> bool {
         self.as_ref() == other
     }
 }
 
-impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<A, S>> for Seq<A, S> {
-    fn eq(&self, other: &&SeqSlice<A, S>) -> bool {
+impl<A: Codec, S: SeqStorage> PartialEq<&SeqSlice<A, S::Slice>> for Seq<A, S> {
+    fn eq(&self, other: &&SeqSlice<A, S::Slice>) -> bool {
         self.as_ref() == *other
     }
 }
@@ -395,14 +395,14 @@ impl<A: Codec, S: SeqStorage> PartialEq<&Seq<A, S>> for Seq<A, S> {
 ///        println!("{query}: {value}");
 /// }
 /// ```
-impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for Seq<A, S> {
-    fn borrow(&self) -> &SeqSlice<A, S> {
+impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S::Slice>> for Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<A, S::Slice> {
         self.as_ref()
     }
 }
 
-impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for &Seq<A, S> {
-    fn borrow(&self) -> &SeqSlice<A, S> {
+impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S::Slice>> for &Seq<A, S> {
+    fn borrow(&self) -> &SeqSlice<A, S::Slice> {
         self.as_ref()
     }
 }
@@ -421,12 +421,12 @@ impl<A: Codec, S: SeqStorage> Borrow<SeqSlice<A, S>> for &Seq<A, S> {
 /// ```
 ///
 impl<A: Codec, S: SeqStorage> Deref for Seq<A, S> {
-    type Target = SeqSlice<A, S>;
+    type Target = SeqSlice<A, S::Slice>;
 
     fn deref(&self) -> &Self::Target {
         let slice: &S::Slice = &self.store;
         let ptr: *const S::Slice = ptr::from_ref(slice);
-        unsafe { &*(ptr as *const SeqSlice<A, S>) }
+        unsafe { &*(ptr as *const SeqSlice<A, S::Slice>) }
     }
 }
 
@@ -443,8 +443,8 @@ impl<A: Codec, S: SeqStorage> Deref for Seq<A, S> {
 /// assert_eq!(count, 12);
 /// ```
 ///
-impl<A: Codec, S: SeqStorage> AsRef<SeqSlice<A, S>> for Seq<A, S> {
-    fn as_ref(&self) -> &SeqSlice<A, S> {
+impl<A: Codec, S: SeqStorage> AsRef<SeqSlice<A, S::Slice>> for Seq<A, S> {
+    fn as_ref(&self) -> &SeqSlice<A, S::Slice> {
         self
     }
 }
@@ -487,11 +487,11 @@ impl<A: Codec, S: SeqStorage> From<&Vec<A>> for Seq<A, S> {
     }
 }
 
-impl<A: Codec, B: Codec, S: SeqStorage> From<&SeqSlice<A, S>> for Seq<B, S>
+impl<A: Codec, B: Codec, S: SeqStorage> From<&SeqSlice<A, S::Slice>> for Seq<B, S>
 where
     A: Into<B>,
 {
-    fn from(slice: &SeqSlice<A, S>) -> Self {
+    fn from(slice: &SeqSlice<A, S::Slice>) -> Self {
         slice.iter().map(Into::into).collect()
     }
 }

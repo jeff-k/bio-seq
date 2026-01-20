@@ -32,9 +32,9 @@
 
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
-use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::storage::{PrimitiveStorage, SeqStorage};
-use bitvec::view::BitView;
+use crate::seq::{Seq, SeqSlice};
+use crate::storage::{PrimitiveStorage, SeqSliceStorage, SeqStorage};
+//use bitvec::view::BitView;
 //use crate::storage::integral64;
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
@@ -42,8 +42,8 @@ use crate::{
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
-use core::ops::Deref;
-use core::ptr;
+//use core::ops::Deref;
+//use core::ptr;
 use core::str::FromStr;
 
 //#[cfg(target_feature(enable = "avx2,bmi2"))]
@@ -120,7 +120,7 @@ impl<A: Codec, const K: usize, S: PrimitiveStorage> Kmer<A, K, S> {
     }
 
     /// Create Kmer from sequence without checking length
-    pub fn unsafe_from_seqslice<Q: SeqStorage<Slice = S::Slice>>(seq: &SeqSlice<A, Q>) -> Self {
+    pub fn unsafe_from_seqslice(seq: &SeqSlice<A, S::Slice>) -> Self {
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
@@ -205,12 +205,8 @@ impl<A: Codec, const K: usize> Deref for Kmer<A, K, usize> {
 }
 */
 
-impl<A: Codec, Q: SeqStorage<Slice = <usize as PrimitiveStorage>::Slice>, const K: usize>
-    AsRef<SeqSlice<A, Q>> for Kmer<A, K, usize>
-where
-    usize: PrimitiveStorage,
-{
-    fn as_ref(&self) -> &SeqSlice<A, Q> {
+impl<A: Codec, const K: usize> AsRef<SeqSlice<A>> for Kmer<A, K, usize> {
+    fn as_ref(&self) -> &SeqSlice<A> {
         todo!()
         //self
     }
@@ -288,12 +284,12 @@ impl<A: Codec, const K: usize, S: PrimitiveStorage> Hash for Kmer<A, K, S> {
     }
 }
 
-impl<A: Codec, const K: usize, S: PrimitiveStorage, Q: SeqStorage<Slice = S::Slice>>
-    TryFrom<&SeqSlice<A, Q>> for Kmer<A, K, S>
+impl<A: Codec, const K: usize, S: PrimitiveStorage> TryFrom<&SeqSlice<A, S::Slice>>
+    for Kmer<A, K, S>
 {
     type Error = ParseBioError;
 
-    fn try_from(seq: &SeqSlice<A, Q>) -> Result<Self, Self::Error> {
+    fn try_from(seq: &SeqSlice<A, S::Slice>) -> Result<Self, Self::Error> {
         if seq.len() == K {
             Ok(Kmer::<A, K, S>::unsafe_from_seqslice(&seq[0..K]))
         } else {
@@ -346,18 +342,19 @@ impl<A: Codec, const K: usize> PartialEq<Seq<A>> for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize, S: PrimitiveStorage, Q: SeqStorage<Slice = S::Slice>>
+impl<A: Codec, const K: usize, S: PrimitiveStorage, Q: SeqSliceStorage + ?Sized>
     PartialEq<SeqSlice<A, Q>> for Kmer<A, K, S>
 {
     fn eq(&self, seq: &SeqSlice<A, Q>) -> bool {
         if seq.len() != K {
             return false;
         }
-        Kmer::<A, K, S>::unsafe_from_seqslice(seq) == *self
+        todo!()
+        //Kmer::<A, K, S>::unsafe_from_seqslice(seq) == *self
     }
 }
 
-impl<A: Codec, const K: usize, S: PrimitiveStorage, Q: SeqStorage<Slice = S::Slice>>
+impl<A: Codec, const K: usize, S: PrimitiveStorage, Q: SeqSliceStorage + ?Sized>
     PartialEq<&SeqSlice<A, Q>> for Kmer<A, K, S>
 {
     fn eq(&self, seq: &&SeqSlice<A, Q>) -> bool {
@@ -376,7 +373,7 @@ impl<A: Codec, const K: usize> PartialEq<&str> for Kmer<A, K> {
     }
 }
 
-impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
+impl<A: Codec, const K: usize, S: PrimitiveStorage> FromStr for Kmer<A, K, S> {
     type Err = ParseBioError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -384,7 +381,7 @@ impl<A: Codec, const K: usize> FromStr for Kmer<A, K> {
             return Err(ParseBioError::MismatchedLength(K, s.len()));
         }
         let seq: Seq<A> = Seq::from_str(s)?;
-        Kmer::<A, K>::try_from(seq.as_ref())
+        Kmer::<A, K, S>::try_from(seq.as_ref())
     }
 }
 

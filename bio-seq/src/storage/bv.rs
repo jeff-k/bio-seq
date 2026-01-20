@@ -7,7 +7,6 @@ type Order = Lsb0;
 pub(crate) type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
 pub(crate) type Ba<const W: usize> = BitArray<[usize; W], Order>;
-//type Ba<const W: usize> = BitArray<[usize; W], Order>;
 
 use bitvec::field::BitField;
 use bitvec::view::BitView;
@@ -41,6 +40,8 @@ impl Index<Range<usize>> for BitSliceStorage {
 }
 
 impl SeqSliceStorage for BitSliceStorage {
+    type Owned = BitVecStorage;
+
     fn get(&self, start: usize, end: usize) -> u8 {
         self.bs[start..end].load_le::<u8>()
     }
