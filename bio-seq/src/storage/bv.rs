@@ -46,7 +46,7 @@ impl SeqSliceStorage for BitSliceStorage {
         self.bs[start..end].load_le::<u8>()
     }
 
-    fn len(&self) -> usize {
+    fn bits(&self) -> usize {
         self.bs.len()
     }
 
@@ -70,6 +70,10 @@ impl SeqStorage for BitVecStorage {
 
     fn new() -> Self {
         BitVecStorage { bv: Bv::new() }
+    }
+
+    fn bits(&self) -> usize {
+        todo!()
     }
 
     fn with_capacity(len: usize) -> Self {
@@ -96,7 +100,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn prepend(&mut self, other: &Self::Slice) {
-        let mut bv = Bv::with_capacity(self.len() + other.bs.len());
+        let mut bv = Bv::with_capacity(self.bits() + other.bs.len());
         bv.extend(&other.bs);
         bv.extend_from_bitslice(&self.bv);
         self.bv = bv;
@@ -111,7 +115,7 @@ impl SeqStorage for BitVecStorage {
     }
 
     fn insert(&mut self, index: usize, other: &Self::Slice) {
-        assert!(index <= self.len(), "Index out of bounds");
+        assert!(index <= self.bits(), "Index out of bounds");
 
         let mut bv = Bv::with_capacity(self.bv.len() + other.bs.len());
 

@@ -1,9 +1,11 @@
-use crate::kmer::{REV_2BIT, sealed};
+use crate::kmer::{REV_2BIT};
 use bitvec::field::BitField;
+use crate::storage::PrimitiveStorage;
+use crate::storage::bv;
 
 use crate::{Ba, Bs};
 
-impl sealed::KmerStorage for usize {
+impl PrimitiveStorage for usize {
     const BITS: usize = usize::BITS as usize;
 
     type BaN = Ba<1>;

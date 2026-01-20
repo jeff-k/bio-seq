@@ -58,7 +58,7 @@ pub fn codec_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let output = quote! {
         impl Codec for #enum_ident {
             //type Store = crate::Bv;
-            const BITS: u8 = #width;
+            const BITS: usize = #width;
 
             fn unsafe_from_bits(b: u8) -> Self {
                 match b {

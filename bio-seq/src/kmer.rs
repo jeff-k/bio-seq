@@ -81,7 +81,7 @@ impl<A: Codec, const K: usize, S: PrimitiveStorage> Kmer<A, K, S> {
     const _ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
 
     #[allow(dead_code)]
-    const BITS: usize = K * A::BITS as usize;
+    const BITS: usize = K * A::BITS;
 
     pub fn len(&self) -> usize {
         K
@@ -405,7 +405,7 @@ impl<const K: usize> Complement for Kmer<codec::dna::Dna, K, usize> {}
 
 impl<A: Codec, const K: usize> ReverseMut for Kmer<A, K, usize> {
     fn rev(&mut self) {
-        self.bs.rev_blocks_2();
+        self.bs.rev_blocks(A::BITS);
     }
 }
 

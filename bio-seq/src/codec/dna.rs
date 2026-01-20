@@ -15,7 +15,7 @@ pub enum Dna {
 }
 
 impl Codec for Dna {
-    const BITS: u8 = 2;
+    const BITS: usize = 2;
 
     /// Transmute a `u8` into a nucleotide
     ///

@@ -11,17 +11,20 @@ use syn::Token;
 use syn::punctuated::Punctuated;
 
 /// Allow the user to request more bits than used by their encodings
-pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
+pub(crate) fn parse_width(
+    attrs: &Vec<syn::Attribute>,
+    max_variant: u8,
+) -> Result<usize, syn::Error> {
     // minimum width is the log2 of the max_variant
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
-    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant + 1))) as u8;
+    let min_width: usize = f32::ceil(f32::log2(f32::from(max_variant + 1))) as usize;
 
     for attr in attrs {
         if attr.path().is_ident("bits") {
             return match attr.parse_args::<syn::LitInt>() {
                 Ok(w) => {
-                    let chosen_width = w.base10_parse::<u8>().unwrap();
+                    let chosen_width = w.base10_parse::<usize>().unwrap();
                     // test whether the specified width is too small
                     if chosen_width < min_width {
                         Err(syn::Error::new_spanned(

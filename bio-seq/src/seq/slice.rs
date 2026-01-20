@@ -1,12 +1,12 @@
-// Copyright 2021-2024 Jeff Knaggs
+// Copyright 2021-2026 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
 use crate::codec::Codec;
 use crate::error::ParseBioError;
-//use crate::seq::Seq;
-use crate::storage::{BitSliceStorage, SeqSliceStorage};
+use crate::seq::Seq;
+use crate::storage::{BitSliceStorage, SeqSliceStorage, SeqStorage};
 //use crate::{
 //    Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 //};
@@ -27,20 +27,25 @@ pub struct SeqSlice<A: Codec, S: SeqSliceStorage + ?Sized = BitSliceStorage> {
     pub(crate) bs: S,
 }
 
-impl<A: Codec, S: SeqSliceStorage + ?Sized> TryFrom<&SeqSlice<A, S>> for usize {
+// this could be for the PrimitiveStorage Unit type associated with the Seq
+// type associated with SeqSlice (the owned value)
+impl<A: Codec, S: SeqSliceStorage + ?Sized> TryFrom<&SeqSlice<A, S>> for usize
+where
+    S::Owned: SeqStorage<Unit = usize>,
+{
     type Error = ParseBioError;
 
-    fn try_from(_slice: &SeqSlice<A, S>) -> Result<usize, Self::Error> {
-        todo!()
-        /*
-        if slice.bs.len() <= usize::BITS as usize {
-            Ok(slice.bs.load_le::<usize>())
+    fn try_from(slice: &SeqSlice<A, S>) -> Result<usize, Self::Error> {
+        if slice.bs.bits() <= usize::BITS as usize {
+            // If this branch is hit then we can directly return the PrimitiveStorage
+            todo!()
+            // This is the original implementation for SeqSlice<A, BitSliceStorage> -> usize
+            //Ok(slice.bs.load_le::<usize>())
         } else {
-            let len: usize = slice.bs.len() / A::BITS as usize;
-            let expected: usize = usize::BITS as usize / A::BITS as usize;
+            let len: usize = slice.bs.bits() / A::BITS;
+            let expected: usize = usize::BITS as usize / A::BITS;
             Err(ParseBioError::SequenceTooLong(len, expected))
         }
-        */
     }
 }
 
@@ -65,18 +70,18 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 impl<A: Codec, S: SeqSliceStorage + ?Sized> SeqSlice<A, S> {
     /// unsafely index into the `i`th position of a sequence
     pub fn nth(&self, i: usize) -> A {
-        let s: usize = i * A::BITS as usize;
-        let e: usize = s + A::BITS as usize;
+        let s: usize = i * A::BITS;
+        let e: usize = s + A::BITS;
         A::unsafe_from_bits(self.bs.get(s, e))
     }
 
     pub fn len(&self) -> usize {
-        self.bs.len() / A::BITS as usize
+        self.bs.bits() / A::BITS
     }
 
     /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
     pub fn get(&self, i: usize) -> Option<A> {
-        if i >= self.bs.len() / A::BITS as usize {
+        if i >= self.bs.bits() / A::BITS {
             None
         } else {
             Some(self.nth(i))
@@ -84,14 +89,13 @@ impl<A: Codec, S: SeqSliceStorage + ?Sized> SeqSlice<A, S> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.bs.len() == 0
+        self.bs.bits() == 0
     }
 }
 
 impl<A: Codec, S: SeqSliceStorage + ?Sized> From<&SeqSlice<A, S>> for String {
-    fn from(_seq: &SeqSlice<A, S>) -> Self {
-        todo!()
-        //        seq.into_iter().map(Codec::to_char).collect()
+    fn from(seq: &SeqSlice<A, S>) -> Self {
+        seq.into_iter().map(Codec::to_char).collect()
     }
 }
 
@@ -145,17 +149,14 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
 
 /// Warning! hashes are not currently stable between platforms/version
 impl<A: Codec, S: SeqSliceStorage + ?Sized> Hash for SeqSlice<A, S> {
-    fn hash<H: Hasher>(&self, _state: &mut H) {
-        todo!()
-        /*
-        self.bs.hash(state);
-        // prepend length to make robust against matching prefixes
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.len().hash(state);
-        */
+        for item in self {
+            item.hash(state);
+        }
     }
 }
 
-/*
 /// Clone a borrowed slice of a sequence into an owned version.
 ///
 /// ```
@@ -167,21 +168,21 @@ impl<A: Codec, S: SeqSliceStorage + ?Sized> Hash for SeqSlice<A, S> {
 ///
 /// assert_eq!(&owned, &seq[2..7]);
 /// ```
-
-impl<A: Codec, S: SeqStorage> ToOwned for SeqSlice<A, S> {
-    type Owned = Seq<A, S>;
+impl<A: Codec, S: SeqSliceStorage + ?Sized> ToOwned for SeqSlice<A, S>
+where
+    S::Owned: SeqStorage<Slice = S>,
+{
+    type Owned = Seq<A, S::Owned>;
 
     fn to_owned(&self) -> Self::Owned {
-        todo!()
-        /*
+        let mut store = S::Owned::new();
+        store.extend(&self.bs);
         Seq {
             _p: PhantomData,
-            bv: self.bs.into(),
+            store,
         }
-        */
     }
 }
-*/
 
 impl<A: Codec, S: SeqSliceStorage + ?Sized> AsRef<SeqSlice<A, S>> for SeqSlice<A, S> {
     fn as_ref(&self) -> &SeqSlice<A, S> {
@@ -190,9 +191,8 @@ impl<A: Codec, S: SeqSliceStorage + ?Sized> AsRef<SeqSlice<A, S>> for SeqSlice<A
 }
 
 impl<A: Codec, S: SeqSliceStorage + ?Sized> fmt::Display for SeqSlice<A, S> {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-        //write!(f, "{}", String::from(self))
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", String::from(self))
     }
 }
 
@@ -229,7 +229,7 @@ impl<A: Codec> BitOr for &SeqSlice<A> {
 impl<A: Codec> ReverseMut for SeqSlice<A> {
     fn rev(&mut self) {
         self.bs.reverse();
-        for chunk in self.bs.rchunks_exact_mut(A::BITS as usize) {
+        for chunk in self.bs.rchunks_exact_mut(A::BITS ) {
             chunk.reverse();
         }
     }
@@ -238,7 +238,7 @@ impl<A: Codec> ReverseMut for SeqSlice<A> {
 impl<A: Codec + ComplementMut> ComplementMut for SeqSlice<A> {
     fn comp(&mut self) {
         unsafe {
-            for base in self.bs.chunks_exact_mut(A::BITS as usize).remove_alias() {
+            for base in self.bs.chunks_exact_mut(A::BITS ).remove_alias() {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.comp();
                 base.store(bc.to_bits() as usize);

@@ -1,4 +1,4 @@
-// Copyright 2025 Jeff Knaggs
+// Copyright 2025, 2026 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -18,7 +18,7 @@ pub trait PrimitiveStorage: Sized + Clone + PartialEq {
     const BITS: usize;
     type Slice: ?Sized + SeqSliceStorage;
 
-    fn len(&self) -> usize;
+    fn bits(&self) -> usize;
     fn is_empty(&self) -> bool;
 
     fn to_usize(&self) -> usize;
@@ -27,10 +27,13 @@ pub trait PrimitiveStorage: Sized + Clone + PartialEq {
 
     fn shiftl(&mut self, n: u32);
 
-    fn mask(&mut self, bits: usize);
+    fn mask(&mut self, bits: Self);
 
-    fn complement(&mut self, mask: usize);
-    fn rev_blocks_2(&mut self);
+    fn complement(&mut self, mask: Self);
+
+    fn rev_blocks(&mut self, n: usize);
+
+    /// Reverse bits
     fn reverse(&self) -> Self;
 
     fn unsafe_from_slice(slice: &Self::Slice) -> Self;
@@ -42,6 +45,7 @@ pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
 
     fn new() -> Self;
     fn with_capacity(cap: usize) -> Self;
+    fn bits(&self) -> usize;
 
     fn push(&mut self, byte: u8, bits: usize);
     fn clear(&mut self);
@@ -60,6 +64,6 @@ pub trait SeqStorage: Sized + Clone + PartialEq + Deref<Target = Self::Slice> {
 pub trait SeqSliceStorage: PartialEq + Eq + Index<Range<usize>, Output = Self> {
     type Owned: SeqStorage<Slice = Self>;
     fn get(&self, start: usize, end: usize) -> u8;
-    fn len(&self) -> usize;
+    fn bits(&self) -> usize;
     fn is_empty(&self) -> bool;
 }

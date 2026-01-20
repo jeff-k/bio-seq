@@ -47,7 +47,7 @@ impl<A: Codec, const N: usize, const W: usize> Deref for SeqArray<A, N, W> {
     type Target = SeqSlice<A, BitSliceStorage>;
 
     fn deref(&self) -> &Self::Target {
-        let bs: *const Bs = ptr::from_ref::<Bs>(&self.ba[..N * A::BITS as usize]);
+        let bs: *const Bs = ptr::from_ref::<Bs>(&self.ba[..N * A::BITS]);
         unsafe { &*(bs as *const SeqSlice<A, BitSliceStorage>) }
     }
 }

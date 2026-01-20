@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Jeff Knaggs
+// Copyright 2021-2026 Jeff Knaggs
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 // This file may not be copied, modified, or distributed
 // except according to those terms.
@@ -28,7 +28,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 use core::borrow::Borrow;
-//use core::hash::{Hash, Hasher};
+use core::hash::{Hash, Hasher};
 use core::marker::PhantomData;
 use core::ops::{Bound, Deref, Range, RangeBounds};
 use core::str::FromStr;
@@ -47,19 +47,17 @@ pub struct Seq<A: Codec, S: SeqStorage = BitVecStorage> {
 
 impl<A: Codec, S: SeqStorage<Unit = usize>> From<Seq<A, S>> for usize {
     fn from(slice: Seq<A, S>) -> usize {
-        debug_assert!(slice.store.len() <= usize::BITS as usize);
+        debug_assert!(slice.store.bits() <= usize::BITS as usize);
         slice.store.pop_unit() //.wrapping_shr(shift)
     }
 }
 
-/*
 impl<A: Codec, S: SeqStorage> Hash for Seq<A, S> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ref().hash(state);
         //self.len().hash(state);
     }
 }
-*/
 
 impl<A: Codec, S: SeqStorage> Default for Seq<A, S> {
     fn default() -> Self {
@@ -75,8 +73,9 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         }
     }
 
+    /// The length of a Seq is the number of codec units in it
     pub fn len(&self) -> usize {
-        self.store.len() / A::BITS as usize
+        self.store.bits() / A::BITS
     }
 
     pub fn is_empty(&self) -> bool {
@@ -99,7 +98,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
         debug_assert!(s <= e, "Start of range must be less than or equal to end");
         debug_assert!(e <= self.len(), "Range out of bounds");
 
-        s * A::BITS as usize..e * A::BITS as usize
+        s * A::BITS..e * A::BITS
     }
 
     /// Trim leading and trailing characters that don't match bases/symbols
@@ -134,7 +133,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
-            store: S::with_capacity(len * A::BITS as usize),
+            store: S::with_capacity(len * A::BITS),
         }
     }
 
@@ -156,8 +155,8 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
 
     pub fn push(&mut self, item: A) {
         let byte: u8 = item.to_bits();
-        self.store.push(byte, A::BITS as usize);
-        //&byte.view_bits::<Order>()[..A::BITS as usize]);
+        self.store.push(byte, A::BITS);
+        //&byte.view_bits::<Order>()[..A::BITS ]);
     }
 
     pub fn clear(&mut self) {
@@ -172,7 +171,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// assert_eq!(&seq, dna!("CC"));
     /// ```
     pub fn truncate(&mut self, len: usize) {
-        self.store.truncate(len * A::BITS as usize);
+        self.store.truncate(len * A::BITS);
     }
 
     /// Prepend a slice
@@ -219,7 +218,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
     /// # Panics
     /// Panics if index out of bounds
     pub fn insert(&mut self, index: usize, other: &SeqSlice<A, S::Slice>) {
-        self.store.insert(index * A::BITS as usize, &other.bs);
+        self.store.insert(index * A::BITS, &other.bs);
     }
 
     /// Remove a region of a sequence
@@ -251,7 +250,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
             if len > bv.len() {
                 None
             } else {
-                bv.truncate(len * A::BITS as usize);
+                bv.truncate(len * A::BITS );
                 Some(Seq {
                     _p: PhantomData,
                     bv,
@@ -278,7 +277,7 @@ impl<A: Codec, S: SeqStorage> Seq<A, S> {
 impl<A: Codec> ReverseMut for Seq<A, BitVecStorage> {
     fn rev(&mut self) {
         self.store.bv.reverse();
-        for chunk in self.store.bv.rchunks_exact_mut(A::BITS as usize) {
+        for chunk in self.store.bv.rchunks_exact_mut(A::BITS) {
             chunk.reverse();
         }
     }
@@ -287,12 +286,7 @@ impl<A: Codec> ReverseMut for Seq<A, BitVecStorage> {
 impl<A: Codec + ComplementMut> ComplementMut for Seq<A, BitVecStorage> {
     fn comp(&mut self) {
         unsafe {
-            for base in self
-                .store
-                .bv
-                .chunks_exact_mut(A::BITS as usize)
-                .remove_alias()
-            {
+            for base in self.store.bv.chunks_exact_mut(A::BITS).remove_alias() {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.comp();
                 base.store(bc.to_bits() as usize);
@@ -304,12 +298,7 @@ impl<A: Codec + ComplementMut> ComplementMut for Seq<A, BitVecStorage> {
 impl<A: Codec + MaskableMut> MaskableMut for Seq<A, BitVecStorage> {
     fn mask(&mut self) {
         unsafe {
-            for base in self
-                .store
-                .bv
-                .chunks_exact_mut(A::BITS as usize)
-                .remove_alias()
-            {
+            for base in self.store.bv.chunks_exact_mut(A::BITS).remove_alias() {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.mask();
                 base.store(bc.to_bits() as usize);
@@ -318,12 +307,7 @@ impl<A: Codec + MaskableMut> MaskableMut for Seq<A, BitVecStorage> {
     }
     fn unmask(&mut self) {
         unsafe {
-            for base in self
-                .store
-                .bv
-                .chunks_exact_mut(A::BITS as usize)
-                .remove_alias()
-            {
+            for base in self.store.bv.chunks_exact_mut(A::BITS).remove_alias() {
                 let mut bc = A::unsafe_from_bits(base.load_le::<u8>());
                 bc.unmask();
                 base.store(bc.to_bits() as usize);
@@ -884,7 +868,7 @@ mod tests {
     fn test_bit_order() {
         let raw: usize = 0b10_11_01_11_10_01_00_01;
         let mut bv: Bv = Default::default();
-        bv.extend(&raw.view_bits::<Order>()[..(Dna::BITS as usize * 8)]);
+        bv.extend(&raw.view_bits::<Order>()[..(Dna::BITS * 8)]);
         let s = Seq::<Dna> {
             store: BitVecStorage { bv },
             _p: PhantomData,
