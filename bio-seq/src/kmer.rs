@@ -340,10 +340,14 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
 /// ```
 impl<A: Codec, const K: usize, S: KmerStorage> Hash for Kmer<A, K, S> {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        // Length prefix as 8 little-endian bytes (see `SeqSlice` for rationale).
+        state.write(&(K as u64).to_le_bytes());
         let ba = self.bs.to_bitarray();
         let bs: &Bs = ba.as_ref();
-        bs.hash(state);
-        K.hash(state);
+        // Only the meaningful bits are hashed; the unused high bits of the
+        // storage word/array are padding and must not influence the digest.
+        let n_bits = K * A::BITS as usize;
+        crate::hash::hash_bits(&bs[..n_bits], state);
     }
 }
 
