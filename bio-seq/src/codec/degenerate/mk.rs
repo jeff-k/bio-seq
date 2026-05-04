@@ -61,7 +61,7 @@ impl Codec for MK {
 impl ComplementMut for MK {
     /// This representation preserves complementarity, `M = comp(K)`
     fn comp(&mut self) {
-        *self = unsafe { std::mem::transmute(*self as u8 ^ 1) };
+        *self = unsafe { std::mem::transmute::<u8, Self>(*self as u8 ^ 1) };
     }
 }
 

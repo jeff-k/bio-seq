@@ -61,7 +61,7 @@ impl Codec for RY {
 impl ComplementMut for RY {
     /// This representation preserves complementarity, `R = comp(Y)`
     fn comp(&mut self) {
-        *self = unsafe { std::mem::transmute(*self as u8 ^ 1) };
+        *self = unsafe { std::mem::transmute::<u8, Self>(*self as u8 ^ 1) };
     }
 }
 
