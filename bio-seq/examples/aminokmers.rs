@@ -7,8 +7,7 @@
 //! cargo run --example aminokmers -- path/to/proteins.faa
 //! ```
 
-use std::fs::File;
-use std::io::{self, BufReader};
+use std::io;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 

@@ -6,8 +6,7 @@
 //! ```
 
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{self, BufReader};
+use std::io;
 use std::path::PathBuf;
 
 use bio_seq::codec;

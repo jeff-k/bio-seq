@@ -11,11 +11,10 @@
 
 #![warn(clippy::pedantic)]
 use std::fs::File;
-use std::io::{self, BufReader, Read, Write};
+use std::io;
 use std::path::PathBuf;
 
 use bio_seq::prelude::*;
-use ciborium;
 use clap::{Parser, Subcommand};
 use noodles::fasta;
 use serde::{Deserialize, Serialize};
