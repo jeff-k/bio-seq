@@ -83,7 +83,7 @@ impl<'a, A: Codec> SeqSlice<A> {
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
     /// assert_eq!(chunks, vec![dna!("ACT"), dna!("GAT")]);
     /// ```
-    pub fn chunks(&self, width: usize) -> SeqChunks<A> {
+    pub fn chunks(&self, width: usize) -> SeqChunks<'_, A> {
         SeqChunks {
             slice: self,
             width,

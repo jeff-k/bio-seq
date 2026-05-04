@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 
 use bio_seq::prelude::*;
-use noodles::fasta::Reader;
+use noodles::fasta;
 
 use clap::Parser;
 
@@ -62,9 +62,8 @@ impl<C: Codec, const K: usize> Histogram<C, K> {
 
 fn main() -> io::Result<()> {
     let args = Cli::parse();
-    let fasta = File::open(&args.fasta)?;
 
-    let mut reader = Reader::new(BufReader::new(fasta));
+    let mut reader = fasta::io::reader::Builder.build_from_path(&args.fasta)?;
     let mut histogram = Histogram::<Amino, 3>::new();
 
     for result in reader.records() {

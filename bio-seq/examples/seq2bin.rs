@@ -15,8 +15,9 @@ use std::io::{self, BufReader, Read, Write};
 use std::path::PathBuf;
 
 use bio_seq::prelude::*;
+use ciborium;
 use clap::{Parser, Subcommand};
-use noodles::fasta::Reader;
+use noodles::fasta;
 use serde::{Deserialize, Serialize};
 
 /// We need to associate the sequence's codec with the binary data. The
@@ -58,24 +59,17 @@ enum Commands {
 
 /// Save a DNA or Amino acid sequence to a binary file
 fn save_bin(seq: &TaggedSeq, path: &PathBuf) -> io::Result<()> {
-    let bs: Vec<u8> = bincode::serialize(seq).unwrap();
-
     let mut fd = File::create(path)?;
-    fd.write_all(&bs)?;
-
-    Ok(())
+    ciborium::into_writer(seq, &mut fd).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
 /// Load a sequence from a binary file
 fn load_bin(path: &PathBuf) -> io::Result<String> {
-    let mut buf = Vec::new();
     let mut fd = File::open(path)?;
 
-    fd.read_to_end(&mut buf)?;
-
     // Deserialise that raw buffer as a tagged Seq struct
-    let data: TaggedSeq =
-        bincode::deserialize(&buf).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let data: TaggedSeq = ciborium::from_reader(&mut fd)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
     Ok(match data {
         // We can handle sequences based on their encoding
@@ -86,10 +80,10 @@ fn load_bin(path: &PathBuf) -> io::Result<String> {
 
 /// Read the first record of a fasta file and encode with associated codec
 fn load_fasta<A: Codec>(path: &PathBuf) -> io::Result<Seq<A>> {
-    let mut rdr = Reader::new(BufReader::new(File::open(path)?));
+    let mut reader = fasta::io::reader::Builder.build_from_path(path)?;
 
     // read first fasta record
-    let record = rdr
+    let record = reader
         .records()
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Empty fasta file"))

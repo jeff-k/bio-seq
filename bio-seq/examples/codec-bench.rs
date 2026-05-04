@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use bio_seq::codec;
 use bio_seq::prelude::*;
-use noodles::fasta::Reader;
+use noodles::fasta;
 
 use clap::{Parser, ValueEnum};
 
@@ -87,10 +87,8 @@ impl<C: Codec> KmerCounter for KmerCounts<C> {
 
 fn main() -> io::Result<()> {
     let args = Cli::parse();
-    let fasta = File::open(&args.fasta)?;
     let k = args.k;
-
-    let mut reader = Reader::new(BufReader::new(fasta));
+    let mut reader = fasta::io::reader::Builder.build_from_path(args.fasta)?;
 
     let mut counts: Box<dyn KmerCounter> = match args.codec {
         CodecType::Dna => Box::new(KmerCounts::<Dna>::new(k)),
