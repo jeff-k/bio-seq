@@ -100,6 +100,8 @@ type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
 type Ba<const W: usize> = BitArray<[usize; W], Order>;
 
+mod hash;
+
 pub mod codec;
 pub mod error;
 #[macro_use]

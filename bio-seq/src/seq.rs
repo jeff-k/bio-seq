@@ -1199,6 +1199,61 @@ mod tests {
         assert_eq!(hash1, hash2);
     }
 
+    #[derive(Default)]
+    struct RecordingHasher(Vec<u8>);
+
+    impl Hasher for RecordingHasher {
+        fn finish(&self) -> u64 { 0 }
+        fn write(&mut self, bytes: &[u8]) { self.0.extend_from_slice(bytes); }
+    }
+
+    fn record<T: Hash>(value: &T) -> Vec<u8> {
+        let mut h = RecordingHasher::default();
+        value.hash(&mut h);
+        h.0
+    }
+
+    #[test]
+    fn test_hash_byte_stream_invariants() {
+        // Same logical content must produce the same byte stream regardless of
+        // how it is spelt (Seq vs &SeqSlice) and across a range of codecs and
+        // lengths — including ones with partial trailing bytes and ones long
+        // enough to cross the internal flush buffer in `hash_bits`.
+        fn check<A: Codec>(s: &str) {
+            let seq: Seq<A> = s.try_into().unwrap_or_else(|_| panic!("parse {s:?}"));
+            let bytes = record(&seq);
+            assert_eq!(record::<&SeqSlice<A>>(&&seq[..]), bytes);
+
+            // Structural: 8-byte LE length prefix, then ceil(bits / 8) bytes.
+            let n = seq.len();
+            let body = (n * A::BITS as usize).div_ceil(8);
+            assert_eq!(bytes.len(), 8 + body);
+            assert_eq!(&bytes[..8], &(n as u64).to_le_bytes());
+        }
+        check::<Dna>("A");
+        check::<Dna>("ACGT");
+        check::<Dna>("ACGTA");
+        check::<Dna>(&"ACGT".repeat(80)); // > 64-byte flush in `hash_bits`
+        check::<Iupac>("AC");
+        check::<Iupac>("ACG");
+        check::<Iupac>("NRYKBDHV");
+        check::<Amino>("MWLLP"); // 6-bit codec, partial trailing byte
+        check::<text::Dna>("ACGT"); // 8-bit codec, byte-aligned
+    }
+
+    #[test]
+    fn test_kmer_hash_independent_of_storage_width() {
+        let seq: Seq<Dna> = "ACGTACGTAC".try_into().unwrap();
+        let slice: &SeqSlice<Dna> = &seq[..];
+        let bytes = record(&slice);
+        let km_usize: Kmer<Dna, 10, usize> = slice.try_into().unwrap();
+        let km_u64: Kmer<Dna, 10, u64> = slice.try_into().unwrap();
+        let km_u128: Kmer<Dna, 10, u128> = slice.try_into().unwrap();
+        assert_eq!(record(&km_usize), bytes);
+        assert_eq!(record(&km_u64), bytes);
+        assert_eq!(record(&km_u128), bytes);
+    }
+
     #[test]
     fn test_prepend() {
         let mut seq1 =

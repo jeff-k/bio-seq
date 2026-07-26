@@ -123,12 +123,14 @@ impl<A: Codec> PartialEq<&str> for SeqSlice<A> {
     }
 }
 
-/// Warning! hashes are not currently stable between platforms/version
 impl<A: Codec> Hash for SeqSlice<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bs.hash(state);
-        // prepend length to make robust against matching prefixes
-        self.len().hash(state);
+        // Prefix with length as 8 little-endian bytes so the byte stream is
+        // identical on 32-/64-bit targets and across endianness. Going through
+        // `u64::hash` would route via `Hasher::write_u64`, whose default impl
+        // emits native-endian bytes.
+        state.write(&(self.len() as u64).to_le_bytes());
+        crate::hash::hash_bits(&self.bs, state);
     }
 }
 
