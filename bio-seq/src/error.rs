@@ -85,7 +85,7 @@ mod tests {
         let seq = dna!("ACGTACGTACGTACGTACGTACGTACGTACGTA");
         let int = TryInto::<usize>::try_into(seq).unwrap_err();
 
-        let expected_size = usize::BITS / Dna::BITS as u32;
+        let expected_size = usize::BITS / u32::from(Dna::BITS);
 
         assert_eq!(
             format!("{int}"),

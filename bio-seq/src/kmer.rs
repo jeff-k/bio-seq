@@ -510,7 +510,7 @@ mod tests {
     #[test]
     fn kmer_to_usize() {
         let s: &'static SeqSlice<Dna> = dna!("AACTT");
-        println!("{}", s.to_string());
+        println!("{}", s);
 
         for (kmer, index) in s.kmers::<2>().zip([0b00_00, 0b01_00, 0b11_01, 0b11_11]) {
             println!("{kmer}");
@@ -541,7 +541,7 @@ mod tests {
         let k4 = k3.pushr(Dna::C);
         let k5 = k4.pushr(Dna::C);
 
-        println!("{}", k1);
+        println!("{k1}");
         assert_eq!(k1, kmer!("CGTG"));
         assert_eq!(k2, kmer!("GTGA"));
         assert_eq!(k3, kmer!("TGAT"));
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn big_kmer_shiftr() {
         let mut kmer: Kmer<Dna, 32, u64> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA", u64);
-        for base in dna!("TACTATGAGGACGATCAGCACCATAAGAACAAA").into_iter() {
+        for base in dna!("TACTATGAGGACGATCAGCACCATAAGAACAAA") {
             kmer = kmer.pushr(base);
         }
         assert_eq!(kmer!("ACTATGAGGACGATCAGCACCATAAGAACAAA", u64), kmer);
@@ -571,7 +571,7 @@ mod tests {
     #[test]
     fn big_kmer_shiftl() {
         let mut kmer: Kmer<Dna, 32, u64> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA", u64);
-        for base in dna!("GTACTATGAGGACGATCAGCACCATAAGAACAAA").into_iter() {
+        for base in dna!("GTACTATGAGGACGATCAGCACCATAAGAACAAA") {
             kmer = kmer.pushl(base);
         }
         assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA", u64), kmer);
@@ -735,12 +735,12 @@ mod tests {
     #[test]
     fn kmer_as_ref() {
         let kmer: Kmer<Dna, 4> = kmer!("ACGT");
-        let seq: &SeqSlice<Dna> = &kmer.as_ref();
+        let seq: &SeqSlice<Dna> = kmer.as_ref();
 
         assert_eq!(seq.to_string(), "ACGT");
 
         let kmer: Kmer<Dna, 16> = kmer!("AGCTAGCTAGCTAGCT");
-        let seq: &SeqSlice<Dna> = &kmer.as_ref();
+        let seq: &SeqSlice<Dna> = kmer.as_ref();
 
         assert_eq!(seq.to_string(), "AGCTAGCTAGCTAGCT");
     }

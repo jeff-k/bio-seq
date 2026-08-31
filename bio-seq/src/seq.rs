@@ -741,7 +741,7 @@ mod tests {
     fn from_slice() {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
         let s: &SeqSlice<Dna> = &s1[15..21];
-        assert_eq!(format!("{}", s), "GATCAA");
+        assert_eq!(format!("{s}"), "GATCAA");
     }
 
     #[test]
@@ -793,7 +793,7 @@ mod tests {
         seq.push(Dna::T);
 
         assert_eq!(seq.len(), 4);
-        assert_eq!(String::from(seq), "ACGT")
+        assert_eq!(String::from(seq), "ACGT");
     }
 
     #[test]
@@ -802,7 +802,7 @@ mod tests {
         seq.push(Amino::S);
         seq.push(Amino::L);
 
-        seq.extend(vec![Amino::Y, Amino::M].into_iter());
+        seq.extend(vec![Amino::Y, Amino::M]);
 
         assert_eq!(seq.len(), 4);
         assert_eq!(String::from(seq), "SLYM");
@@ -813,7 +813,7 @@ mod tests {
         seq.push(Dna::A);
         seq.push(Dna::C);
 
-        seq.extend(vec![Dna::G, Dna::T].into_iter());
+        seq.extend(vec![Dna::G, Dna::T]);
 
         assert_eq!(seq.len(), 4);
         assert_eq!(String::from(seq), "ACGT");
@@ -1116,7 +1116,7 @@ mod tests {
 
     #[test]
     fn test_lens() {
-        assert_eq!(iupac!("AWANWATNA---SKAGTCAA").len(), 20)
+        assert_eq!(iupac!("AWANWATNA---SKAGTCAA").len(), 20);
     }
 
     #[test]
