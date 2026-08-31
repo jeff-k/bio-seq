@@ -7,7 +7,7 @@
 //!
 //! Generally, the underlying storage type of `Kmer` should lend itself to optimisation. The default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
 //!
-//! `k * codec::BITS` must fit in the storage type, e.g. `usize` (64 bits).
+//! `k * A::BITS` must fit in the storage type, e.g. `usize` (64 bits).
 //!
 //! ```
 //! use bio_seq::prelude::*;
@@ -27,7 +27,7 @@
 //! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").try_into().unwrap();
 //! ```
 
-// permit truncations that may happen on 32-bit platforms which are unsupported anyway
+// storage types wider than usize are deliberately narrowed
 #![allow(clippy::cast_possible_truncation)]
 
 use crate::Bs;
@@ -111,6 +111,19 @@ impl KmerStorage for u64 {}
 impl KmerStorage for u128 {}
 
 /// By default k-mers are backed by `usize` and `Codec::BITS` * `K` must be <= 64 on 64-bit platforms
+///
+/// ```compile_fail
+/// # use bio_seq::prelude::*;
+/// // 40 * 2 bits does not fit in a usize
+/// let kmer: Kmer<Dna, 40> = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT".parse().unwrap();
+/// ```
+///
+/// ```
+/// # use bio_seq::prelude::*;
+/// // ..but 80 bits does fit into a u128
+/// let kmer: Kmer<Dna, 40, u128> = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT".parse().unwrap();
+/// assert_eq!(kmer.len(), 40);
+/// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
@@ -127,6 +140,11 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     );
 
     const _ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
+
+    const fn assert_k() {
+        let () = Self::_ASSERT_K;
+        let () = Self::_ASSERT_K_NONZERO;
+    }
 
     const BITS: usize = K * A::BITS as usize;
 
@@ -203,6 +221,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
 
     /// Create Kmer from sequence without checking length
     pub fn unsafe_from_seqslice(seq: &SeqSlice<A>) -> Self {
+        Self::assert_k();
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
@@ -223,6 +242,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
     fn from(i: usize) -> Kmer<A, K, usize> {
+        Self::assert_k();
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -232,6 +252,7 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
 
 impl<A: Codec, const K: usize> From<u64> for Kmer<A, K, u64> {
     fn from(i: u64) -> Kmer<A, K, u64> {
+        Self::assert_k();
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -241,6 +262,7 @@ impl<A: Codec, const K: usize> From<u64> for Kmer<A, K, u64> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, u64> {
     fn from(i: usize) -> Kmer<A, K, u64> {
+        Self::assert_k();
         Kmer {
             _p: PhantomData,
             bs: i as u64,
@@ -304,6 +326,7 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     fn unsafe_from(seq: &SeqSlice<A>) -> Self {
+        Self::assert_k();
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
@@ -340,10 +363,14 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
 /// ```
 impl<A: Codec, const K: usize, S: KmerStorage> Hash for Kmer<A, K, S> {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        // Length prefix as 8 little-endian bytes (see `SeqSlice` for rationale).
+        state.write(&(K as u64).to_le_bytes());
         let ba = self.bs.to_bitarray();
         let bs: &Bs = ba.as_ref();
-        bs.hash(state);
-        K.hash(state);
+        // Only the meaningful bits are hashed; the unused high bits of the
+        // storage word/array are padding and must not influence the digest.
+        let n_bits = K * A::BITS as usize;
+        crate::hash::hash_bits(&bs[..n_bits], state);
     }
 }
 
@@ -481,9 +508,10 @@ mod tests {
     use crate::seq::SeqArray;
 
     #[test]
+    #[allow(clippy::cast_sign_loss)]
     fn kmer_to_usize() {
         let s: &'static SeqSlice<Dna> = dna!("AACTT");
-        println!("{}", s.to_string());
+        println!("{s}");
 
         for (kmer, index) in s.kmers::<2>().zip([0b00_00, 0b01_00, 0b11_01, 0b11_11]) {
             println!("{kmer}");
@@ -514,7 +542,7 @@ mod tests {
         let k4 = k3.pushr(Dna::C);
         let k5 = k4.pushr(Dna::C);
 
-        println!("{}", k1);
+        println!("{k1}");
         assert_eq!(k1, kmer!("CGTG"));
         assert_eq!(k2, kmer!("GTGA"));
         assert_eq!(k3, kmer!("TGAT"));
@@ -523,11 +551,12 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::cast_sign_loss)]
     fn amino_kmer_to_usize() {
         for (kmer, index) in Seq::<Amino>::try_from("SRY")
             .unwrap()
             .kmers::<2>()
-            .zip([0b001000_011000, 0b010011_001000])
+            .zip([0b0010_0001_1000, 0b0100_1100_1000])
         {
             assert_eq!(index as usize, usize::from(&kmer));
         }
@@ -535,7 +564,7 @@ mod tests {
     #[test]
     fn big_kmer_shiftr() {
         let mut kmer: Kmer<Dna, 32, u64> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA", u64);
-        for base in dna!("TACTATGAGGACGATCAGCACCATAAGAACAAA").into_iter() {
+        for base in dna!("TACTATGAGGACGATCAGCACCATAAGAACAAA") {
             kmer = kmer.pushr(base);
         }
         assert_eq!(kmer!("ACTATGAGGACGATCAGCACCATAAGAACAAA", u64), kmer);
@@ -544,7 +573,7 @@ mod tests {
     #[test]
     fn big_kmer_shiftl() {
         let mut kmer: Kmer<Dna, 32, u64> = kmer!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTA", u64);
-        for base in dna!("GTACTATGAGGACGATCAGCACCATAAGAACAAA").into_iter() {
+        for base in dna!("GTACTATGAGGACGATCAGCACCATAAGAACAAA") {
             kmer = kmer.pushl(base);
         }
         assert_eq!(kmer!("AAACAAGAATACCACGACTAGCAGGAGTATCA", u64), kmer);
@@ -708,12 +737,12 @@ mod tests {
     #[test]
     fn kmer_as_ref() {
         let kmer: Kmer<Dna, 4> = kmer!("ACGT");
-        let seq: &SeqSlice<Dna> = &kmer.as_ref();
+        let seq: &SeqSlice<Dna> = kmer.as_ref();
 
         assert_eq!(seq.to_string(), "ACGT");
 
         let kmer: Kmer<Dna, 16> = kmer!("AGCTAGCTAGCTAGCT");
-        let seq: &SeqSlice<Dna> = &kmer.as_ref();
+        let seq: &SeqSlice<Dna> = kmer.as_ref();
 
         assert_eq!(seq.to_string(), "AGCTAGCTAGCTAGCT");
     }
@@ -736,6 +765,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::needless_borrow)]
     fn kmer_storage_types() {
         let s1 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAAA";
         let s2 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAA";

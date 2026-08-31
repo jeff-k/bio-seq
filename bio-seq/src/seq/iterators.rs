@@ -214,12 +214,12 @@ mod tests {
         let chained = seq1.chain(&seq2);
 
         let expected_seq = Seq::<Dna>::try_from("ATGTAC").unwrap();
-        for (a, b) in chained.zip(expected_seq.into_iter()) {
+        for (a, b) in chained.zip(&expected_seq) {
             assert_eq!(a, b);
         }
 
         let chained = seq1.chain(&seq2);
-        for (a, b) in chained.map(|b| b.to_comp()).zip(expected_seq.into_iter()) {
+        for (a, b) in chained.map(|b| b.to_comp()).zip(&expected_seq) {
             assert_ne!(a, b);
         }
     }

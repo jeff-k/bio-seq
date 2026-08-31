@@ -254,16 +254,16 @@ impl<A: Codec> Seq<A> {
     /// ```
     pub fn from_raw(len: usize, bits: &[usize]) -> Option<Self> {
         let mut bv: Bv = Bv::from_slice(bits);
-        //debug_assert!(len <= bv.len(), "desired length is greater than provided bits string");
-        if len > bv.len() {
-            None
-        } else {
-            bv.truncate(len * A::BITS as usize);
-            Some(Seq {
-                _p: PhantomData,
-                bv,
-            })
+        let bit_len = len.checked_mul(A::BITS as usize)?;
+
+        if bit_len > bv.len() {
+            return None;
         }
+        bv.truncate(bit_len);
+        Some(Seq {
+            _p: PhantomData,
+            bv,
+        })
     }
 
     /// **Experimental** Access raw sequence data as `&[usize]`
@@ -664,6 +664,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_index_owned() {
         let seq = dna!("GCTCGATCACT");
 
@@ -676,6 +677,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_indexing() {
         let seq = dna!("TGCATCGAT");
 
@@ -695,6 +697,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_index_ranges() {
         let s1: &'static SeqSlice<Dna> = dna!("ACGACTGATCGA");
         let s2: &'static SeqSlice<Dna> = dna!("TCGAACGACTGA");
@@ -725,6 +728,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_rangeto_and_full() {
         let s1 = dna!("ATCGACTAGCATGCTACG");
         let s2 = dna!("ATCGACTAG");
@@ -737,7 +741,7 @@ mod tests {
     fn from_slice() {
         let s1 = dna!("ATGTGTGCGACTGATGATCAAACGTAGCTACG");
         let s: &SeqSlice<Dna> = &s1[15..21];
-        assert_eq!(format!("{}", s), "GATCAA");
+        assert_eq!(format!("{s}"), "GATCAA");
     }
 
     #[test]
@@ -789,7 +793,7 @@ mod tests {
         seq.push(Dna::T);
 
         assert_eq!(seq.len(), 4);
-        assert_eq!(String::from(seq), "ACGT")
+        assert_eq!(String::from(seq), "ACGT");
     }
 
     #[test]
@@ -798,7 +802,7 @@ mod tests {
         seq.push(Amino::S);
         seq.push(Amino::L);
 
-        seq.extend(vec![Amino::Y, Amino::M].into_iter());
+        seq.extend(vec![Amino::Y, Amino::M]);
 
         assert_eq!(seq.len(), 4);
         assert_eq!(String::from(seq), "SLYM");
@@ -809,7 +813,7 @@ mod tests {
         seq.push(Dna::A);
         seq.push(Dna::C);
 
-        seq.extend(vec![Dna::G, Dna::T].into_iter());
+        seq.extend(vec![Dna::G, Dna::T]);
 
         assert_eq!(seq.len(), 4);
         assert_eq!(String::from(seq), "ACGT");
@@ -855,7 +859,7 @@ mod tests {
     #[test]
     fn test_bit_order() {
         let raw: usize = 0b10_11_01_11_10_01_00_01;
-        let mut bv: Bv = Default::default();
+        let mut bv: Bv = BitVec::default();
         bv.extend(&raw.view_bits::<Order>()[..(Dna::BITS as usize * 8)]);
         let s = Seq::<Dna> {
             bv,
@@ -875,6 +879,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::explicit_auto_deref)]
     fn test_deref() {
         let seq: Seq<Dna> = dna!("AGAATGATCG").into();
         let slice: &SeqSlice<Dna> = &*seq;
@@ -1001,9 +1006,12 @@ mod tests {
         let hash2 = hasher2.finish();
 
         assert_eq!(hash1, hash2);
+
+        assert_eq!(record(&seq1), [4, 0, 0, 0, 0, 0, 0, 0, 0xe4]);
     }
 
     #[test]
+    #[allow(clippy::similar_names)]
     fn test_seq_slice_eq() {
         let seq1: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTA".try_into().unwrap();
         let seq2: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTAA".try_into().unwrap();
@@ -1109,7 +1117,7 @@ mod tests {
 
     #[test]
     fn test_lens() {
-        assert_eq!(iupac!("AWANWATNA---SKAGTCAA").len(), 20)
+        assert_eq!(iupac!("AWANWATNA---SKAGTCAA").len(), 20);
     }
 
     #[test]
@@ -1197,6 +1205,65 @@ mod tests {
         let hash2 = hasher2.finish();
 
         assert_eq!(hash1, hash2);
+    }
+
+    #[derive(Default)]
+    struct RecordingHasher(Vec<u8>);
+
+    impl Hasher for RecordingHasher {
+        fn finish(&self) -> u64 {
+            0
+        }
+        fn write(&mut self, bytes: &[u8]) {
+            self.0.extend_from_slice(bytes);
+        }
+    }
+
+    fn record<T: Hash>(value: &T) -> Vec<u8> {
+        let mut h = RecordingHasher::default();
+        value.hash(&mut h);
+        h.0
+    }
+
+    #[test]
+    fn test_hash_byte_stream_invariants() {
+        // Same logical content must produce the same byte stream regardless of
+        // how it is spelt (Seq vs &SeqSlice) and across a range of codecs and
+        // lengths — including ones with partial trailing bytes and ones long
+        // enough to cross the internal flush buffer in `hash_bits`.
+        fn check<A: Codec>(s: &str) {
+            let seq: Seq<A> = s.try_into().unwrap_or_else(|_| panic!("parse {s:?}"));
+            let bytes = record(&seq);
+            assert_eq!(record::<&SeqSlice<A>>(&&seq[..]), bytes);
+
+            // Structural: 8-byte LE length prefix, then ceil(bits / 8) bytes.
+            let n = seq.len();
+            let body = (n * A::BITS as usize).div_ceil(8);
+            assert_eq!(bytes.len(), 8 + body);
+            assert_eq!(&bytes[..8], &(n as u64).to_le_bytes());
+        }
+        check::<Dna>("A");
+        check::<Dna>("ACGT");
+        check::<Dna>("ACGTA");
+        check::<Dna>(&"ACGT".repeat(80)); // > 64-byte flush in `hash_bits`
+        check::<Iupac>("AC");
+        check::<Iupac>("ACG");
+        check::<Iupac>("NRYKBDHV");
+        check::<Amino>("MWLLP"); // 6-bit codec, partial trailing byte
+        check::<text::Dna>("ACGT"); // 8-bit codec, byte-aligned
+    }
+
+    #[test]
+    fn test_kmer_hash_independent_of_storage_width() {
+        let seq: Seq<Dna> = "ACGTACGTAC".try_into().unwrap();
+        let slice: &SeqSlice<Dna> = &seq[..];
+        let bytes = record(&slice);
+        let km_usize: Kmer<Dna, 10, usize> = slice.try_into().unwrap();
+        let km_u64: Kmer<Dna, 10, u64> = slice.try_into().unwrap();
+        let km_u128: Kmer<Dna, 10, u128> = slice.try_into().unwrap();
+        assert_eq!(record(&km_usize), bytes);
+        assert_eq!(record(&km_u64), bytes);
+        assert_eq!(record(&km_u128), bytes);
     }
 
     #[test]

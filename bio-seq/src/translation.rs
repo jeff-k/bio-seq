@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bio-seq = { version="0.13", features=["translation"] }
+//! bio-seq = { version="0.15", features=["translation"] }
 //! ```
 //!
 //! ## Examples
@@ -50,32 +50,31 @@
 //!        } else if codon == dna!("TGA") {
 //!             Amino::W
 //!         } else {
-//!                 Amino::unsafe_from_bits(Into::<u8>::into(codon))
-//!               }
-//!           }
+//!             Amino::unsafe_from_bits(Into::<u8>::into(codon))
+//!         }
+//!     }
+//!     fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
+//!         unimplemented!()
+//!     }
+//! }
 //!
-//!          fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
-//!               unimplemented!()
-//!           }
-//!       }
+//! let seq: Seq<Dna> =
+//!     dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
+//! let aminos: Seq<Amino> = seq
+//!     .windows(3)
+//!     .map(|codon| Mitochondria.to_amino(&codon))
+//!     .collect::<Seq<Amino>>();
+//! assert_eq!(seq.len() - 2, aminos.len());
 //!
-//!        let seq: Seq<Dna> =
-//!            dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
-//!        let aminos: Seq<Amino> = seq
-//!            .windows(3)
-//!            .map(|codon| Mitochondria.to_amino(&codon))
-//!            .collect::<Seq<Amino>>();
-//!        assert_eq!(seq.len() - 2, aminos.len());
+//! for (x, y) in aminos.into_iter().zip(
+//!    Seq::<Amino>::try_from(
+//!         "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK",
+//!     )
+//!     .unwrap()
+//!     .into_iter()) {
 //!
-//!        for (x, y) in aminos.into_iter().zip(
-//!            Seq::<Amino>::try_from(
-//!                "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK",
-//!            )
-//!            .unwrap()
-//!            .into_iter(),
-//!        ) {
-//!            assert_eq!(x, y)
-//!        }
+//!     assert_eq!(x, y)
+//! }
 //! ```
 //!
 //! ## Errors
@@ -96,7 +95,7 @@ pub use crate::translation::standard::STANDARD;
 /// Error conditions for codon/amino acid translation
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TranslationError<A: Codec = Dna, B: Codec = Amino> {
-    /// Amino acid can be translation from multiple codons
+    /// Amino acid can be translated from multiple codons
     AmbiguousCodon(B),
     /// Codon sequence maps to multiple amino acids
     AmbiguousTranslation(Seq<A>),
@@ -244,9 +243,7 @@ mod tests {
 
         impl TranslationTable<Dna, Amino> for Mitochondria {
             fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
-                if codon == dna!("AGA") {
-                    Amino::X
-                } else if codon == dna!("AGG") {
+                if codon == dna!("AGA") || codon == dna!("AGG") {
                     Amino::X
                 } else if codon == dna!("ATA") {
                     Amino::M
@@ -266,18 +263,17 @@ mod tests {
             dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
         let aminos: Seq<Amino> = seq
             .windows(3)
-            .map(|codon| Mitochondria.to_amino(&codon))
+            .map(|codon| Mitochondria.to_amino(codon))
             .collect::<Seq<Amino>>();
         assert_eq!(seq.len() - 2, aminos.len());
 
         for (x, y) in aminos.into_iter().zip(
-            Seq::<Amino>::try_from(
+            &Seq::<Amino>::try_from(
                 "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK",
             )
-            .unwrap()
-            .into_iter(),
+            .unwrap(),
         ) {
-            assert_eq!(x, y)
+            assert_eq!(x, y);
         }
     }
 }

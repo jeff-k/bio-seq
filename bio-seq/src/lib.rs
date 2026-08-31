@@ -23,7 +23,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bio-seq = "0.13"
+//! bio-seq = "0.15"
 //! ```
 //!
 //! ```rust
@@ -99,6 +99,8 @@ type Order = Lsb0;
 type Bs = BitSlice<usize, Order>;
 type Bv = BitVec<usize, Order>;
 type Ba<const W: usize> = BitArray<[usize; W], Order>;
+
+mod hash;
 
 pub mod codec;
 pub mod error;
@@ -257,6 +259,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::many_single_char_names)]
     fn into_usize() {
         let a: usize = dna!("ACGT").to_owned().into_raw()[0];
         assert_eq!(a, 0b11_10_01_00);
@@ -288,7 +291,7 @@ mod tests {
     #[test]
     fn test_display_dna() {
         let seq = Seq::from(&vec![A, C, G, T, T, A, T, C]);
-        assert_eq!(format!("{}", &seq), "ACGTTATC");
+        assert_eq!(format!("{seq}"), "ACGTTATC");
         assert_eq!(format!("{}", dna!("ACGT")), "ACGT");
     }
 
@@ -351,7 +354,7 @@ mod tests {
             .kmers::<4>()
             .zip(["ACGT", "CGTA", "GTAA", "TAAG", "AAGG", "AGGG", "GGGG"])
         {
-            assert_eq!(format!("{}", kmer), answer);
+            assert_eq!(format!("{kmer}"), answer);
         }
     }
 
@@ -362,7 +365,7 @@ mod tests {
             .kmers::<8>()
             .zip(["AAAACCCC", "AAACCCCG", "AACCCCGG", "ACCCCGGG", "CCCCGGGG"])
         {
-            assert_eq!(format!("{}", kmer), answer);
+            assert_eq!(format!("{kmer}"), answer);
         }
     }
 
@@ -373,7 +376,7 @@ mod tests {
             "AAAA", "AAAC", "AACC", "ACCC", "CCCC", "CCCG", "CCGG", "CGGG", "GGGG", "GGGT", "GGTT",
             "GTTT", "TTTT",
         ]) {
-            assert_eq!(format!("{}", kmer), answer);
+            assert_eq!(format!("{kmer}"), answer);
         }
     }
 
@@ -401,11 +404,7 @@ mod tests {
         use core::cmp::min;
 
         fn hash(seq: &SeqSlice<Dna>) -> u64 {
-            if seq == dna!("GGCTCTCTCTCCTCCA") {
-                0
-            } else {
-                1
-            }
+            u64::from(seq != dna!("GGCTCTCTCTCCTCCA"))
         }
 
         let seq =
@@ -446,6 +445,8 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::needless_borrows_for_generic_args)]
+    #[allow(clippy::needless_borrow)]
     fn hash_characteristics() {
         fn hash<T: Hash>(chunk: T) -> u64 {
             let mut hasher = DefaultHasher::new();
@@ -541,12 +542,15 @@ mod tests {
             .iter()
             .enumerate()
         {
-            assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), format!("{}", e));
+            assert_eq!(format!("{}", Kmer::<Dna, 2>::from(i)), e.to_string());
             assert_eq!(Kmer::<Dna, 2>::from(i), *e);
         }
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
+    #[allow(clippy::needless_borrow)]
+    #[allow(clippy::similar_names)]
     fn sequence_type_equality() {
         let raw_a = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA";
         let raw_b = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";

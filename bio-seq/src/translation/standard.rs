@@ -133,7 +133,7 @@ mod tests {
             dna!("GCATGCGACGAATTCGGACACATAAAACTAATGAACCCACAAAGAAGCACAGTATGGTACTAA").into();
         let aminos: Seq<Amino> = seq
             .chunks(3)
-            .map(|codon| STANDARD.to_amino(codon.into()))
+            .map(|codon| STANDARD.to_amino(codon))
             .collect::<Seq<Amino>>();
         assert_eq!(
             aminos,
@@ -154,7 +154,7 @@ mod tests {
         let seq: Seq<Dna> = dna!("AGCTCGTCATCCTCTAGTTGATAATAG").into();
         let aminos: Seq<Amino> = seq
             .chunks(3)
-            .map(|codon| STANDARD.to_amino(codon.into()))
+            .map(|codon| STANDARD.to_amino(codon))
             .collect::<Seq<Amino>>();
         assert_eq!(aminos, Seq::<Amino>::try_from("SSSSSS***").unwrap());
     }
@@ -165,7 +165,7 @@ mod tests {
             dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
         let aminos: Seq<Amino> = seq
             .windows(3)
-            .map(|codon| STANDARD.to_amino(&codon))
+            .map(|codon| STANDARD.to_amino(codon))
             .collect::<Seq<Amino>>();
         assert_eq!(seq.len() - 2, aminos.len());
         assert_eq!(
@@ -182,7 +182,7 @@ mod tests {
         let seq = iupac!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
         let aminos: Seq<Amino> = seq
             .windows(3)
-            .map(|codon| STANDARD.try_to_amino(&codon).unwrap())
+            .map(|codon| STANDARD.try_to_amino(codon).unwrap())
             .collect::<Seq<Amino>>();
         assert_eq!(
             aminos,
@@ -226,7 +226,7 @@ mod tests {
         let seq: Seq<Iupac> = iupac!("AAYATHTTYTGYGTNTGGGGNGGNGTNTTYGTNTGYGCNGGNGCNCCNGCNCCNCCNGTNTAYACNTAYATGGARGGNGAYACNGAYATHCARGCNCAYACNCCNCAYATHAARGARAAYACNCARAAR").into();
         let aminos: Seq<Amino> = seq
             .chunks(3)
-            .map(|codon| STANDARD.try_to_amino(&codon).unwrap())
+            .map(|codon| STANDARD.try_to_amino(codon).unwrap())
             .collect::<Seq<Amino>>();
         assert_eq!(
             aminos,
@@ -237,18 +237,18 @@ mod tests {
     #[test]
     fn iupac_to_amino_errors() {
         assert_eq!(
-            STANDARD.try_to_amino(&iupac!("TN")),
+            STANDARD.try_to_amino(iupac!("TN")),
             Err(TranslationError::InvalidCodon(
                 Seq::<Iupac>::try_from("TN").unwrap()
             ))
         );
 
         assert_eq!(
-            STANDARD.try_to_amino(&iupac!("NYTN")),
+            STANDARD.try_to_amino(iupac!("NYTN")),
             Err(TranslationError::InvalidCodon("NYTN".try_into().unwrap()))
         );
         assert_eq!(
-            STANDARD.try_to_amino(&iupac!("YTN")),
+            STANDARD.try_to_amino(iupac!("YTN")),
             Err(TranslationError::AmbiguousTranslation(
                 "YTN".try_into().unwrap()
             ))

@@ -14,7 +14,7 @@ impl Codec for WS {
 
     /// Transmute a `u8` into a degenerate 1-bit nucleotide
     ///
-    /// SAFETY: This only looks at the lower 2 bits of the `u8`
+    /// SAFETY: This only looks at the lowest bit of the `u8`
     fn unsafe_from_bits(b: u8) -> Self {
         debug_assert!(b < 2);
         unsafe { std::mem::transmute(b & 0b1) }
@@ -54,7 +54,7 @@ impl Codec for WS {
     }
 
     fn items() -> impl Iterator<Item = Self> {
-        vec![WS::S, WS::W].into_iter()
+        vec![WS::W, WS::S].into_iter()
     }
 }
 
