@@ -20,7 +20,7 @@ Add [bio-seq](https://crates.io/crates/bio-seq) to `Cargo.toml`:
 
 ```toml
 [dependencies]
-bio-seq = "0.14"
+bio-seq = "0.15"
 ```
 
 Iterating over the [kmer](https://docs.rs/bio-seq/latest/bio_seq/kmer)s of a [sequence](https://docs.rs/bio-seq/latest/bio_seq/seq):
@@ -300,7 +300,7 @@ Enable the translation feature in `Cargo.toml`:
 
 ```
 [dependencies]
-bio-seq = { version="0.13", features=["translation"] }
+bio-seq = { version="0.15", features=["translation"] }
 ```
 
 ```rust
