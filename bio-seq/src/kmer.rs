@@ -7,7 +7,7 @@
 //!
 //! Generally, the underlying storage type of `Kmer` should lend itself to optimisation. The default `Kmer` instance is packed into a `usize`, which can be efficiently `Copy`ed on the stack.
 //!
-//! `k * codec::BITS` must fit in the storage type, e.g. `usize` (64 bits).
+//! `k * A::BITS` must fit in the storage type, e.g. `usize` (64 bits).
 //!
 //! ```
 //! use bio_seq::prelude::*;
@@ -27,7 +27,7 @@
 //! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").try_into().unwrap();
 //! ```
 
-// permit truncations that may happen on 32-bit platforms which are unsupported anyway
+// storage types wider than usize are deliberately narrowed
 #![allow(clippy::cast_possible_truncation)]
 
 use crate::Bs;
@@ -111,6 +111,19 @@ impl KmerStorage for u64 {}
 impl KmerStorage for u128 {}
 
 /// By default k-mers are backed by `usize` and `Codec::BITS` * `K` must be <= 64 on 64-bit platforms
+///
+/// ```compile_fail
+/// # use bio_seq::prelude::*;
+/// // 40 * 2 bits does not fit in a usize
+/// let kmer: Kmer<Dna, 40> = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT".parse().unwrap();
+/// ```
+///
+/// ```
+/// # use bio_seq::prelude::*;
+/// // ..but 80 bits does fit into a u128
+/// let kmer: Kmer<Dna, 40, u128> = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT".parse().unwrap();
+/// assert_eq!(kmer.len(), 40);
+/// ```
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
@@ -127,6 +140,11 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     );
 
     const _ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
+
+    const fn assert_k() {
+        let () = Self::_ASSERT_K;
+        let () = Self::_ASSERT_K_NONZERO;
+    }
 
     const BITS: usize = K * A::BITS as usize;
 
@@ -203,6 +221,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
 
     /// Create Kmer from sequence without checking length
     pub fn unsafe_from_seqslice(seq: &SeqSlice<A>) -> Self {
+        Self::assert_k();
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,
@@ -223,6 +242,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
     fn from(i: usize) -> Kmer<A, K, usize> {
+        Self::assert_k();
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -232,6 +252,7 @@ impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, usize> {
 
 impl<A: Codec, const K: usize> From<u64> for Kmer<A, K, u64> {
     fn from(i: u64) -> Kmer<A, K, u64> {
+        Self::assert_k();
         Kmer {
             _p: PhantomData,
             bs: i,
@@ -241,6 +262,7 @@ impl<A: Codec, const K: usize> From<u64> for Kmer<A, K, u64> {
 
 impl<A: Codec, const K: usize> From<usize> for Kmer<A, K, u64> {
     fn from(i: usize) -> Kmer<A, K, u64> {
+        Self::assert_k();
         Kmer {
             _p: PhantomData,
             bs: i as u64,
@@ -304,6 +326,7 @@ pub struct KmerIter<'a, A: Codec, const K: usize> {
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     fn unsafe_from(seq: &SeqSlice<A>) -> Self {
+        Self::assert_k();
         debug_assert!(K == seq.len(), "K != seq.len()");
         Kmer {
             _p: PhantomData,

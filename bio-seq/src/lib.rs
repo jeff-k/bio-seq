@@ -23,7 +23,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bio-seq = "0.13"
+//! bio-seq = "0.15"
 //! ```
 //!
 //! ```rust

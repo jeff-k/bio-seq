@@ -52,7 +52,7 @@ let s: &'static str = "hello!";
 let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
 
 // Sequences can also be copied as `Kmer`s:
-let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").into();
+let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").try_into()?;
 // or with the kmer! macro:
 let kmer = kmer!("CGCTAGCTACGATCGCAT");
 
@@ -61,7 +61,7 @@ let s: String = "hello!".into();
 let seq: Seq<Dna> = dna!("CGCTAGCTACGATCGCAT").into();
 
 // Alternatively, a `Seq` can be fallibly encoded at runtime:
-let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
+let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into()?;
 
 // `&SeqSlice`s are analogous to `&str`, `String` slices:
 let slice: &str = &s[1..3];
@@ -79,7 +79,7 @@ for result in reader.records() {
         .sequence()
         .as_ref()
         .try_into()
-        .unwrap()
+        .unwrap();
 
     // ...
 }
@@ -95,7 +95,7 @@ for result in reader.records() {
 
 Many bioinformatics crates implement their own kmer packing logic. This effort began as a way to define types and traits that allow kmer code to be shared between projects. It quickly became apparent that a kmer type doesn't make sense without being tightly coupled to a general type for sequences. The scope of this crate will be limited to operating on fixed and arbitrary length sequences with an emphasis on safety.
 
-Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianess. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives.
+Some people like to engineer clever bit twiddling hacks to reverse complement a sequence and some people want to rapidly prototype succinct datastructures. Most people don't want to worry about endianness. The strength of rust is that we can safely abstract the science from the engineering to work towards both objectives.
 
 ## Contributing
 
@@ -110,13 +110,13 @@ Contributions and suggestions are very much welcome. Check out the [Roadmap](htt
 
 ## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
-Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, these are stored on the heap and implement `Clone`.
+Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, `Seq`s are stored on the heap and implement `Clone`, `SeqSlice`s are unsized views.
 
 ## [Kmers](https://docs.rs/bio-seq/latest/bio_seq/kmer)
 
-kmers are short sequences of length `k` that generally fit into a register (e.g. `usize`, or SIMD vector) and implement `Copy`. `k` is a compile-time constant.
+kmers are short sequences of length `K` that generally fit into a register (e.g. `usize`, or SIMD vector) and implement `Copy`. `K` is a compile-time constant.
 
-All data is stored little-endian. This effects the order that sequences map to the integers:
+All data is stored little-endian. This affects the order that sequences map to the integers:
 
 ```rust
 for i in 0..=15 {
@@ -182,7 +182,7 @@ The [2-bit representation](https://docs.rs/bio-seq/latest/bio_seq/codec/dna) of 
 let seq = dna!("GCTCGATCGTAAAAAATCGTATT");
 let minimiser = seq.kmers::<8>().min().unwrap();
 
-assert_eq!(minimiser, Kmer::from(dna!("GTAAAAAA")));
+assert_eq!(minimiser, dna!("GTAAAAAA"));
 ```
 
 ### Hashing
@@ -190,10 +190,16 @@ assert_eq!(minimiser, Kmer::from(dna!("GTAAAAAA")));
 `Hash` is implemented for sequence and kmer types so equal values of these types will hash identically:
 
 ```rust
+fn hash<T: Hash>(seq: T) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    seq.hash(&mut hasher);
+    hasher.finish()
+}
+
 let seq_arr: &'static SeqSlice<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
 let seq: Seq<Dna> = seq_arr.into();
 let seq_slice: &SeqSlice<Dna> = &seq;
-let kmer: Kmer<Dna, 32> = seq_arr.into();
+let kmer: Kmer<Dna, 32> = seq_arr.try_into()?;
 
 assert_eq!(hash(seq_arr), hash(&seq));
 assert_eq!(hash(&seq), hash(&seq_slice));
@@ -205,12 +211,6 @@ assert_eq!(hash(&seq_slice), hash(&kmer));
 In practice we want to hash sequences that we minimise:
 
 ```rust
-fn hash<T: Hash>(seq: T) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    seq.hash(&mut hasher);
-    hasher.finish()
-}
-
 let (minimiser, min_hash) = seq
     .kmers::<16>()
     .map(|kmer| (kmer, hash(&kmer)))
@@ -218,7 +218,7 @@ let (minimiser, min_hash) = seq
     .unwrap();
 ```
 
-### Canonical kmers:
+### Canonical kmers
 
 To consider both the forward and reverse complement of kmers when minimising:
 
@@ -239,9 +239,9 @@ Although it's more efficient to minimise `seq` and `seq.revcomp()` separately.
 
 The `Codec` trait describes the coding/decoding process for the symbols of a biological sequence. This trait can be derived procedurally. There are four built-in codecs:
 
-* `codec::Dna`, Using the lexicographically ordered 2-bit representation
+* `codec::dna::Dna`, Using the lexicographically ordered 2-bit representation
 
-* `codec::Iupac`, IUPAC nucleotide ambiguity codes are represented with 4 bits. This automatically gives us membership semantics for bitwise operations. Logical `or` is the union:
+* `codec::iupac::Iupac`, IUPAC nucleotide ambiguity codes are represented with 4 bits. This automatically gives us membership semantics for bitwise operations. Logical `or` is the union:
 
     ```rust
     assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
@@ -253,9 +253,18 @@ The `Codec` trait describes the coding/decoding process for the symbols of a bio
     assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
     ```
 
-* `codec::Text`, utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
+* `codec::text::Dna`, utf-8 strings that are read directly from common plain-text file formats can be treated as sequences. Additional logic can be defined to ensure that `'a' == 'A'` and for handling `'N'`.
 
-* `codec::Amino`, Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
+* `codec::amino::Amino`, Amino acid sequences are represented with 6 bits. The representation of amino acids is designed to be easy to coerce from sequences of 2-bit encoded DNA.
+
+The `extra_codecs` feature add two experimental families:
+
+* `codec::masked`, 4-bit nucleotide encoding with a soft mask (i.e. lowercase bases)
+
+* `codec::degenerate`, 1-bit encodings that split nucleotides into two classes:
+    * `WS`: weak/strong
+    * `RY`: purine/pyramidine
+    * `MK`: amino/ketone
 
 ## Defining new codecs
 
@@ -267,7 +276,7 @@ In simple cases the `Codec` trait can be derived from the variant names and disc
 use bio_seq_derive::Codec;
 use bio_seq::codec::Codec;
 
-#[derive(Clone, Copy, Debug, PartialEq, Codec)]
+#[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Codec)]
 #[repr(u8)]
 pub enum Dna {
     A = 0b00,
@@ -279,7 +288,7 @@ pub enum Dna {
 
 Note that you need to explicitly provide a "discriminant" (e.g. `0b00`) in the enum.
 
-A `#[width(n)]` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
+A `#[bits(n)]` attribute specifies how many bits the encoding requires per symbol. The maximum supported is 8. If this attribute isn't specified then the optimal width will be chosen.
 
 `#[alt(...,)]` and `#[display('x')]` attributes can be used to define alternative representations or display the item with a special character. Here is the definition for the stop codon in `codec::Amino`:
 
@@ -298,7 +307,7 @@ pub enum Amino {
 
 Enable the translation feature in `Cargo.toml`:
 
-```
+```toml
 [dependencies]
 bio-seq = { version="0.15", features=["translation"] }
 ```
@@ -319,9 +328,9 @@ pub trait PartialTranslationTable<A: Codec, B: Codec> {
 The standard genetic code is provided as a `translation::STANDARD` constant:
 
 ```rust
-use crate::prelude::*;
-use crate::translation::STANDARD;
-use crate::translation::TranslationTable;
+use bio_seq::prelude::*;
+use bio_seq::translation::STANDARD;
+use bio_seq::translation::TranslationTable;
 
 let seq = dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
 
@@ -332,7 +341,7 @@ let aminos: Seq<Amino> = seq
 
 assert_eq!(
     aminos,
-    Seq<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
+    Seq::<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
 );
 ```
 
@@ -342,17 +351,17 @@ Instantiate a translation table from a type that implements `Into<HashMap<Seq<A>
 
 ```rust
 let codon_mapping: [(Seq<Dna>, Amino); 6] = [
-    (dna!("AAA"), Amino::A),
-    (dna!("ATG"), Amino::A),
-    (dna!("CCC"), Amino::C),
-    (dna!("GGG"), Amino::E),
-    (dna!("TTT"), Amino::D),
-    (dna!("TTA"), Amino::F),
+    (dna!("AAA").into(), Amino::A),
+    (dna!("ATG").into(), Amino::A),
+    (dna!("CCC").into(), Amino::C),
+    (dna!("GGG").into(), Amino::E),
+    (dna!("TTT").into(), Amino::D),
+    (dna!("TTA").into(), Amino::F),
 ];
 
 let table = CodonTable::from_map(codon_mapping);
 
-let seq: Seq<Dna> = dna!("AAACCCGGGTTTTTATTAATG");
+let seq: Seq<Dna> = dna!("AAACCCGGGTTTTTATTAATG").into();
 let mut amino_seq: Seq<Amino> = Seq::new();
 
 for codon in seq.chunks(3) {
@@ -367,13 +376,11 @@ struct Mitochondria;
 
 impl TranslationTable<Dna, Amino> for Mitochondria {
     fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
-        if *codon == dna!("AGA") {
+        if codon == dna!("AGA") || codon == dna!("AGG") {
             Amino::X
-        } else if *codon == dna!("AGG") {
-            Amino::X
-        } else if *codon == dna!("ATA") {
+        } else if codon == dna!("ATA") {
             Amino::M
-        } else if *codon == dna!("TGA") {
+        } else if codon == dna!("TGA") {
             Amino::W
         } else {
             Amino::unsafe_from_bits(Into::<u8>::into(codon))

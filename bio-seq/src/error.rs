@@ -25,12 +25,12 @@ impl fmt::Display for ParseBioError {
                 }
             }
 
-            ParseBioError::MismatchedLength(got, expected) => {
+            ParseBioError::MismatchedLength(expected, got) => {
                 write!(f, "Expected length {expected}, got {got}")
             }
 
-            ParseBioError::SequenceTooLong(got, expected) => {
-                write!(f, "Expected length <= {expected}, got {got}")
+            ParseBioError::SequenceTooLong(maximum, got) => {
+                write!(f, "Expected length <= {maximum}, got {got}")
             }
         }
     }
@@ -71,10 +71,10 @@ mod tests {
     fn test_mismatched_length() {
         let seq: &SeqSlice<Dna> = dna!("ACGTGAT");
         let kmer = Kmer::<Dna, 14>::try_from(seq).unwrap_err();
-        assert_eq!(format!("{kmer}"), "Expected length 7, got 14".to_string());
+        assert_eq!(format!("{kmer}"), "Expected length 14, got 7".to_string());
 
         let kmer = Kmer::<Dna, 6>::try_from(seq).unwrap_err();
-        assert_eq!(format!("{kmer}"), "Expected length 7, got 6".to_string());
+        assert_eq!(format!("{kmer}"), "Expected length 6, got 7".to_string());
 
         let kmer = Kmer::<Dna, 7>::try_from(seq);
         assert!(kmer.is_ok());

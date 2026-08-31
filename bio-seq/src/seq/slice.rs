@@ -36,8 +36,8 @@ impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
             Ok(slice.bs.load_le::<usize>())
         } else {
             let len: usize = slice.bs.len() / A::BITS as usize;
-            let expected: usize = usize::BITS as usize / A::BITS as usize;
-            Err(ParseBioError::SequenceTooLong(len, expected))
+            let maximum: usize = usize::BITS as usize / A::BITS as usize;
+            Err(ParseBioError::SequenceTooLong(maximum, len))
         }
     }
 }

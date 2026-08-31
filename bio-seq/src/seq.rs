@@ -254,16 +254,16 @@ impl<A: Codec> Seq<A> {
     /// ```
     pub fn from_raw(len: usize, bits: &[usize]) -> Option<Self> {
         let mut bv: Bv = Bv::from_slice(bits);
-        //debug_assert!(len <= bv.len(), "desired length is greater than provided bits string");
-        if len > bv.len() {
-            None
-        } else {
-            bv.truncate(len * A::BITS as usize);
-            Some(Seq {
-                _p: PhantomData,
-                bv,
-            })
+        let bit_len = len.checked_mul(A::BITS as usize)?;
+
+        if bit_len > bv.len() {
+            return None;
         }
+        bv.truncate(bit_len);
+        Some(Seq {
+            _p: PhantomData,
+            bv,
+        })
     }
 
     /// **Experimental** Access raw sequence data as `&[usize]`
@@ -1001,6 +1001,8 @@ mod tests {
         let hash2 = hasher2.finish();
 
         assert_eq!(hash1, hash2);
+
+        assert_eq!(record(&seq1), [4, 0, 0, 0, 0, 0, 0, 0, 0xe4]);
     }
 
     #[test]
@@ -1203,8 +1205,12 @@ mod tests {
     struct RecordingHasher(Vec<u8>);
 
     impl Hasher for RecordingHasher {
-        fn finish(&self) -> u64 { 0 }
-        fn write(&mut self, bytes: &[u8]) { self.0.extend_from_slice(bytes); }
+        fn finish(&self) -> u64 {
+            0
+        }
+        fn write(&mut self, bytes: &[u8]) {
+            self.0.extend_from_slice(bytes);
+        }
     }
 
     fn record<T: Hash>(value: &T) -> Vec<u8> {

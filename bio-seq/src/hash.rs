@@ -7,9 +7,7 @@ use core::hash::Hasher;
 /// Feed a bit slice into a hasher as a stable, platform-independent byte stream.
 ///
 /// Bits are packed least-significant-first into bytes, matching the in-memory
-/// `Lsb0` layout. Sidestepping `bitvec`'s `Hash` impl (which routes bits
-/// through `bool::hash`, one hasher write per bit) and the `usize` storage
-/// width keeps the byte stream identical on 32- and 64-bit targets.
+/// `Lsb0` layout. Identical on 32 and 64 bit targets.
 #[inline]
 pub(crate) fn hash_bits<H: Hasher>(bs: &Bs, state: &mut H) {
     // Extract whole bytes via `BitField::load_le::<u8>()`, which lets bitvec
