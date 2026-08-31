@@ -763,6 +763,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::needless_borrow)]
     fn kmer_storage_types() {
         let s1 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAAA";
         let s2 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAA";

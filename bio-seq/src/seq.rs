@@ -664,6 +664,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_index_owned() {
         let seq = dna!("GCTCGATCACT");
 
@@ -676,6 +677,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_indexing() {
         let seq = dna!("TGCATCGAT");
 
@@ -695,6 +697,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_index_ranges() {
         let s1: &'static SeqSlice<Dna> = dna!("ACGACTGATCGA");
         let s2: &'static SeqSlice<Dna> = dna!("TCGAACGACTGA");
@@ -725,6 +728,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::redundant_slicing)]
     fn slice_rangeto_and_full() {
         let s1 = dna!("ATCGACTAGCATGCTACG");
         let s2 = dna!("ATCGACTAG");
@@ -875,6 +879,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::explicit_auto_deref)]
     fn test_deref() {
         let seq: Seq<Dna> = dna!("AGAATGATCG").into();
         let slice: &SeqSlice<Dna> = &*seq;
