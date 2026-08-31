@@ -859,7 +859,7 @@ mod tests {
     #[test]
     fn test_bit_order() {
         let raw: usize = 0b10_11_01_11_10_01_00_01;
-        let mut bv: Bv = Default::default();
+        let mut bv: Bv = BitVec::default();
         bv.extend(&raw.view_bits::<Order>()[..(Dna::BITS as usize * 8)]);
         let s = Seq::<Dna> {
             bv,
@@ -1011,6 +1011,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::similar_names)]
     fn test_seq_slice_eq() {
         let seq1: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTA".try_into().unwrap();
         let seq2: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTAA".try_into().unwrap();

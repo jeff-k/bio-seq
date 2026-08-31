@@ -243,9 +243,7 @@ mod tests {
 
         impl TranslationTable<Dna, Amino> for Mitochondria {
             fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
-                if codon == dna!("AGA") {
-                    Amino::X
-                } else if codon == dna!("AGG") {
+                if codon == dna!("AGA") || codon == dna!("AGG") {
                     Amino::X
                 } else if codon == dna!("ATA") {
                     Amino::M
@@ -265,18 +263,17 @@ mod tests {
             dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA").into();
         let aminos: Seq<Amino> = seq
             .windows(3)
-            .map(|codon| Mitochondria.to_amino(&codon))
+            .map(|codon| Mitochondria.to_amino(codon))
             .collect::<Seq<Amino>>();
         assert_eq!(seq.len() - 2, aminos.len());
 
         for (x, y) in aminos.into_iter().zip(
-            Seq::<Amino>::try_from(
+            &Seq::<Amino>::try_from(
                 "NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYMWE*GDTRDISQSAHTPHM*K*ENTQK",
             )
-            .unwrap()
-            .into_iter(),
+            .unwrap(),
         ) {
-            assert_eq!(x, y)
+            assert_eq!(x, y);
         }
     }
 }

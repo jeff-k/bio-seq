@@ -508,9 +508,10 @@ mod tests {
     use crate::seq::SeqArray;
 
     #[test]
+    #[allow(clippy::cast_sign_loss)]
     fn kmer_to_usize() {
         let s: &'static SeqSlice<Dna> = dna!("AACTT");
-        println!("{}", s);
+        println!("{s}");
 
         for (kmer, index) in s.kmers::<2>().zip([0b00_00, 0b01_00, 0b11_01, 0b11_11]) {
             println!("{kmer}");
@@ -550,11 +551,12 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::cast_sign_loss)]
     fn amino_kmer_to_usize() {
         for (kmer, index) in Seq::<Amino>::try_from("SRY")
             .unwrap()
             .kmers::<2>()
-            .zip([0b001000_011000, 0b010011_001000])
+            .zip([0b0010_0001_1000, 0b0100_1100_1000])
         {
             assert_eq!(index as usize, usize::from(&kmer));
         }
