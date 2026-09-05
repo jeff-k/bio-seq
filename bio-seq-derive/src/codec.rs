@@ -12,18 +12,23 @@ use syn::punctuated::Punctuated;
 
 /// Allow the user to request more bits than used by their encodings
 pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
-    // minimum width is the log2 of the max_variant
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant + 1))) as u8;
+    //    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant + 1))) as u8;
 
+    #[allow(clippy::cast_possible_truncation)]
+    let min_width = (max_variant.bit_width()).max(1) as u8;
     for attr in attrs {
         if attr.path().is_ident("bits") {
             return match attr.parse_args::<syn::LitInt>() {
                 Ok(w) => {
-                    let chosen_width = w.base10_parse::<u8>().unwrap();
-                    // test whether the specified width is too small
-                    if chosen_width < min_width {
+                    let chosen_width = w.base10_parse::<u8>()?;
+                    // test whether the specified width is too small or large
+                    #[allow(clippy::cast_possible_truncation)]
+                    if chosen_width > u8::BITS as u8 {
+                        Err(syn::Error::new_spanned(
+                            attr,
+                            "Codec bit width cannot exceed 8",
+                        ))
+                    } else if chosen_width < min_width {
                         Err(syn::Error::new_spanned(
                             attr,
                             format!(
@@ -106,7 +111,7 @@ pub(crate) fn parse_variants(
             let value = match &expr_lit.lit {
                 // discriminants must be either integers or byte literals
                 syn::Lit::Byte(lit_byte) => lit_byte.value(),
-                syn::Lit::Int(lit_int) => lit_int.base10_parse::<u8>().unwrap(),
+                syn::Lit::Int(lit_int) => lit_int.base10_parse::<u8>()?,
                 _ => {
                     return Err(syn::Error::new_spanned(
                         ident,
