@@ -30,10 +30,10 @@
 // storage types wider than usize are deliberately narrowed
 #![allow(clippy::cast_possible_truncation)]
 
+use crate::Bs;
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
 use crate::seq::{Seq, SeqArray, SeqSlice};
-use crate::Bs;
 use crate::{
     Complement, ComplementMut, Reverse, ReverseComplement, ReverseComplementMut, ReverseMut,
 };

@@ -15,7 +15,7 @@ mod slice;
 pub use array::SeqArray;
 pub use slice::SeqSlice;
 
-use crate::codec::{text, Codec};
+use crate::codec::{Codec, text};
 use crate::error::ParseBioError;
 use crate::{
     Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,

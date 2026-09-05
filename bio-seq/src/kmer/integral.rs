@@ -1,4 +1,4 @@
-use crate::kmer::{sealed, REV_2BIT};
+use crate::kmer::{REV_2BIT, sealed};
 use bitvec::field::BitField;
 
 use crate::{Ba, Bs};
