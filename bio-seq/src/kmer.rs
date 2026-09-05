@@ -117,16 +117,16 @@ pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     // This error message can be formatted with constants in nightly (const_format)
-    const _ASSERT_K: () = assert!(
+    const ASSERT_K: () = assert!(
         K * A::BITS as usize <= S::BITS,
         "`KmerStorage` not large enough for `Kmer`",
     );
 
-    const _ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
+    const ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
 
     const fn assert_k() {
-        let () = Self::_ASSERT_K;
-        let () = Self::_ASSERT_K_NONZERO;
+        let () = Self::ASSERT_K;
+        let () = Self::ASSERT_K_NONZERO;
     }
 
     const BITS: usize = K * A::BITS as usize;
