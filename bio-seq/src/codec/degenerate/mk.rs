@@ -1,5 +1,5 @@
-use crate::ComplementMut;
 use crate::codec::Codec;
+use crate::{Complement, ComplementMut};
 
 /// 1-bit encoding for nucleotides with a**M**ino (`A`/`C`) and **K**etone (`T`/`G`) functional groups.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -64,6 +64,8 @@ impl ComplementMut for MK {
         *self = unsafe { std::mem::transmute::<u8, Self>(*self as u8 ^ 1) };
     }
 }
+
+impl Complement for MK {}
 
 #[cfg(test)]
 mod tests {

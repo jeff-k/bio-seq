@@ -62,7 +62,12 @@ impl<'a, A: Codec> SeqSlice<A> {
     /// let windows: Vec<String> = seq.windows(3).map(String::from).collect();
     /// assert_eq!(windows, vec!["ACT", "CTG", "TGA", "GAT", "ATC", "TCG"]);
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `width` is 0.
     pub fn windows(&self, width: usize) -> SeqChunks<'_, A> {
+        assert!(width != 0, "window must be non-zero");
         SeqChunks {
             slice: self,
             width,
@@ -83,7 +88,12 @@ impl<'a, A: Codec> SeqSlice<A> {
     /// let chunks: Vec<Seq<Dna>> = seq.chunks(3).collect();
     /// assert_eq!(chunks, vec![dna!("ACT"), dna!("GAT")]);
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `width` is 0.
     pub fn chunks(&self, width: usize) -> SeqChunks<'_, A> {
+        assert!(width != 0, "chunk must be non-zero");
         SeqChunks {
             slice: self,
             width,
@@ -95,8 +105,8 @@ impl<'a, A: Codec> SeqSlice<A> {
 
 /// An iterator over the elements of a sequence in reverse order
 pub struct RevIter<'a, A: Codec> {
-    pub slice: &'a SeqSlice<A>,
-    pub index: usize,
+    pub(crate) slice: &'a SeqSlice<A>,
+    pub(crate) index: usize,
 }
 
 impl<A: Codec> Iterator for RevIter<'_, A> {
@@ -110,23 +120,39 @@ impl<A: Codec> Iterator for RevIter<'_, A> {
         self.index -= 1;
         Some(A::unsafe_from_bits(self.slice[i - 1].into()))
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let n = self.slice.len();
+        (n, Some(n))
+    }
 }
 
-impl<'a, A: Codec + core::fmt::Debug> Iterator for SeqChunks<'a, A> {
+impl<A: Codec> ExactSizeIterator for RevIter<'_, A> {}
+
+impl<'a, A: Codec> Iterator for SeqChunks<'a, A> {
     type Item = &'a SeqSlice<A>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index + self.width > self.slice.len() {
-            return None;
-        }
         let i = self.index;
-        self.index += self.skip;
         if i + self.width > self.slice.len() {
             return None;
         }
+        self.index += self.skip;
         Some(&self.slice[i..i + self.width])
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let n = self
+            .slice
+            .len()
+            .saturating_sub(self.index)
+            .saturating_sub(self.width - 1)
+            .div_ceil(self.skip);
+        (n, Some(n))
+    }
 }
+
+impl<A: Codec> ExactSizeIterator for SeqChunks<'_, A> {}
 
 impl<'a, A: Codec> IntoIterator for &'a Seq<A> {
     type Item = A;
@@ -165,7 +191,14 @@ impl<A: Codec> Iterator for SeqIter<'_, A> {
         self.index += 1;
         Some(A::unsafe_from_bits(self.slice[i].into()))
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let n = self.slice.len();
+        (n, Some(n))
+    }
 }
+
+impl<A: Codec> ExactSizeIterator for SeqIter<'_, A> {}
 
 #[cfg(test)]
 mod tests {

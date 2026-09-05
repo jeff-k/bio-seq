@@ -15,7 +15,7 @@ mod slice;
 pub use array::SeqArray;
 pub use slice::SeqSlice;
 
-use crate::codec::{Codec, text};
+use crate::codec::{text, Codec};
 use crate::error::ParseBioError;
 use crate::{
     Complement, ComplementMut, Maskable, MaskableMut, Reverse, ReverseComplement,
@@ -49,9 +49,13 @@ pub struct Seq<A: Codec> {
 }
 
 impl<A: Codec> From<Seq<A>> for usize {
-    fn from(slice: Seq<A>) -> usize {
-        debug_assert!(slice.bv.len() <= usize::BITS as usize);
-        slice.bv.load_le::<usize>() //.wrapping_shr(shift)
+    fn from(seq: Seq<A>) -> usize {
+        debug_assert!(seq.bv.len() <= usize::BITS as usize);
+        if seq.bv.is_empty() {
+            0
+        } else {
+            seq.bv.load_le::<usize>() //.wrapping_shr(shift)
+        }
     }
 }
 
@@ -241,7 +245,7 @@ impl<A: Codec> Seq<A> {
         self.bv.drain(s..e);
     }
 
-    pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
+    pub fn extend_from_iter<I: IntoIterator<Item = A>>(&mut self, iter: I) {
         iter.into_iter().for_each(|base| self.push(base));
     }
 
@@ -572,7 +576,7 @@ impl<A: Codec> fmt::Display for Seq<A> {
 
 impl<A: Codec> Extend<A> for Seq<A> {
     fn extend<T: IntoIterator<Item = A>>(&mut self, iter: T) {
-        self.extend(iter);
+        self.extend_from_iter(iter);
     }
 }
 

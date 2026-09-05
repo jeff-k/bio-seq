@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.15.0"
+version = "0.15.1"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2024"
 description = "Bit packed and well-typed biological sequences"
@@ -10,7 +10,7 @@ license = "MIT"
 keywords = ["bioinformatics", "genomics", "kmer", "dna", "sequence"]
 categories = ["science::bioinformatics", "science::bioinformatics::genomics", "science::bioinformatics::proteomics", "science::bioinformatics::sequence-analysis"]
 readme = "../README.md"
-rust-version = "1.85"
+rust-version = "1.95"
 
 [dev-dependencies]
 clap = { version="4", features=["derive"] }
@@ -45,5 +45,4 @@ name = "seq2bin"
 required-features = ["serde", "noodles/fasta"]
 
 [package.metadata.docs.rs]
-features = ["translation", "serde", "extra_codecs"]
 all-features = true

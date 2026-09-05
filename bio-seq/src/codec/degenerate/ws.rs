@@ -1,5 +1,5 @@
-use crate::ComplementMut;
 use crate::codec::Codec;
+use crate::{Complement, ComplementMut};
 
 /// 1-bit encoding for nucleotides with **W**eak (`A`/`T`) and **S**trong (`G`/`C`) bond strengths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -59,9 +59,11 @@ impl Codec for WS {
 }
 
 impl ComplementMut for WS {
-    /// This representation erases complements, so this is the identify function
+    /// This representation erases complements, so this is the identity function
     fn comp(&mut self) {}
 }
+
+impl Complement for WS {}
 
 #[cfg(test)]
 mod tests {

@@ -1,4 +1,4 @@
-use crate::kmer::{REV_2BIT, sealed};
+use crate::kmer::{sealed, REV_2BIT};
 use bitvec::field::BitField;
 
 use crate::{Ba, Bs};
@@ -20,19 +20,6 @@ impl sealed::KmerStorage for usize {
         bs.load_le()
     }
 
-    /*
-        fn rotate_right(self, n: u32) -> Self {
-            self.rotate_right(n)
-        }
-        fn rotate_left(self, n: u32) -> Self {
-            self.rotate_left(n)
-        }
-    */
-
-    fn mask(&mut self, bits: usize) {
-        *self &= (1 << bits) - 1;
-    }
-
     fn complement(&mut self, mask: usize) {
         if mask >= Self::BITS as usize {
             *self ^= Self::MAX;
@@ -44,10 +31,6 @@ impl sealed::KmerStorage for usize {
 
     fn shiftr(&mut self, n: u32) {
         *self >>= n;
-    }
-
-    fn shiftl(&mut self, n: u32) {
-        *self <<= n;
     }
 
     fn rev_blocks_2(&mut self) {
@@ -66,6 +49,12 @@ impl sealed::KmerStorage for u64 {
 
     type BaN = Ba<{ (Self::BITS / usize::BITS) as usize }>;
 
+    #[cfg(target_pointer_width = "64")]
+    fn to_bitarray(self) -> Self::BaN {
+        Self::BaN::new([self.try_into().unwrap()])
+    }
+
+    #[cfg(target_pointer_width = "32")]
     fn to_bitarray(self) -> Self::BaN {
         Self::BaN::new([
             (self & 0xFFFFFFFF) as usize,
@@ -77,21 +66,16 @@ impl sealed::KmerStorage for u64 {
         bs.load_le::<Self>()
     }
 
-    fn mask(&mut self, bits: usize) {
-        *self &= (1 << bits) - 1;
-    }
-
     fn shiftr(&mut self, n: u32) {
         *self >>= n;
     }
 
-    fn shiftl(&mut self, n: u32) {
-        *self <<= n;
-    }
-
     fn complement(&mut self, mask: usize) {
-        let mask = (1 << mask) - 1;
-        *self ^= mask;
+        if mask >= Self::BITS as usize {
+            *self ^= Self::MAX;
+        } else {
+            *self ^= (1 << mask) - 1;
+        }
     }
 
     fn rev_blocks_2(&mut self) {
@@ -100,6 +84,8 @@ impl sealed::KmerStorage for u64 {
         for b in &mut bs {
             *b = REV_2BIT[*b as usize];
         }
+
+        *self = Self::from_le_bytes(bs);
     }
 }
 
@@ -107,6 +93,12 @@ impl sealed::KmerStorage for u128 {
     const BITS: usize = u128::BITS as usize;
     type BaN = Ba<{ (Self::BITS / usize::BITS) as usize }>;
 
+    #[cfg(target_pointer_width = "64")]
+    fn to_bitarray(self) -> Self::BaN {
+        Self::BaN::new([self as usize, (self >> 64) as usize])
+    }
+
+    #[cfg(target_pointer_width = "32")]
     fn to_bitarray(self) -> Self::BaN {
         Self::BaN::new([
             (self & 0xFFFFFFFF) as usize,
@@ -120,21 +112,16 @@ impl sealed::KmerStorage for u128 {
         bs.load_le::<Self>()
     }
 
-    fn mask(&mut self, bits: usize) {
-        *self &= (1 << bits) - 1;
-    }
-
     fn shiftr(&mut self, n: u32) {
         *self >>= n;
     }
 
-    fn shiftl(&mut self, n: u32) {
-        *self <<= n;
-    }
-
     fn complement(&mut self, mask: usize) {
-        let mask = (1 << mask) - 1;
-        *self ^= mask;
+        if mask >= Self::BITS as usize {
+            *self ^= Self::MAX;
+        } else {
+            *self ^= (1 << mask) - 1;
+        }
     }
 
     fn rev_blocks_2(&mut self) {
@@ -143,5 +130,6 @@ impl sealed::KmerStorage for u128 {
         for b in &mut bs {
             *b = REV_2BIT[*b as usize];
         }
+        *self = Self::from_le_bytes(bs);
     }
 }

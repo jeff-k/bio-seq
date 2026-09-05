@@ -1,7 +1,7 @@
-use crate::ComplementMut;
 use crate::codec::Codec;
+use crate::{Complement, ComplementMut};
 
-/// 1-bit encoding for nucleotides with pu**R**ine (`A`/`G`) and p**Y**ramidine (`T`/`C`) structures.
+/// 1-bit encoding for nucleotides with pu**R**ine (`A`/`G`) and p**Y**rimidine (`T`/`C`) structures.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum RY {
@@ -64,6 +64,8 @@ impl ComplementMut for RY {
         *self = unsafe { std::mem::transmute::<u8, Self>(*self as u8 ^ 1) };
     }
 }
+
+impl Complement for RY {}
 
 #[cfg(test)]
 mod tests {

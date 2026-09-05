@@ -32,7 +32,9 @@ impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
     type Error = ParseBioError;
 
     fn try_from(slice: &SeqSlice<A>) -> Result<usize, Self::Error> {
-        if slice.bs.len() <= usize::BITS as usize {
+        if slice.bs.is_empty() {
+            Ok(0)
+        } else if slice.bs.len() <= usize::BITS as usize {
             Ok(slice.bs.load_le::<usize>())
         } else {
             let len: usize = slice.bs.len() / A::BITS as usize;
@@ -45,7 +47,11 @@ impl<A: Codec> TryFrom<&SeqSlice<A>> for usize {
 impl<A: Codec> From<&SeqSlice<A>> for u8 {
     fn from(slice: &SeqSlice<A>) -> u8 {
         debug_assert!(slice.bs.len() <= u8::BITS as usize);
-        slice.bs.load_le::<u8>()
+        if slice.bs.is_empty() {
+            0
+        } else {
+            slice.bs.load_le::<u8>()
+        }
     }
 }
 
