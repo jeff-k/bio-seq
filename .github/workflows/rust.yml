@@ -37,7 +37,7 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --workspace --all-features --verbose
-    - name Check wasm32
+    - name: Check wasm32
       run: cargo check --workspace --all-features --target wasm32-unknown-unknown
     - name: Package
       run: cargo package -p bio-seq
