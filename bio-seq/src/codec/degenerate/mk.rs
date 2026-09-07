@@ -1,5 +1,5 @@
-use crate::ComplementMut;
 use crate::codec::Codec;
+use crate::{Complement, ComplementMut};
 
 /// 1-bit encoding for nucleotides with a**M**ino (`A`/`C`) and **K**etone (`T`/`G`) functional groups.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -29,9 +29,9 @@ impl Codec for MK {
         }
     }
 
-    /// TODO: fast translation of A, T, W to 0 and C, G, S to 1
-    fn unsafe_from_ascii(_b: u8) -> Self {
-        todo!()
+    /// TODO: fast translation of A, C, M to 0 and T, G, K to 1
+    fn unsafe_from_ascii(b: u8) -> Self {
+        Self::try_from_ascii(b).unwrap_or_else(|| panic!("Unrecognised character: {b:#04X}"))
     }
 
     fn try_from_ascii(c: u8) -> Option<Self> {
@@ -54,7 +54,7 @@ impl Codec for MK {
     }
 
     fn items() -> impl Iterator<Item = Self> {
-        vec![MK::M, MK::K].into_iter()
+        [MK::M, MK::K].into_iter()
     }
 }
 
@@ -64,6 +64,8 @@ impl ComplementMut for MK {
         *self = unsafe { std::mem::transmute::<u8, Self>(*self as u8 ^ 1) };
     }
 }
+
+impl Complement for MK {}
 
 #[cfg(test)]
 mod tests {

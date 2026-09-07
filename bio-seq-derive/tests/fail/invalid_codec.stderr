@@ -15,22 +15,34 @@ error: Codec derivations require discriminants
 13 |     A,
    |     ^
 
-error: Bit width is not large enough encode all variants (min: 3)
+error: Codec bit width cannot exceed 8
   --> tests/fail/invalid_codec.rs:20:1
    |
-20 | #[bits(2)]
+20 | #[bits(9)]
+   | ^^^^^^^^^^
+
+error: expected integer literal
+  --> tests/fail/invalid_codec.rs:24:8
+   |
+24 | #[bits("nine")]
+   |        ^^^^^^
+
+error: Bit width is not large enough encode all variants (min: 3)
+  --> tests/fail/invalid_codec.rs:28:1
+   |
+28 | #[bits(2)]
    | ^^^^^^^^^^
 
 error: Codec derivations require byte or integer discriminants
-  --> tests/fail/invalid_codec.rs:36:5
+  --> tests/fail/invalid_codec.rs:44:5
    |
-36 |     X = 1.0,
+44 |     X = 1.0,
    |     ^
 
 error[E0308]: mismatched types
-  --> tests/fail/invalid_codec.rs:36:9
+  --> tests/fail/invalid_codec.rs:44:9
    |
-36 |     X = 1.0,
+44 |     X = 1.0,
    |         ^^^ expected `isize`, found floating-point number
    |
    = note: enum variant discriminant can only be of a primitive type compatible with the enum's `repr`

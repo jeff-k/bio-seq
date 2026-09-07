@@ -62,3 +62,19 @@ impl core::fmt::Display for Amino {
         write!(f, "{}", self.to_char())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Amino;
+    use crate::codec::Codec;
+
+    #[test]
+    fn amino_conversions() {
+        for amino in Amino::items() {
+            assert_eq!(u8::from(amino), amino.to_bits());
+            assert_eq!(amino.to_string(), amino.to_char().to_string());
+        }
+
+        assert_eq!(Amino::X.to_string(), "*");
+    }
+}

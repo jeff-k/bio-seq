@@ -15,17 +15,19 @@
 //!
 //! Custom encodings can be easily defined on enums using the derivable `Codec` trait.
 //!
-//! ```ignore
-//! use bio_seq::prelude;
-//! use bio_seq::prelude::Codec;
+//! ```
+//! use bio_seq::prelude::*;
 //!
 //! #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
-//! pub enum Dna {
+//! #[repr(u8)]
+//! pub enum MyDna {
 //!     A = 0b00,
 //!     C = 0b01,
 //!     G = 0b10,
 //!     T = 0b11,
 //! }
+//!
+//! assert_eq!(MyDna::BITS, 2);
 //! ```
 //! ## Implementing custom Codecs
 //!
@@ -166,8 +168,39 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
 
 #[cfg(test)]
 mod tests {
-    use super::dna::Dna;
-    use super::iupac::Iupac;
+    use crate::codec::{Codec, amino, dna::Dna, iupac::Iupac, text};
+    #[cfg(feature = "extra_codecs")]
+    use crate::codec::{degenerate, masked};
+    use crate::{ComplementMut, MaskableMut};
+
+    fn check_codec<C: Codec>() {
+        for symbol in C::items() {
+            assert_eq!(C::try_from_bits(symbol.to_bits()), Some(symbol));
+            assert_eq!(C::unsafe_from_bits(symbol.to_bits()), symbol);
+            assert_eq!(C::try_from_ascii(symbol.to_char() as u8), Some(symbol));
+            assert_eq!(C::unsafe_from_ascii(symbol.to_char() as u8), symbol);
+        }
+    }
+
+    fn check_comp_comp<C: Codec + ComplementMut>() {
+        for symbol in C::items() {
+            let mut symcomp = symbol;
+            symcomp.comp();
+            symcomp.comp();
+            assert_eq!(symcomp, symbol);
+        }
+    }
+
+    fn check_mask_comp<C: Codec + ComplementMut + MaskableMut>() {
+        for symbol in C::items() {
+            let mut symcomp = symbol;
+            symcomp.comp();
+            symcomp.mask();
+            symcomp.comp();
+            symcomp.unmask();
+            assert_eq!(symcomp, symbol);
+        }
+    }
 
     #[test]
     fn dna_to_iupac() {
@@ -180,5 +213,53 @@ mod tests {
         assert_ne!(Iupac::from(Dna::T), Iupac::A);
         assert_ne!(Iupac::from(Dna::C), Iupac::T);
         assert_ne!(Iupac::from(Dna::G), Iupac::T);
+    }
+
+    #[test]
+    fn check_codecs() {
+        check_codec::<Dna>();
+        check_codec::<Iupac>();
+        check_codec::<amino::Amino>();
+        check_codec::<text::Dna>();
+
+        #[cfg(feature = "extra_codecs")]
+        check_codec::<degenerate::MK>();
+        #[cfg(feature = "extra_codecs")]
+        check_codec::<degenerate::RY>();
+        #[cfg(feature = "extra_codecs")]
+        check_codec::<degenerate::WS>();
+    }
+
+    #[test]
+    fn check_comp_codecs() {
+        check_comp_comp::<Dna>();
+        check_comp_comp::<Iupac>();
+
+        #[cfg(feature = "extra_codecs")]
+        check_comp_comp::<degenerate::MK>();
+        #[cfg(feature = "extra_codecs")]
+        check_comp_comp::<degenerate::RY>();
+        #[cfg(feature = "extra_codecs")]
+        check_comp_comp::<degenerate::WS>();
+        //check_comp_comp::<text::Dna>();
+    }
+
+    #[test]
+    #[cfg(feature = "extra_codecs")]
+    fn check_mask_comp_codecs() {
+        check_mask_comp::<masked::Dna>();
+        //check_mask_comp::<masked::Iupac>();
+    }
+
+    #[test]
+    fn derive_weird_codec() {
+        #[derive(Codec, PartialEq, Clone, Copy, Debug, Hash, Eq)]
+        enum Weird {
+            A = 0,
+            B = 0b01,
+            C = 16,
+        }
+
+        assert_eq!(Weird::BITS, 5);
     }
 }

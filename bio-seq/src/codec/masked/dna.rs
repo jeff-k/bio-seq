@@ -1,6 +1,6 @@
 use crate::codec::Codec;
 //use crate::{Complement, Maskable, Reverse, ReverseComplement};
-use crate::{Complement, ComplementMut, MaskableMut}; //, ReverseComplementMut, ReverseMut};
+use crate::{Complement, ComplementMut, Maskable, MaskableMut}; //, ReverseComplementMut, ReverseMut};
 
 /// **Experimental** 4-bit nucleotide encoding with fast reverse complement and toggled mask operation
 ///
@@ -69,6 +69,8 @@ impl MaskableMut for Dna {
         *self = Dna::unsafe_from_bits(b);
     }
 }
+
+impl Maskable for Dna {}
 
 #[cfg(test)]
 mod tests {

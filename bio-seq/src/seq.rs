@@ -49,9 +49,13 @@ pub struct Seq<A: Codec> {
 }
 
 impl<A: Codec> From<Seq<A>> for usize {
-    fn from(slice: Seq<A>) -> usize {
-        debug_assert!(slice.bv.len() <= usize::BITS as usize);
-        slice.bv.load_le::<usize>() //.wrapping_shr(shift)
+    fn from(seq: Seq<A>) -> usize {
+        debug_assert!(seq.bv.len() <= usize::BITS as usize);
+        if seq.bv.is_empty() {
+            0
+        } else {
+            seq.bv.load_le::<usize>() //.wrapping_shr(shift)
+        }
     }
 }
 
@@ -79,18 +83,18 @@ impl<A: Codec> Seq<A> {
     fn bit_range<R: RangeBounds<usize>>(&self, range: R) -> (usize, usize) {
         let s = match range.start_bound() {
             Bound::Included(&n) => n,
-            Bound::Excluded(&n) => n + 1,
+            Bound::Excluded(&n) => n.checked_add(1).expect("bound overflow"),
             Bound::Unbounded => 0,
         };
 
         let e = match range.end_bound() {
-            Bound::Included(&n) => n + 1,
+            Bound::Included(&n) => n.checked_add(1).expect("bound overflow"),
             Bound::Excluded(&n) => n,
             Bound::Unbounded => self.len(),
         };
 
-        debug_assert!(s <= e, "Start of range must be less than or equal to end");
-        debug_assert!(e <= self.len(), "Range out of bounds");
+        assert!(s <= e, "Start of range must be less than or equal to end");
+        assert!(e <= self.len(), "Range out of bounds");
 
         (s * A::BITS as usize, e * A::BITS as usize)
     }
@@ -191,20 +195,24 @@ impl<A: Codec> Seq<A> {
         self.bv.extend_from_bitslice(&other.bs);
     }
 
-    /*
-        /// Remove a range and replace it with a slice
-        /// ```
-        /// # use bio_seq::prelude::*;
-        /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
-        /// seq.splice(4..6, dna!("TTTT"));
-        /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
-        /// ```
-        pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
-            let (s, e) = self.bit_range(range);
-            self.bv
-                .splice(s..e, other.bs.iter().by_vals())
-        }
-    */
+    /// Remove a range and replace it with a slice
+    /// ```
+    /// # use bio_seq::prelude::*;
+    /// let mut seq: Seq<Dna> = dna!("AAAACCAAAA").into();
+    /// seq.splice(4..6, dna!("TTTT"));
+    /// assert_eq!(&seq, dna!("AAAATTTTAAAA"));
+    /// ```
+    pub fn splice<R: RangeBounds<usize>>(&mut self, range: R, other: &SeqSlice<A>) {
+        let (s, e) = self.bit_range(range);
+
+        let mut bv = Bv::with_capacity(self.bv.len() - (e - s) + other.bs.len());
+
+        bv.extend_from_bitslice(&self.bs[..s]);
+        bv.extend_from_bitslice(&other.bs);
+        bv.extend_from_bitslice(&self.bs[e..]);
+
+        self.bv = bv;
+    }
 
     /// Insert a slice into a sequence
     /// ```
@@ -241,7 +249,7 @@ impl<A: Codec> Seq<A> {
         self.bv.drain(s..e);
     }
 
-    pub fn extend<I: IntoIterator<Item = A>>(&mut self, iter: I) {
+    pub fn extend_from_iter<I: IntoIterator<Item = A>>(&mut self, iter: I) {
         iter.into_iter().for_each(|base| self.push(base));
     }
 
@@ -535,7 +543,10 @@ impl<A: Codec> TryFrom<&[u8]> for Seq<A> {
     type Error = ParseBioError;
 
     fn try_from(v: &[u8]) -> Result<Self, Self::Error> {
-        Self::try_from(v.to_vec())
+        v.iter()
+            .copied()
+            .map(|byte| A::try_from_ascii(byte).ok_or(ParseBioError::UnrecognisedBase(byte)))
+            .collect()
     }
 }
 
@@ -572,7 +583,7 @@ impl<A: Codec> fmt::Display for Seq<A> {
 
 impl<A: Codec> Extend<A> for Seq<A> {
     fn extend<T: IntoIterator<Item = A>>(&mut self, iter: T) {
-        self.extend(iter);
+        self.extend_from_iter(iter);
     }
 }
 
@@ -1345,7 +1356,6 @@ mod tests {
         assert_eq!(&seq, dna!(""));
     }
 
-    /*
     #[test]
     fn test_long_splice() {
         let mut seq: Seq<Dna> = dna!("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT").into();
@@ -1360,11 +1370,11 @@ mod tests {
         seq.splice(1..=1, dna!("AAA"));
         assert_eq!(
             &seq,
-            dna!("TAAATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+            dna!("TAAATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTCCCCCCCTTTTTTTTTTT")
         );
 
         seq.splice(10.., dna!("GGGG"));
-        assert_eq!(&seq, dna!("TTTTTTTTTTGGGG"));
+        assert_eq!(&seq, dna!("TAAATTTTTTGGGG"));
     }
 
     #[test]
@@ -1376,10 +1386,9 @@ mod tests {
         assert_eq!(&seq, dna!("TCAGCCCCCTCGATCAATCGT"));
 
         seq.splice(1..=1, dna!("AAA"));
-        assert_eq!(&seq, dna!("TAAAAGCCCCCTCGATCAATCG"));
+        assert_eq!(&seq, dna!("TAAAAGCCCCCTCGATCAATCGT"));
 
         seq.splice(10.., dna!("TTTT"));
         assert_eq!(&seq, dna!("TAAAAGCCCCTTTT"));
     }
-    */
 }

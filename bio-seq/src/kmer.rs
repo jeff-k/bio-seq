@@ -46,17 +46,7 @@ use core::ops::Deref;
 use core::ptr;
 use core::str::FromStr;
 
-//#[cfg(target_feature(enable = "avx2,bmi2"))]
-//pub mod avx2;
-
-//#[cfg(target_arch = "wasm32")]
-//pub mod wasm;
-
-#[cfg(target_pointer_width = "64")]
-pub(crate) mod integral64;
-
-#[cfg(target_pointer_width = "32")]
-pub(crate) mod integral32;
+pub(crate) mod integral;
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
@@ -88,14 +78,7 @@ pub(crate) mod sealed {
         fn to_bitarray(self) -> Self::BaN;
         fn from_bitslice(bs: &Bs) -> Self;
 
-        //        fn rotate_left(self, n: u32) -> Self;
-        //        fn rotate_right(self, n: u32) -> Self;
-
         fn shiftr(&mut self, n: u32);
-
-        fn shiftl(&mut self, n: u32);
-
-        fn mask(&mut self, bits: usize);
 
         fn complement(&mut self, mask: usize);
         fn rev_blocks_2(&mut self);
@@ -128,22 +111,22 @@ impl KmerStorage for u128 {}
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Kmer<C: Codec, const K: usize, S: KmerStorage = usize> {
-    pub _p: PhantomData<C>,
-    pub bs: S,
+    pub(crate) _p: PhantomData<C>,
+    pub(crate) bs: S,
 }
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     // This error message can be formatted with constants in nightly (const_format)
-    const _ASSERT_K: () = assert!(
+    const ASSERT_K: () = assert!(
         K * A::BITS as usize <= S::BITS,
         "`KmerStorage` not large enough for `Kmer`",
     );
 
-    const _ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
+    const ASSERT_K_NONZERO: () = assert!(K > 0, "`K` must be greater than 0");
 
     const fn assert_k() {
-        let () = Self::_ASSERT_K;
-        let () = Self::_ASSERT_K_NONZERO;
+        let () = Self::ASSERT_K;
+        let () = Self::ASSERT_K_NONZERO;
     }
 
     const BITS: usize = K * A::BITS as usize;
@@ -318,10 +301,10 @@ impl<A: Codec, const K: usize, S: KmerStorage> fmt::Display for Kmer<A, K, S> {
 
 /// An iterator over all kmers of a sequence with a specified length
 pub struct KmerIter<'a, A: Codec, const K: usize> {
-    pub slice: &'a SeqSlice<A>,
-    pub index: usize,
-    pub len: usize,
-    pub _p: PhantomData<A>,
+    pub(crate) slice: &'a SeqSlice<A>,
+    pub(crate) index: usize,
+    pub(crate) len: usize,
+    pub(crate) _p: PhantomData<A>,
 }
 
 impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
@@ -345,7 +328,14 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
         self.index += 1;
         Some(Kmer::<A, K>::unsafe_from(&self.slice[i..i + K]))
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let n = (self.len.saturating_sub(self.index) + 1).saturating_sub(K);
+        (n, Some(n))
+    }
 }
+
+impl<A: Codec, const K: usize> ExactSizeIterator for KmerIter<'_, A, K> {}
 
 /// ```
 /// use bio_seq::prelude::*;
@@ -495,10 +485,12 @@ impl<const K: usize> ReverseComplement for Kmer<codec::dna::Dna, K, usize> {}
 #[macro_export]
 macro_rules! kmer {
     ($seq:expr) => {
-        Kmer::<Dna, { $seq.len() }>::unsafe_from_seqslice(dna!($seq))
+        $crate::kmer::Kmer::<$crate::codec::dna::Dna, { $seq.len() }>::unsafe_from_seqslice(dna!($seq))
     };
     ($seq:expr, $storage:ty) => {
-        Kmer::<Dna, { $seq.len() }, $storage>::unsafe_from_seqslice(dna!($seq))
+        $crate::kmer::Kmer::<$crate::codec::dna::Dna, { $seq.len() }, $storage>::unsafe_from_seqslice(
+            dna!($seq),
+        )
     };
 }
 

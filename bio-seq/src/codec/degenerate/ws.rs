@@ -1,5 +1,5 @@
-use crate::ComplementMut;
 use crate::codec::Codec;
+use crate::{Complement, ComplementMut};
 
 /// 1-bit encoding for nucleotides with **W**eak (`A`/`T`) and **S**trong (`G`/`C`) bond strengths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -30,8 +30,8 @@ impl Codec for WS {
     }
 
     /// TODO: fast translation of A, T, W to 0 and C, G, S to 1
-    fn unsafe_from_ascii(_b: u8) -> Self {
-        todo!()
+    fn unsafe_from_ascii(b: u8) -> Self {
+        Self::try_from_ascii(b).unwrap_or_else(|| panic!("Unrecognised character: {b:#04x}"))
     }
 
     fn try_from_ascii(c: u8) -> Option<Self> {
@@ -54,14 +54,16 @@ impl Codec for WS {
     }
 
     fn items() -> impl Iterator<Item = Self> {
-        vec![WS::W, WS::S].into_iter()
+        [WS::W, WS::S].into_iter()
     }
 }
 
 impl ComplementMut for WS {
-    /// This representation erases complements, so this is the identify function
+    /// This representation erases complements, so this is the identity function
     fn comp(&mut self) {}
 }
+
+impl Complement for WS {}
 
 #[cfg(test)]
 mod tests {

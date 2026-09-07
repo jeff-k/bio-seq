@@ -223,4 +223,16 @@ mod tests {
             iupac!("TCGARYWSMKHBDVN")
         );
     }
+
+    #[test]
+    fn iupac_bits_sanity() {
+        assert_eq!(Iupac::A.to_bits(), 0b1000);
+        assert_eq!(Iupac::C.to_bits(), 0b0100);
+
+        assert_eq!(Iupac::unsafe_from_bits(0b1000), Iupac::A);
+        assert_eq!(Iupac::unsafe_from_bits(0b0100), Iupac::C);
+
+        assert_eq!(Iupac::unsafe_from_bits(Iupac::A.to_bits()), Iupac::A);
+        assert_eq!(Iupac::unsafe_from_bits(Iupac::C.to_bits()), Iupac::C);
+    }
 }

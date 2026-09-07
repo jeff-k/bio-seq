@@ -36,11 +36,13 @@ impl Codec for Dna {
     }
 
     /// The ASCII values of 'A', 'C', 'G', and 'T' can be translated into
-    /// the numbers 0, 1, 2, and 3 using bitwise operations: `((b << 1) + b) >> 3`.
+    /// the numbers 0, 1, 2, and 3 using bitwise operations: `(b * 3) >> 3`.
     /// In other words, multiply the ASCII value by 3 and shift right.
+    ///
+    /// SAFETY: bytes that aren't `A`, `C`, `G`, or `T` yield an arbitrary
+    /// nucleotide.
     fn unsafe_from_ascii(b: u8) -> Self {
-        // TODO: benchmark against b * 3
-        Dna::unsafe_from_bits(((b << 1) + b) >> 3)
+        Dna::unsafe_from_bits((b.wrapping_mul(3) >> 3) & 0b11)
     }
 
     fn try_from_ascii(c: u8) -> Option<Self> {
@@ -80,29 +82,6 @@ impl ComplementMut for Dna {
 }
 
 impl Complement for Dna {}
-
-/*
-impl ComplementMut for Seq<Dna> {
-    fn comp(&mut self) {
-        for word in self.bv.as_raw_mut_slice() {
-            *word ^= usize::MAX;
-        }
-    }
-}
-*/
-
-/*
-impl ReverseMut for Seq<Dna> {
-    fn rev(&mut self) {
-        self.bv.reverse();
-        for word in self.bv.as_raw_mut_slice().iter_mut() {
-            let c: usize = *word;
-            let odds = (c & 0x5555_5555_5555_5555usize) >> 1;
-            *word = (c & 0xAAAA_AAAA_AAAA_AAAAusize) << 1 | odds;
-        }
-    }
-}
-*/
 
 #[cfg(test)]
 mod tests {

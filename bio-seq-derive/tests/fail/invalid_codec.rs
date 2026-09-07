@@ -17,6 +17,14 @@ enum NoDiscriminants {
 }
 
 #[derive(Codec, PartialEq, Debug, Hash)]
+#[bits(9)]
+enum ZeroWidth {}
+
+#[derive(Codec, PartialEq, Debug, Hash)]
+#[bits("nine")]
+enum WeirdWidth {}
+
+#[derive(Codec, PartialEq, Debug, Hash)]
 #[bits(2)]
 enum BadWidth {
     A = 0b000,
@@ -47,6 +55,17 @@ enum NoRepr {
 }
 */
 
+#[derive(Codec, PartialEq, Debug, Hash, Eq, Copy, Clone)]
+#[repr(u8)]
+enum ActuallyGood {
+    A = 0b001,
+    C = b'\0',
+    G = 0b0_10,
+    T = 3,
+    #[alt(16)]
+    X = 4,
+}
+
 fn main() {
     let _c = NotEnum {
         a: (),
@@ -54,4 +73,8 @@ fn main() {
         g: (),
         t: (),
     };
+
+    let _x = ActuallyGood::C;
+
+    assert_eq!(ActuallyGood::BITS, 5);
 }
