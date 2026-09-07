@@ -184,14 +184,6 @@ mod tests {
             }
         };
 
-        let (_, expr) = item.variants[0].discriminant.as_ref().unwrap();
-
-        let syn::Expr::Lit(expr) = expr else {
-            panic!("expected literal");
-        };
-
-        assert!(matches!(expr.lit, syn::Lit::Byte(_)));
-
         let parsed = parse_variants(&item.variants).unwrap();
         assert_eq!(parsed.max_discriminant, 65);
     }

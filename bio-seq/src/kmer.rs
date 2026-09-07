@@ -330,11 +330,7 @@ impl<A: Codec, const K: usize> Iterator for KmerIter<'_, A, K> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let n = self
-            .slice
-            .len()
-            .saturating_sub(self.index)
-            .saturating_sub(A::BITS as usize * (K - 1));
+        let n = (self.len.saturating_sub(self.index) + 1).saturating_sub(K);
         (n, Some(n))
     }
 }

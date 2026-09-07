@@ -122,8 +122,7 @@ impl<A: Codec> Iterator for RevIter<'_, A> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let n = self.slice.len();
-        (n, Some(n))
+        (self.index, Some(self.index))
     }
 }
 
@@ -193,7 +192,7 @@ impl<A: Codec> Iterator for SeqIter<'_, A> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let n = self.slice.len();
+        let n = self.slice.len() - self.index;
         (n, Some(n))
     }
 }

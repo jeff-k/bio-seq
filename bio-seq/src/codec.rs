@@ -15,17 +15,19 @@
 //!
 //! Custom encodings can be easily defined on enums using the derivable `Codec` trait.
 //!
-//! ```ignore
-//! use bio_seq::prelude;
-//! use bio_seq::prelude::Codec;
+//! ```
+//! use bio_seq::prelude::*;
 //!
 //! #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
-//! pub enum Dna {
+//! #[repr(u8)]
+//! pub enum MyDna {
 //!     A = 0b00,
 //!     C = 0b01,
 //!     G = 0b10,
 //!     T = 0b11,
 //! }
+//!
+//! assert_eq!(MyDna::BITS, 2);
 //! ```
 //! ## Implementing custom Codecs
 //!
@@ -166,7 +168,9 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
 
 #[cfg(test)]
 mod tests {
-    use crate::codec::{Codec, amino, degenerate, dna::Dna, iupac::Iupac, masked, text};
+    use crate::codec::{Codec, amino, dna::Dna, iupac::Iupac, text};
+    #[cfg(feature = "extra_codecs")]
+    use crate::codec::{degenerate, masked};
     use crate::{ComplementMut, MaskableMut};
 
     fn check_codec<C: Codec>() {
@@ -215,24 +219,33 @@ mod tests {
     fn check_codecs() {
         check_codec::<Dna>();
         check_codec::<Iupac>();
-        check_codec::<degenerate::MK>();
-        check_codec::<degenerate::RY>();
-        check_codec::<degenerate::WS>();
         check_codec::<amino::Amino>();
         check_codec::<text::Dna>();
+
+        #[cfg(feature = "extra_codecs")]
+        check_codec::<degenerate::MK>();
+        #[cfg(feature = "extra_codecs")]
+        check_codec::<degenerate::RY>();
+        #[cfg(feature = "extra_codecs")]
+        check_codec::<degenerate::WS>();
     }
 
     #[test]
     fn check_comp_codecs() {
         check_comp_comp::<Dna>();
         check_comp_comp::<Iupac>();
+
+        #[cfg(feature = "extra_codecs")]
         check_comp_comp::<degenerate::MK>();
+        #[cfg(feature = "extra_codecs")]
         check_comp_comp::<degenerate::RY>();
+        #[cfg(feature = "extra_codecs")]
         check_comp_comp::<degenerate::WS>();
         //check_comp_comp::<text::Dna>();
     }
 
     #[test]
+    #[cfg(feature = "extra_codecs")]
     fn check_mask_comp_codecs() {
         check_mask_comp::<masked::Dna>();
         //check_mask_comp::<masked::Iupac>();

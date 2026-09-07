@@ -1,4 +1,5 @@
 //! Standard amino acid translation table
+use core::str::FromStr;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -88,7 +89,11 @@ impl TranslationTable<Dna, Amino> for Standard {
 
     /// There are no unambiguous translations from amino acid to DNA codon except M and W
     fn to_codon(&self, amino: Amino) -> Result<Seq<Dna>, TranslationError<Dna, Amino>> {
-        Err(TranslationError::AmbiguousCodon(amino))
+        match amino {
+            Amino::M => Ok(Seq::from_str("ATG").unwrap()),
+            Amino::W => Ok(Seq::from_str("TGG").unwrap()),
+            _ => Err(TranslationError::AmbiguousCodon(amino)),
+        }
     }
 }
 
