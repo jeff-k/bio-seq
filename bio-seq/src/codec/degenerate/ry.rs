@@ -29,9 +29,9 @@ impl Codec for RY {
         }
     }
 
-    /// TODO: fast translation of A, T, W to 0 and C, G, S to 1
-    fn unsafe_from_ascii(_b: u8) -> Self {
-        todo!()
+    /// TODO: fast translation of A, G, R to 0 and C, T, Y to 1
+    fn unsafe_from_ascii(b: u8) -> Self {
+        Self::try_from_ascii(b).unwrap_or_else(|| panic!("Unrecognised character: {b:#04X}"))
     }
 
     fn try_from_ascii(c: u8) -> Option<Self> {
@@ -54,7 +54,7 @@ impl Codec for RY {
     }
 
     fn items() -> impl Iterator<Item = Self> {
-        vec![RY::R, RY::Y].into_iter()
+        [RY::R, RY::Y].into_iter()
     }
 }
 

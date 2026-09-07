@@ -12,8 +12,6 @@ use syn::punctuated::Punctuated;
 
 /// Allow the user to request more bits than used by their encodings
 pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
-    //    let min_width: u8 = f32::ceil(f32::log2(f32::from(max_variant + 1))) as u8;
-
     #[allow(clippy::cast_possible_truncation)]
     let min_width = (max_variant.bit_width()).max(1) as u8;
     for attr in attrs {
@@ -131,8 +129,6 @@ pub(crate) fn parse_variants(
             ));
         }
 
-        //let mut char_repr = ident.to_string().chars().next().unwrap();
-
         let mut char_repr = ident.to_string().bytes().next().unwrap();
 
         for attr in &variant.attrs {
@@ -146,6 +142,11 @@ pub(crate) fn parse_variants(
                     alts.push(quote! { #d => Some(Self::#ident) });
                     unsafe_alts.push(quote! { #d => Self::#ident });
                 }
+            } else {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "unknown attribute for codec item",
+                ));
             }
         }
 
@@ -161,4 +162,37 @@ pub(crate) fn parse_variants(
         unsafe_alts,
         max_discriminant,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_variants, parse_width};
+    use syn::parse_quote;
+
+    #[test]
+    fn test_width_parser() {
+        let attrs = vec![];
+
+        assert_eq!(parse_width(&attrs, 3).unwrap(), 2);
+    }
+
+    #[test]
+    fn byte_discriminant() {
+        let item: syn::ItemEnum = parse_quote! {
+            enum Test {
+                A = b'A',
+            }
+        };
+
+        let (_, expr) = item.variants[0].discriminant.as_ref().unwrap();
+
+        let syn::Expr::Lit(expr) = expr else {
+            panic!("expected literal");
+        };
+
+        assert!(matches!(expr.lit, syn::Lit::Byte(_)));
+
+        let parsed = parse_variants(&item.variants).unwrap();
+        assert_eq!(parsed.max_discriminant, 65);
+    }
 }

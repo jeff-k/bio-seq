@@ -30,8 +30,8 @@ impl Codec for WS {
     }
 
     /// TODO: fast translation of A, T, W to 0 and C, G, S to 1
-    fn unsafe_from_ascii(_b: u8) -> Self {
-        todo!()
+    fn unsafe_from_ascii(b: u8) -> Self {
+        Self::try_from_ascii(b).unwrap_or_else(|| panic!("Unrecognised character: {b:#04x}"))
     }
 
     fn try_from_ascii(c: u8) -> Option<Self> {
@@ -54,7 +54,7 @@ impl Codec for WS {
     }
 
     fn items() -> impl Iterator<Item = Self> {
-        vec![WS::W, WS::S].into_iter()
+        [WS::W, WS::S].into_iter()
     }
 }
 

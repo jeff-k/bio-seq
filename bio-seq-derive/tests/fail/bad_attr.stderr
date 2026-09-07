@@ -1,0 +1,11 @@
+error: unknown attribute for codec item
+ --> tests/fail/bad_attr.rs:8:5
+  |
+8 |     #[asdf]
+  |     ^^^^^^^
+
+error: cannot find attribute `asdf` in this scope
+ --> tests/fail/bad_attr.rs:8:7
+  |
+8 |     #[asdf]
+  |       ^^^^

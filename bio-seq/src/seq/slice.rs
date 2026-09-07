@@ -171,7 +171,10 @@ impl<A: Codec> AsRef<SeqSlice<A>> for SeqSlice<A> {
 
 impl<A: Codec> fmt::Display for SeqSlice<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", String::from(self))
+        for symbol in self {
+            write!(f, "{}", symbol.to_char())?;
+        }
+        Ok(())
     }
 }
 

@@ -34,7 +34,6 @@ extra_codecs = []
 
 [[example]]
 name = "aminokmers"
-required-features = ["noodles/fasta"]
 
 [[example]]
 name = "codec-bench"
@@ -42,7 +41,7 @@ required-features = ["extra_codecs"]
 
 [[example]]
 name = "seq2bin"
-required-features = ["serde", "noodles/fasta"]
+required-features = ["serde"]
 
 [package.metadata.docs.rs]
 all-features = true

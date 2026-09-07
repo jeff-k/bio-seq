@@ -166,8 +166,37 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
 
 #[cfg(test)]
 mod tests {
-    use super::dna::Dna;
-    use super::iupac::Iupac;
+    use crate::codec::{Codec, amino, degenerate, dna::Dna, iupac::Iupac, masked, text};
+    use crate::{ComplementMut, MaskableMut};
+
+    fn check_codec<C: Codec>() {
+        for symbol in C::items() {
+            assert_eq!(C::try_from_bits(symbol.to_bits()), Some(symbol));
+            assert_eq!(C::unsafe_from_bits(symbol.to_bits()), symbol);
+            assert_eq!(C::try_from_ascii(symbol.to_char() as u8), Some(symbol));
+            assert_eq!(C::unsafe_from_ascii(symbol.to_char() as u8), symbol);
+        }
+    }
+
+    fn check_comp_comp<C: Codec + ComplementMut>() {
+        for symbol in C::items() {
+            let mut symcomp = symbol;
+            symcomp.comp();
+            symcomp.comp();
+            assert_eq!(symcomp, symbol);
+        }
+    }
+
+    fn check_mask_comp<C: Codec + ComplementMut + MaskableMut>() {
+        for symbol in C::items() {
+            let mut symcomp = symbol;
+            symcomp.comp();
+            symcomp.mask();
+            symcomp.comp();
+            symcomp.unmask();
+            assert_eq!(symcomp, symbol);
+        }
+    }
 
     #[test]
     fn dna_to_iupac() {
@@ -180,5 +209,44 @@ mod tests {
         assert_ne!(Iupac::from(Dna::T), Iupac::A);
         assert_ne!(Iupac::from(Dna::C), Iupac::T);
         assert_ne!(Iupac::from(Dna::G), Iupac::T);
+    }
+
+    #[test]
+    fn check_codecs() {
+        check_codec::<Dna>();
+        check_codec::<Iupac>();
+        check_codec::<degenerate::MK>();
+        check_codec::<degenerate::RY>();
+        check_codec::<degenerate::WS>();
+        check_codec::<amino::Amino>();
+        check_codec::<text::Dna>();
+    }
+
+    #[test]
+    fn check_comp_codecs() {
+        check_comp_comp::<Dna>();
+        check_comp_comp::<Iupac>();
+        check_comp_comp::<degenerate::MK>();
+        check_comp_comp::<degenerate::RY>();
+        check_comp_comp::<degenerate::WS>();
+        //check_comp_comp::<text::Dna>();
+    }
+
+    #[test]
+    fn check_mask_comp_codecs() {
+        check_mask_comp::<masked::Dna>();
+        //check_mask_comp::<masked::Iupac>();
+    }
+
+    #[test]
+    fn derive_weird_codec() {
+        #[derive(Codec, PartialEq, Clone, Copy, Debug, Hash, Eq)]
+        enum Weird {
+            A = 0,
+            B = 0b01,
+            C = 16,
+        }
+
+        assert_eq!(Weird::BITS, 5);
     }
 }

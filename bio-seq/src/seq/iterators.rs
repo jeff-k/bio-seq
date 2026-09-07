@@ -263,4 +263,16 @@ mod tests {
         let windows: Vec<String> = seq.windows(5).map(String::from).collect();
         assert_eq!(windows, vec!["ACTGA", "CTGAT", "TGATA", "GATAC", "ATACG"]);
     }
+
+    #[test]
+    #[should_panic(expected = "chunk must be non-zero")]
+    fn zero_width_chunk_panics() {
+        let _ = dna!("ACGTACGTGA").chunks(0);
+    }
+
+    #[test]
+    #[should_panic(expected = "window must be non-zero")]
+    fn zero_width_window_panics() {
+        let _ = dna!("ACGTACGTGA").windows(0);
+    }
 }

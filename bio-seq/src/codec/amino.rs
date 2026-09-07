@@ -62,3 +62,8 @@ impl core::fmt::Display for Amino {
         write!(f, "{}", self.to_char())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    //    use crate::prelude::*;
+}
