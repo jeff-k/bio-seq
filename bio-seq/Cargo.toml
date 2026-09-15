@@ -47,5 +47,9 @@ required-features = ["serde"]
 name = "kmer"
 required-features = ["extra_codecs"]
 
+[[test]]
+name = "codec"
+required-features = ["extra_codecs"]
+
 [package.metadata.docs.rs]
 all-features = true

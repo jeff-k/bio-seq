@@ -499,6 +499,7 @@ mod tests {
     use crate::prelude::*;
     use crate::seq::SeqArray;
 
+    #[cfg(target_pointer_width = "64")]
     #[test]
     #[allow(clippy::cast_sign_loss)]
     fn kmer_to_usize() {
@@ -507,7 +508,7 @@ mod tests {
 
         for (kmer, index) in s.kmers::<2>().zip([0b00_00, 0b01_00, 0b11_01, 0b11_11]) {
             println!("{kmer}");
-            assert_eq!(index as usize, (&kmer).into());
+            assert_eq!(index as usize, usize::from(&kmer));
         }
     }
     #[test]
