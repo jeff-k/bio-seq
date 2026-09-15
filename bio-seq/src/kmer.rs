@@ -463,13 +463,13 @@ impl<const K: usize> ComplementMut for Kmer<codec::dna::Dna, K, usize> {
 
 impl<const K: usize> Complement for Kmer<codec::dna::Dna, K, usize> {}
 
-impl<A: Codec, const K: usize> ReverseMut for Kmer<A, K, usize> {
+impl<A: Codec, const K: usize, S: KmerStorage> ReverseMut for Kmer<A, K, S> {
     fn rev(&mut self) {
         self.rev_blocks();
     }
 }
 
-impl<A: Codec, const K: usize> Reverse for Kmer<A, K, usize> {}
+impl<A: Codec, const K: usize, S: KmerStorage> Reverse for Kmer<A, K, S> {}
 
 impl<const K: usize> ReverseComplementMut for Kmer<codec::dna::Dna, K, usize> {}
 
