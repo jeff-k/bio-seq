@@ -455,13 +455,13 @@ impl<A: Codec, const K: usize> From<Kmer<A, K, usize>> for Seq<A> {
     }
 }
 
-impl<const K: usize> ComplementMut for Kmer<codec::dna::Dna, K, usize> {
+impl<const K: usize, S: KmerStorage> ComplementMut for Kmer<codec::dna::Dna, K, S> {
     fn comp(&mut self) {
         self.complement();
     }
 }
 
-impl<const K: usize> Complement for Kmer<codec::dna::Dna, K, usize> {}
+impl<const K: usize, S: KmerStorage> Complement for Kmer<codec::dna::Dna, K, S> {}
 
 impl<A: Codec, const K: usize, S: KmerStorage> ReverseMut for Kmer<A, K, S> {
     fn rev(&mut self) {
@@ -837,5 +837,31 @@ mod tests {
             Kmer::<Dna, 14>::try_from(seq).unwrap().to_string(),
             "ACACACACACACGT"
         );
+    }
+
+    #[test]
+    fn two_bit_reversal_table() {
+        let generate = std::hint::black_box(super::make_2bit_table as fn() -> [u8; 256]);
+        let table = generate();
+
+        for input in 0u8..=u8::MAX {
+            let mut rem = input;
+            let mut expected = 0u8;
+
+            for _ in 0..4 {
+                expected = (expected << 2) | (rem & 0b11);
+                rem >>= 2;
+            }
+
+            let i = usize::from(input);
+            assert_eq!(table[i], expected, "input={input:#010b}");
+            assert_eq!(super::REV_2BIT[i], expected, "input={input:#010b}");
+        }
+    }
+
+    #[test]
+    fn kmer_is_nonempty() {
+        let k: Kmer<Dna, 1> = "A".parse().unwrap();
+        assert!(!k.is_empty());
     }
 }
