@@ -1,7 +1,12 @@
 use crate::kmer::{REV_2BIT, sealed};
 use bitvec::field::BitField;
 
-use crate::{Ba, Bs};
+use crate::{Ba, Bs, codec::Codec};
+
+const MASK4: usize = usize::MAX / 0x11;
+//const MASK4_32: u32 = 0x0f0f_0f0f;
+const MASK4_64: u64 = 0x0f0f_0f0f_0f0f_0f0f;
+const MASK4_128: u128 = 0x0f0f_0f0f_0f0f_0f0f_0f0f_0f0f_0f0f_0f0f;
 
 impl sealed::KmerStorage for usize {
     const BITS: usize = usize::BITS as usize;
@@ -33,14 +38,24 @@ impl sealed::KmerStorage for usize {
         *self >>= n;
     }
 
-    fn rev_blocks_2(&mut self) {
-        let mut bs = self.swap_bytes().to_le_bytes();
+    fn rev_blocks<A: Codec, const K: usize>(&mut self) {
+        match A::BITS {
+            1 => *self = self.reverse_bits(),
+            2 => {
+                let mut bs = self.swap_bytes().to_le_bytes();
 
-        for b in &mut bs {
-            *b = REV_2BIT[*b as usize];
+                for b in &mut bs {
+                    *b = REV_2BIT[*b as usize];
+                }
+
+                *self = Self::from_le_bytes(bs);
+            }
+            4 => {
+                let bs = self.swap_bytes();
+                *self = ((bs >> 4) & MASK4) | ((bs & MASK4) << 4);
+            }
+            _ => todo!(),
         }
-
-        *self = Self::from_le_bytes(bs);
     }
 }
 
@@ -78,14 +93,24 @@ impl sealed::KmerStorage for u64 {
         }
     }
 
-    fn rev_blocks_2(&mut self) {
-        let mut bs = self.swap_bytes().to_le_bytes();
+    fn rev_blocks<A: Codec, const K: usize>(&mut self) {
+        match A::BITS {
+            1 => *self = self.reverse_bits(),
+            2 => {
+                let mut bs = self.swap_bytes().to_le_bytes();
 
-        for b in &mut bs {
-            *b = REV_2BIT[*b as usize];
+                for b in &mut bs {
+                    *b = REV_2BIT[*b as usize];
+                }
+
+                *self = Self::from_le_bytes(bs);
+            }
+            4 => {
+                let bs = self.swap_bytes();
+                *self = ((bs >> 4) & MASK4_64) | ((bs & MASK4_64) << 4);
+            }
+            _ => todo!(),
         }
-
-        *self = Self::from_le_bytes(bs);
     }
 }
 
@@ -124,12 +149,23 @@ impl sealed::KmerStorage for u128 {
         }
     }
 
-    fn rev_blocks_2(&mut self) {
-        let mut bs = self.swap_bytes().to_le_bytes();
+    fn rev_blocks<A: Codec, const K: usize>(&mut self) {
+        match A::BITS {
+            1 => *self = self.reverse_bits(),
+            2 => {
+                let mut bs = self.swap_bytes().to_le_bytes();
 
-        for b in &mut bs {
-            *b = REV_2BIT[*b as usize];
+                for b in &mut bs {
+                    *b = REV_2BIT[*b as usize];
+                }
+
+                *self = Self::from_le_bytes(bs);
+            }
+            4 => {
+                let bs = self.swap_bytes();
+                *self = ((bs >> 4) & MASK4_128) | ((bs & MASK4_128) << 4);
+            }
+            _ => todo!(),
         }
-        *self = Self::from_le_bytes(bs);
     }
 }

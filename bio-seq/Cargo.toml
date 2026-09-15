@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.15.1"
+version = "0.15.2"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2024"
 description = "Bit packed and well-typed biological sequences"
@@ -42,6 +42,10 @@ required-features = ["extra_codecs"]
 [[example]]
 name = "seq2bin"
 required-features = ["serde"]
+
+[[test]]
+name = "kmer"
+required-features = ["extra_codecs"]
 
 [package.metadata.docs.rs]
 all-features = true

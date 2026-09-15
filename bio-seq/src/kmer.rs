@@ -70,6 +70,7 @@ const REV_2BIT: [u8; 256] = make_2bit_table();
 
 pub(crate) mod sealed {
     use crate::Bs;
+    use crate::codec::Codec;
 
     pub trait KmerStorage: Copy + Clone + PartialEq + std::fmt::Debug {
         const BITS: usize;
@@ -81,7 +82,7 @@ pub(crate) mod sealed {
         fn shiftr(&mut self, n: u32);
 
         fn complement(&mut self, mask: usize);
-        fn rev_blocks_2(&mut self);
+        fn rev_blocks<A: Codec, const K: usize>(&mut self);
     }
 }
 
@@ -216,9 +217,8 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         self.bs.complement(K * A::BITS as usize);
     }
 
-    fn rev_blocks_2(&mut self) {
-        // TODO: assert K == 2
-        self.bs.rev_blocks_2();
+    fn rev_blocks(&mut self) {
+        self.bs.rev_blocks::<A, K>();
         self.bs.shiftr((S::BITS - (A::BITS as usize * K)) as u32);
     }
 }
@@ -465,7 +465,7 @@ impl<const K: usize> Complement for Kmer<codec::dna::Dna, K, usize> {}
 
 impl<A: Codec, const K: usize> ReverseMut for Kmer<A, K, usize> {
     fn rev(&mut self) {
-        self.rev_blocks_2();
+        self.rev_blocks();
     }
 }
 
