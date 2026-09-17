@@ -1,9 +1,9 @@
 use core::ops::{Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 use core::ptr;
 
-use crate::Bs;
 use crate::codec::Codec;
 use crate::seq::SeqSlice;
+use crate::Bs;
 
 impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
     type Output = SeqSlice<A>;
@@ -71,6 +71,7 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, i: usize) -> &Self::Output {
+        assert!(i < self.len(), "sequence index out of bounds");
         let s = i * A::BITS as usize;
         let e = s + A::BITS as usize;
         let bs: *const Bs = ptr::from_ref::<Bs>(&self.bs[s..e]);
