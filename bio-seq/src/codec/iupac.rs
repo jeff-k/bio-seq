@@ -21,6 +21,9 @@
 //! | N | 1 | 1 | 1 | 1 |
 //! | X/- | 0 | 0 | 0 | 0 |
 //!
+//! The gap symbol [`Iupac::X`] (`-`) represents the empty set. In containment
+//! tests, every symbol contains a gap, while a gap contains only another gap.
+//!
 //! This means that we can treat each symbol as a set and we get meaningful bitwise operations:
 //!
 //! ```rust
@@ -209,6 +212,25 @@ mod tests {
             .collect();
 
         assert_eq!(matches, vec![iupac!("GACGT"), iupac!("TATGT")]);
+    }
+
+    #[test]
+    fn iupac_gap_containment() {
+        let gap_array = SeqArray::<Iupac, 1, 1> {
+            _p: core::marker::PhantomData,
+            ba: crate::Ba::default(),
+        };
+        let gap: Seq<Iupac> = gap_array.as_ref().into();
+        assert_eq!(gap, iupac!("-"));
+
+        for symbol in Iupac::items() {
+            let seq: Seq<Iupac> = [symbol].into_iter().collect();
+            assert!(seq.contains(&gap));
+            assert!(seq.as_ref().contains(&gap));
+            assert_eq!(gap.contains(&seq), symbol == Iupac::X);
+            assert_eq!(gap.as_ref().contains(&seq), symbol == Iupac::X);
+            assert_eq!(gap_array.contains(&seq), symbol == Iupac::X);
+        }
     }
 
     #[test]

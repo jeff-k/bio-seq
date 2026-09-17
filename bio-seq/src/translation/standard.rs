@@ -102,7 +102,8 @@ impl PartialTranslationTable<Iupac, Amino> for Standard {
         &self,
         codon: &SeqSlice<Iupac>,
     ) -> Result<Amino, TranslationError<Iupac, Amino>> {
-        if codon.len() != 3 {
+        // Gaps are empty sets and would otherwise match the table's subset checks.
+        if codon.len() != 3 || codon.iter().any(|base| base == Iupac::X) {
             return Err(TranslationError::InvalidCodon(codon.into()));
         }
         for (iupac_set, amino) in IUPAC_TO_AMINO.get_or_init(initialise_iupac_to_amino) {
@@ -124,6 +125,12 @@ impl PartialTranslationTable<Iupac, Amino> for Standard {
     }
 }
 
+/// The standard genetic code.
+///
+/// IUPAC codons must contain exactly three nongap symbols. Codons of any other
+/// length or containing a gap (`Iupac::X`, displayed as `-`) return
+/// [`TranslationError::InvalidCodon`]. Codons whose concrete expansions encode
+/// different amino acids return [`TranslationError::AmbiguousTranslation`].
 pub const STANDARD: Standard = Standard;
 
 #[cfg(test)]
@@ -131,6 +138,92 @@ mod tests {
     use crate::prelude::*;
     use crate::translation::STANDARD;
     use crate::translation::{PartialTranslationTable, TranslationError, TranslationTable};
+
+    fn standard_code_codons() -> [([Dna; 3], Amino); 64] {
+        // NCBI standard genetic code, with each base ordered T, C, A, G:
+        // https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#SG1
+        const AMINOS: &[u8; 64] =
+            b"FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG";
+        let bases = [Dna::T, Dna::C, Dna::A, Dna::G];
+        std::array::from_fn(|i| {
+            (
+                [bases[i / 16], bases[(i / 4) % 4], bases[i % 4]],
+                Amino::try_from_ascii(AMINOS[i]).unwrap(),
+            )
+        })
+    }
+
+    #[test]
+    fn dna_to_amino_matches_standard_code() {
+        for (bases, amino) in standard_code_codons() {
+            let codon: Seq<Dna> = bases.into_iter().collect();
+            assert_eq!(STANDARD.to_amino(&codon), amino, "{codon}");
+        }
+    }
+
+    #[test]
+    fn unambiguous_amino_to_dna() {
+        assert_eq!(STANDARD.to_codon(Amino::M), Ok(dna!("ATG").into()));
+        assert_eq!(STANDARD.to_codon(Amino::W), Ok(dna!("TGG").into()));
+    }
+
+    #[test]
+    fn iupac_gapped_codons_are_invalid() {
+        let symbols: Vec<_> = iupac!("-ACGTRYSWKMBDHVN").iter().collect();
+        let mut checked = 0;
+        for &a in &symbols {
+            for &b in &symbols {
+                for &c in &symbols {
+                    let bases = [a, b, c];
+                    if !bases.contains(&Iupac::X) {
+                        continue;
+                    }
+                    let codon: Seq<Iupac> = bases.into_iter().collect();
+                    assert_eq!(
+                        STANDARD.try_to_amino(&codon),
+                        Err(TranslationError::InvalidCodon(codon.clone())),
+                        "{codon}"
+                    );
+                    checked += 1;
+                }
+            }
+        }
+        assert_eq!(checked, 721);
+    }
+
+    #[test]
+    fn iupac_nongap_codons_match_concrete_expansions() {
+        let reference = standard_code_codons();
+        let symbols: Vec<_> = Iupac::items().filter(|base| *base != Iupac::X).collect();
+        let mut checked = 0;
+        for &a in &symbols {
+            for &b in &symbols {
+                for &c in &symbols {
+                    let bases = [a, b, c];
+                    let mut translations = Vec::new();
+                    for (concrete, amino) in &reference {
+                        if concrete
+                            .iter()
+                            .zip(bases)
+                            .all(|(dna, iupac)| Iupac::from(*dna).to_bits() & iupac.to_bits() != 0)
+                            && !translations.contains(amino)
+                        {
+                            translations.push(*amino);
+                        }
+                    }
+                    let codon: Seq<Iupac> = bases.into_iter().collect();
+                    let expected = match translations.as_slice() {
+                        [] => panic!("No concrete expansions for {codon}"),
+                        [amino] => Ok(*amino),
+                        _ => Err(TranslationError::AmbiguousTranslation(codon.clone())),
+                    };
+                    assert_eq!(STANDARD.try_to_amino(&codon), expected, "{codon}");
+                    checked += 1;
+                }
+            }
+        }
+        assert_eq!(checked, 3375);
+    }
 
     #[test]
     fn dna_to_amino() {
