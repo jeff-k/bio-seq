@@ -15,6 +15,11 @@ macro_rules! codec_tests {
             fn from_invalid_bits_checked() {
                 assert_eq!(None, <$codec>::try_from_bits(255u8));
             }
+
+            #[test]
+            fn from_invalid_ascii_checked() {
+                assert_eq!(None, <$codec>::try_from_ascii(255u8));
+            }
         }
     };
 }

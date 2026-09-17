@@ -78,12 +78,6 @@ const IUPAC_COMPLEMENT_TABLE: [u8; 16] = {
     table
 };
 
-impl From<Iupac> for u8 {
-    fn from(b: Iupac) -> u8 {
-        b as u8
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[bits(4)]
 #[repr(u8)]
@@ -204,16 +198,17 @@ mod tests {
 
     #[test]
     fn iupac_ops() {
-        let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+        let seq = iupac!("AGCTNNCAGTCGACGTATGTASWAGG");
 
-        let pattern = iupac!("AYG");
+        let pattern = iupac!("NAYGN");
+        let missing = iupac!("NATNG");
 
         let matches: Vec<Seq<Iupac>> = seq
             .windows(pattern.len())
-            .filter(|w| pattern.contains(w))
+            .filter(|w| pattern.contains(w) && !missing.contains(w))
             .collect();
 
-        assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")]);
+        assert_eq!(matches, vec![iupac!("GACGT"), iupac!("TATGT")]);
     }
 
     #[test]
