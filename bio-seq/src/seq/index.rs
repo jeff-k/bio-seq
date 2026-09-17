@@ -1,9 +1,9 @@
 use core::ops::{Index, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 use core::ptr;
 
+use crate::Bs;
 use crate::codec::Codec;
 use crate::seq::SeqSlice;
-use crate::Bs;
 
 impl<A: Codec> Index<Range<usize>> for SeqSlice<A> {
     type Output = SeqSlice<A>;
