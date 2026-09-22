@@ -51,5 +51,9 @@ required-features = ["extra_codecs"]
 name = "codec"
 required-features = ["extra_codecs"]
 
+[[test]]
+name = "translation"
+required-features = ["translation"]
+
 [package.metadata.docs.rs]
 all-features = true
