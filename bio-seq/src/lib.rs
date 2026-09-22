@@ -3,91 +3,8 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Bit-packed and well-typed biological sequences
-//!
-//! The strength of rust is that we can safely separate the science (well-typed) and the engineering (bit-packed) of bioinformatics. An incremental benchmark improvement in the reverse complement algorithm should benefit the user of a succinct datastructure without anyone unwillingly learning about endianess.
-//!
-//! Contributions are very welcome. There's lots of low hanging fruit for optimisation and ideally we should only have to write them once!
-//!
-//! ## Sequences
-//!
-//! A [`Seq`](seq::Seq) is a heap allocated [sequence](seq) of symbols that owns its data. A [`SeqSlice`](seq::SeqSlice) is a read-only window into a `Seq`. Static [`SeqArray`s](seq::SeqArray) can be declared with the [`dna!`](macro@dna) and [`iupac!`](macro@iupac) macros but these should be dereferenced as `&'static SeqSlice`s.
-//!
-//! [`Kmer`s](mod@kmer) are shorter, fixed-length sequences. They generally fit in a single register and implement `Copy`. They are used for optimised algorithms on sequences and succinct datastructures. The default implementation uses a `usize` for storage. Using the 2-bit `Dna` encoding a `Kmer<Dna, 32>` occupies 64 bits.
-//!
-//! These sequence types are parameterised with [`Codec`s](`codec`) (e.g. `Seq<Dna>`, `Seq<Amino>`, etc.) that define how symbols are encoded into strings of bits and decoded as readable strings.
-//!
-//! ## Quick start
-//!
-//! Add `bio-seq` to `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! bio-seq = "0.15"
-//! ```
-//!
-//! ```rust
-//! use bio_seq::prelude::*;
-//!
-//! let seq = dna!("ATACGATCGATCGATCGATCCGT");
-//!
-//! // iterate over the 8-mers of the reverse complement
-//! for kmer in seq.to_revcomp().kmers::<8>() {
-//!     println!("{kmer}");
-//! }
-//!
-//! // ACGGATCG
-//! // CGGATCGA
-//! // GGATCGAT
-//! // GATCGATC
-//! // ATCGATCG
-//! // ...
-//! ```
-//!
-//! Sequences are analogous to rust's string types and follow similar dereferencing conventions:
-//!
-//! ```rust
-//! # use bio_seq::prelude::*;
-//! // The `dna!` macro packs a static sequence with 2-bits per symbol at compile time:
-//! let s: &'static str = "hello!";
-//! let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
-//!
-//! // Sequences can also be copied into `Kmer`s:
-//! let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").try_into().unwrap();
-//! // or with the kmer! macro:
-//! let kmer = kmer!("CGCTAGCTACGATCGCAT");
-//!
-//! // `Seq`s can be allocated on the heap like `String`s are:
-//! let s: String = "hello!".into();
-//! let seq: Seq<Dna> = dna!("CGCTAGCTACGATCGCAT").into();
-//!
-//! // Alternatively, a `Seq` can be fallibly encoded at runtime:
-//! let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
-//!
-//! // `&SeqSlice` is analogous to `&str`:
-//! let slice: &str = &s[1..3];
-//! let seqslice: &SeqSlice<Dna> = &seq[2..4];
-//! ```
-//!
-//! ## Bit-packed encodings
-//!
-//! Encodings of genomic symbols are implemented as [`Codec`s](codec). This crate provides four common ones:
-//!   - [`codec::dna`]: 2-bit encoding of the four nucleotides
-//!   - [`codec::text`]: 8-bit ASCII encoding of nucleotides, meant to be compatible with plaintext sequencing data formats
-//!   - [`codec::iupac`]: 4-bit encoding of ambiguous nucleotide identities (the IUPAC ambiguity codes)
-//!   - [`codec::amino`]: 6-bit encoding of amino acids
-//!
-//! Each of these encodings is designed to facilitate common bioinformatics tasks, such as minimising k-mers and implementing succinct datastructures. The [translation] module provides traits and methods for translating between nucleotide and amino acid sequences.
-//!
-//! Custom codecs can also be implemented with the `Codec` trait and derived on specially crafted enums.
-//!
-
+#![doc = include_str!("../README.md")]
 #![warn(clippy::pedantic)]
-#![allow(clippy::must_use_candidate)]
-#![allow(clippy::return_self_not_must_use)]
-#![allow(clippy::module_name_repetitions)]
-// the lint doesn't seem to recognise our implementations
-#![allow(clippy::into_iter_without_iter)]
 //#[cfg(not(target_pointer_width = "64"))]
 //compile_error!("bio-seq currently only supports 64-bit platforms");
 //#![feature(simd_wasm64)]
@@ -162,6 +79,7 @@ where
     /// use bio_seq::prelude::{Dna, Complement};
     /// assert_eq!(Dna::A.to_comp(), Dna::T);
     /// ````
+    #[must_use]
     fn to_comp(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.comp();
@@ -181,6 +99,7 @@ pub trait Reverse: ReverseMut + ToOwned
 where
     <Self as ToOwned>::Owned: ReverseMut,
 {
+    #[must_use]
     fn to_rev(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.rev();
@@ -205,6 +124,7 @@ pub trait ReverseComplement: ReverseComplementMut + ToOwned
 where
     <Self as ToOwned>::Owned: ReverseComplementMut,
 {
+    #[must_use]
     fn to_revcomp(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.revcomp();
@@ -228,11 +148,13 @@ pub trait Maskable: MaskableMut + ToOwned
 where
     <Self as ToOwned>::Owned: MaskableMut,
 {
+    #[must_use]
     fn to_mask(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.mask();
         owned
     }
+    #[must_use]
     fn to_unmask(&self) -> <Self as ToOwned>::Owned {
         let mut owned = self.to_owned();
         owned.unmask();
@@ -259,28 +181,27 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::many_single_char_names)]
     fn into_usize() {
-        let a: usize = dna!("ACGT").to_owned().into_raw()[0];
-        assert_eq!(a, 0b11_10_01_00);
+        let bits: usize = dna!("ACGT").to_owned().into_raw()[0];
+        assert_eq!(bits, 0b11_10_01_00);
 
-        let b: usize = dna!("CGCG").to_owned().into_raw()[0];
-        assert_eq!(b, 0b10_01_10_01);
+        let bits: usize = dna!("CGCG").to_owned().into_raw()[0];
+        assert_eq!(bits, 0b10_01_10_01);
 
-        let c: usize = Seq::from(&vec![T, T]).into();
-        assert_eq!(c, 0b11_11);
+        let bits: usize = Seq::from(&vec![T, T]).into();
+        assert_eq!(bits, 0b11_11);
 
-        let d: usize = Seq::<Dna>::from_str("TCA").unwrap().into();
-        assert_eq!(d, 0b00_01_11);
+        let bits: usize = Seq::<Dna>::from_str("TCA").unwrap().into();
+        assert_eq!(bits, 0b00_01_11);
 
-        let e: usize = Seq::<Dna>::from_str("TGA").unwrap().into();
-        assert_eq!(e, 0b00_10_11);
+        let bits: usize = Seq::<Dna>::from_str("TGA").unwrap().into();
+        assert_eq!(bits, 0b00_10_11);
 
-        let f: usize = Seq::from(&vec![C, G, T, A, C, G, A, T]).into();
-        assert_eq!(f, 0b11_00_10_01_00_11_10_01);
+        let bits: usize = Seq::from(&vec![C, G, T, A, C, G, A, T]).into();
+        assert_eq!(bits, 0b11_00_10_01_00_11_10_01);
 
-        let g: usize = Seq::from(&vec![A]).into();
-        assert_eq!(g, 0b00);
+        let bits: usize = Seq::from(&vec![A]).into();
+        assert_eq!(bits, 0b00);
     }
 
     #[test]
@@ -445,8 +366,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::needless_borrows_for_generic_args)]
-    #[allow(clippy::needless_borrow)]
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "exercise hashing both values and references"
+    )]
     fn hash_characteristics() {
         fn hash<T: Hash>(chunk: T) -> u64 {
             let mut hasher = DefaultHasher::new();
@@ -466,10 +389,10 @@ mod tests {
         let q3 = dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
         let q4 = dna!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
-        let l3: &SeqSlice<Dna> = &q3;
+        let l3: &SeqSlice<Dna> = q3;
         let l3_a: &SeqSlice<Dna> = &q4[1..];
         let l3_b: &SeqSlice<Dna> = &q4[..32];
-        let l4: &SeqSlice<Dna> = &q4;
+        let l4: &SeqSlice<Dna> = q4;
 
         let k1: Kmer<Dna, 32, u64> = s1.try_into().unwrap();
         let k1_a: Kmer<Dna, 32, u64> = s1.try_into().unwrap();
@@ -548,9 +471,14 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::redundant_slicing)]
-    #[allow(clippy::needless_borrow)]
-    #[allow(clippy::similar_names)]
+    #[expect(
+        clippy::redundant_slicing,
+        reason = "exercise equality with full-range indexing"
+    )]
+    #[expect(
+        clippy::similar_names,
+        reason = "names identify sequence variants and k-mer storage widths"
+    )]
     fn sequence_type_equality() {
         let raw_a = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAA";
         let raw_b = "AATTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATAGGACGATCAGCACCATAAGAACAAA";
@@ -630,7 +558,7 @@ mod tests {
         assert_eq!(kmer_ax_32, kmer_bx_32);
         assert_ne!(kmer_ax_32, kmer_x_32);
 
-        let kmer_b_64 = Kmer::<Dna, 64, u128>::from_str(&raw_b).unwrap();
+        let kmer_b_64 = Kmer::<Dna, 64, u128>::from_str(raw_b).unwrap();
         let kmer_cx_64 = Kmer::<Dna, 64, u128>::from_str(&raw_d[..64]).unwrap();
         let kmer_dx_64 = Kmer::<Dna, 64, u128>::from_str(&raw_d[1..]).unwrap();
 

@@ -1,7 +1,7 @@
 use core::fmt;
 use core::result;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ParseBioError {
     UnrecognisedBase(u8),
     MismatchedLength(usize, usize),

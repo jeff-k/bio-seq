@@ -21,6 +21,9 @@
 //! | N | 1 | 1 | 1 | 1 |
 //! | X/- | 0 | 0 | 0 | 0 |
 //!
+//! The gap symbol [`Iupac::X`] (`-`) represents the empty set. In containment
+//! tests, every symbol contains a gap, while a gap contains only another gap.
+//!
 //! This means that we can treat each symbol as a set and we get meaningful bitwise operations:
 //!
 //! ```rust
@@ -78,12 +81,6 @@ const IUPAC_COMPLEMENT_TABLE: [u8; 16] = {
     table
 };
 
-impl From<Iupac> for u8 {
-    fn from(b: Iupac) -> u8 {
-        b as u8
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Codec)]
 #[bits(4)]
 #[repr(u8)]
@@ -119,6 +116,7 @@ impl From<Dna> for Iupac {
 }
 
 impl Seq<Iupac> {
+    #[must_use]
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
             return false;
@@ -129,6 +127,7 @@ impl Seq<Iupac> {
 }
 
 impl<const N: usize, const W: usize> SeqArray<Iupac, N, W> {
+    #[must_use]
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if N != rhs.len() {
             return false;
@@ -138,6 +137,7 @@ impl<const N: usize, const W: usize> SeqArray<Iupac, N, W> {
 }
 
 impl SeqSlice<Iupac> {
+    #[must_use]
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if self.len() != rhs.len() {
             return false;
@@ -204,16 +204,36 @@ mod tests {
 
     #[test]
     fn iupac_ops() {
-        let seq = iupac!("AGCTNNCAGTCGACGTATGTA");
+        let seq = iupac!("AGCTNNCAGTCGACGTATGTASWAGG");
 
-        let pattern = iupac!("AYG");
+        let pattern = iupac!("NAYGN");
+        let missing = iupac!("NATNG");
 
         let matches: Vec<Seq<Iupac>> = seq
             .windows(pattern.len())
-            .filter(|w| pattern.contains(w))
+            .filter(|w| pattern.contains(w) && !missing.contains(w))
             .collect();
 
-        assert_eq!(matches, vec![iupac!("ACG"), iupac!("ATG")]);
+        assert_eq!(matches, vec![iupac!("GACGT"), iupac!("TATGT")]);
+    }
+
+    #[test]
+    fn iupac_gap_containment() {
+        let gap_array = SeqArray::<Iupac, 1, 1> {
+            _p: core::marker::PhantomData,
+            ba: crate::Ba::default(),
+        };
+        let gap: Seq<Iupac> = gap_array.as_ref().into();
+        assert_eq!(gap, iupac!("-"));
+
+        for symbol in Iupac::items() {
+            let seq: Seq<Iupac> = std::iter::once(symbol).collect();
+            assert!(seq.contains(&gap));
+            assert!(seq.as_ref().contains(&gap));
+            assert_eq!(gap.contains(&seq), symbol == Iupac::X);
+            assert_eq!(gap.as_ref().contains(&seq), symbol == Iupac::X);
+            assert_eq!(gap_array.contains(&seq), symbol == Iupac::X);
+        }
     }
 
     #[test]

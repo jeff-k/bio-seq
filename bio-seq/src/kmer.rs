@@ -27,9 +27,6 @@
 //! let kmer: Kmer<Dna, 8> = dna!("AGTTGGCA").try_into().unwrap();
 //! ```
 
-// storage types wider than usize are deliberately narrowed
-#![allow(clippy::cast_possible_truncation)]
-
 use crate::Bs;
 use crate::codec::{self, Codec};
 use crate::prelude::ParseBioError;
@@ -55,10 +52,15 @@ const fn make_2bit_table() -> [u8; 256] {
     let mut table = [0u8; 256];
     let mut i: usize = 0;
     while i < 256 {
-        let b0: u8 = (i as u8 & 0b11_00_00_00) >> 6;
-        let b1: u8 = (i as u8 & 0b00_11_00_00) >> 2;
-        let b2: u8 = (i as u8 & 0b00_00_11_00) << 2;
-        let b3: u8 = (i as u8 & 0b00_00_00_11) << 6;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the loop bounds i below 256"
+        )]
+        let byte = i as u8;
+        let b0: u8 = (byte & 0b11_00_00_00) >> 6;
+        let b1: u8 = (byte & 0b00_11_00_00) >> 2;
+        let b2: u8 = (byte & 0b00_00_11_00) << 2;
+        let b3: u8 = (byte & 0b00_00_00_11) << 6;
 
         table[i] = b3 | b2 | b1 | b0;
         i += 1;
@@ -70,6 +72,7 @@ const REV_2BIT: [u8; 256] = make_2bit_table();
 
 pub(crate) mod sealed {
     use crate::Bs;
+    use crate::codec::Codec;
 
     pub trait KmerStorage: Copy + Clone + PartialEq + std::fmt::Debug {
         const BITS: usize;
@@ -81,7 +84,7 @@ pub(crate) mod sealed {
         fn shiftr(&mut self, n: u32);
 
         fn complement(&mut self, mask: usize);
-        fn rev_blocks_2(&mut self);
+        fn rev_blocks<A: Codec, const K: usize>(&mut self);
     }
 }
 
@@ -131,16 +134,19 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
 
     const BITS: usize = K * A::BITS as usize;
 
-    pub fn len(&self) -> usize {
+    #[must_use]
+    pub const fn len(&self) -> usize {
         K
     }
 
-    pub fn is_empty(&self) -> bool {
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
         // This is recommended by clippy since we have `len`
         // Kmers are never empty if K > 0
         false
     }
 
+    #[must_use]
     pub fn rotated_left(&self, n: u32) -> Self {
         let n: usize = (n as usize % K) * A::BITS as usize;
         let mut ba = self.bs.to_bitarray();
@@ -153,6 +159,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         }
     }
 
+    #[must_use]
     pub fn rotated_right(&self, n: u32) -> Self {
         let n: usize = (n as usize % K) * A::BITS as usize;
         let mut ba = self.bs.to_bitarray();
@@ -174,6 +181,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     /// let k = kmer!("ACGAT");
     /// assert_eq!(k.pushr(Dna::T).to_string(), "CGATT");
     /// ```
+    #[must_use]
     pub fn pushr(self, base: A) -> Self {
         let mut ba = self.rotated_left(1).bs.to_bitarray();
         let bs: &mut Bs = ba.as_mut();
@@ -190,6 +198,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     }
 
     /// Push a base from the left
+    #[must_use]
     pub fn pushl(self, base: A) -> Self {
         let mut ba = self.rotated_right(1).bs.to_bitarray();
         let bs: &mut Bs = ba.as_mut();
@@ -203,6 +212,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
     }
 
     /// Create Kmer from sequence without checking length
+    #[must_use]
     pub fn unsafe_from_seqslice(seq: &SeqSlice<A>) -> Self {
         Self::assert_k();
         debug_assert!(K == seq.len(), "K != seq.len()");
@@ -216,10 +226,10 @@ impl<A: Codec, const K: usize, S: KmerStorage> Kmer<A, K, S> {
         self.bs.complement(K * A::BITS as usize);
     }
 
-    fn rev_blocks_2(&mut self) {
-        // TODO: assert K == 2
-        self.bs.rev_blocks_2();
-        self.bs.shiftr((S::BITS - (A::BITS as usize * K)) as u32);
+    fn rev_blocks(&mut self) {
+        self.bs.rev_blocks::<A, K>();
+        let shift = u32::try_from(S::BITS - Self::BITS).expect("k-mer storage is at most 128 bits");
+        self.bs.shiftr(shift);
     }
 }
 
@@ -300,6 +310,7 @@ impl<A: Codec, const K: usize, S: KmerStorage> fmt::Display for Kmer<A, K, S> {
 }
 
 /// An iterator over all kmers of a sequence with a specified length
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct KmerIter<'a, A: Codec, const K: usize> {
     pub(crate) slice: &'a SeqSlice<A>,
     pub(crate) index: usize,
@@ -455,21 +466,21 @@ impl<A: Codec, const K: usize> From<Kmer<A, K, usize>> for Seq<A> {
     }
 }
 
-impl<const K: usize> ComplementMut for Kmer<codec::dna::Dna, K, usize> {
+impl<const K: usize, S: KmerStorage> ComplementMut for Kmer<codec::dna::Dna, K, S> {
     fn comp(&mut self) {
         self.complement();
     }
 }
 
-impl<const K: usize> Complement for Kmer<codec::dna::Dna, K, usize> {}
+impl<const K: usize, S: KmerStorage> Complement for Kmer<codec::dna::Dna, K, S> {}
 
-impl<A: Codec, const K: usize> ReverseMut for Kmer<A, K, usize> {
+impl<A: Codec, const K: usize, S: KmerStorage> ReverseMut for Kmer<A, K, S> {
     fn rev(&mut self) {
-        self.rev_blocks_2();
+        self.rev_blocks();
     }
 }
 
-impl<A: Codec, const K: usize> Reverse for Kmer<A, K, usize> {}
+impl<A: Codec, const K: usize, S: KmerStorage> Reverse for Kmer<A, K, S> {}
 
 impl<const K: usize> ReverseComplementMut for Kmer<codec::dna::Dna, K, usize> {}
 
@@ -499,15 +510,15 @@ mod tests {
     use crate::prelude::*;
     use crate::seq::SeqArray;
 
+    #[cfg(target_pointer_width = "64")]
     #[test]
-    #[allow(clippy::cast_sign_loss)]
     fn kmer_to_usize() {
         let s: &'static SeqSlice<Dna> = dna!("AACTT");
         println!("{s}");
 
         for (kmer, index) in s.kmers::<2>().zip([0b00_00, 0b01_00, 0b11_01, 0b11_11]) {
             println!("{kmer}");
-            assert_eq!(index as usize, (&kmer).into());
+            assert_eq!(index, usize::from(&kmer));
         }
     }
     #[test]
@@ -543,14 +554,13 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::cast_sign_loss)]
     fn amino_kmer_to_usize() {
         for (kmer, index) in Seq::<Amino>::try_from("SRY")
             .unwrap()
             .kmers::<2>()
             .zip([0b0010_0001_1000, 0b0100_1100_1000])
         {
-            assert_eq!(index as usize, usize::from(&kmer));
+            assert_eq!(index, usize::from(&kmer));
         }
     }
     #[test]
@@ -586,7 +596,7 @@ mod tests {
     fn test_rotations() {
         let kmer: Kmer<Dna, 9> = Kmer::try_from(dna!("ACTGCGATG")).unwrap();
 
-        for (shift, rotation) in vec![
+        for (rotation, shift) in [
             "ACTGCGATG",
             "CTGCGATGA",
             "TGCGATGAC",
@@ -601,13 +611,12 @@ mod tests {
             "TGCGATGAC",
         ]
         .into_iter()
-        .enumerate()
+        .zip(0u32..)
         {
-            //            println!("{} {} {}", shift, kmer.rotated_left(shift as u32), rotation);
-            assert_eq!(kmer.rotated_left(shift as u32), rotation);
+            assert_eq!(kmer.rotated_left(shift), rotation);
         }
 
-        for (shift, rotation) in vec![
+        for (rotation, shift) in [
             "ACTGCGATG",
             "GACTGCGAT",
             "TGACTGCGA",
@@ -621,10 +630,9 @@ mod tests {
             "GACTGCGAT",
         ]
         .into_iter()
-        .enumerate()
+        .zip(0u32..)
         {
-            //            println!("{} {} {}", shift, kmer.rotated_right(shift as u32), rotation);
-            assert_eq!(kmer.rotated_right(shift as u32), rotation);
+            assert_eq!(kmer.rotated_right(shift), rotation);
         }
 
         let kmer: Kmer<Dna, 8> = Kmer::try_from(dna!("ACTGCGAT")).unwrap().rotated_left(1);
@@ -757,7 +765,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::needless_borrow)]
     fn kmer_storage_types() {
         let s1 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAAA";
         let s2 = "AACGTAGCCGCGAACTTACGTAGCCGCGAAA";
@@ -772,15 +779,15 @@ mod tests {
         assert_eq!(s4.len(), 64);
         assert_eq!(s5.len(), 65);
 
-        let kmer1_64 = Kmer::<Dna, 32, u64>::from_str(&s1).unwrap();
-        let kmer2_64 = Kmer::<Dna, 31, u64>::from_str(&s2).unwrap();
-        let kmer3_64 = Kmer::<Dna, 31, u64>::from_str(&s3).unwrap();
+        let kmer1_64 = Kmer::<Dna, 32, u64>::from_str(s1).unwrap();
+        let kmer2_64 = Kmer::<Dna, 31, u64>::from_str(s2).unwrap();
+        let kmer3_64 = Kmer::<Dna, 31, u64>::from_str(s3).unwrap();
 
-        let kmer1 = Kmer::<Dna, 32, u64>::from_str(&s1).unwrap();
-        let kmer2 = Kmer::<Dna, 31, u64>::from_str(&s2).unwrap();
-        let kmer3 = Kmer::<Dna, 31, u64>::from_str(&s3).unwrap();
+        let kmer1 = Kmer::<Dna, 32, u64>::from_str(s1).unwrap();
+        let kmer2 = Kmer::<Dna, 31, u64>::from_str(s2).unwrap();
+        let kmer3 = Kmer::<Dna, 31, u64>::from_str(s3).unwrap();
 
-        let kmer4_128 = Kmer::<Dna, 64, u128>::from_str(&s4).unwrap();
+        let kmer4_128 = Kmer::<Dna, 64, u128>::from_str(s4).unwrap();
 
         let seq5: Seq<Dna> = s5.try_into().unwrap();
 
@@ -837,5 +844,31 @@ mod tests {
             Kmer::<Dna, 14>::try_from(seq).unwrap().to_string(),
             "ACACACACACACGT"
         );
+    }
+
+    #[test]
+    fn two_bit_reversal_table() {
+        let generate = std::hint::black_box(super::make_2bit_table as fn() -> [u8; 256]);
+        let table = generate();
+
+        for input in 0u8..=u8::MAX {
+            let mut rem = input;
+            let mut expected = 0u8;
+
+            for _ in 0..4 {
+                expected = (expected << 2) | (rem & 0b11);
+                rem >>= 2;
+            }
+
+            let i = usize::from(input);
+            assert_eq!(table[i], expected, "input={input:#010b}");
+            assert_eq!(super::REV_2BIT[i], expected, "input={input:#010b}");
+        }
+    }
+
+    #[test]
+    fn kmer_is_nonempty() {
+        let k: Kmer<Dna, 1> = "A".parse().unwrap();
+        assert!(!k.is_empty());
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "bio-seq"
-version = "0.15.1"
+version = "0.15.2"
 authors = ["jeff-k <jeff_k@fastmail.com>"]
 edition = "2024"
 description = "Bit packed and well-typed biological sequences"
@@ -9,7 +9,7 @@ documentation = "https://docs.rs/bio-seq"
 license = "MIT"
 keywords = ["bioinformatics", "genomics", "kmer", "dna", "sequence"]
 categories = ["science::bioinformatics", "science::bioinformatics::genomics", "science::bioinformatics::proteomics", "science::bioinformatics::sequence-analysis"]
-readme = "../README.md"
+readme = "README.md"
 rust-version = "1.95"
 
 [dev-dependencies]
@@ -42,6 +42,18 @@ required-features = ["extra_codecs"]
 [[example]]
 name = "seq2bin"
 required-features = ["serde"]
+
+[[test]]
+name = "kmer"
+required-features = ["extra_codecs"]
+
+[[test]]
+name = "codec"
+required-features = ["extra_codecs"]
+
+[[test]]
+name = "translation"
+required-features = ["translation"]
 
 [package.metadata.docs.rs]
 all-features = true

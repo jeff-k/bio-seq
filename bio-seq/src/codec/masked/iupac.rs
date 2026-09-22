@@ -68,7 +68,6 @@ pub enum Iupac {
     XMasked = 0b00100,
 }
 
-#[allow(clippy::cast_possible_truncation)]
 impl ComplementMut for Iupac {
     /// This representation can be complemented by reversing the bit pattern
     fn comp(&mut self) {

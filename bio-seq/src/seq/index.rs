@@ -71,6 +71,7 @@ impl<A: Codec> Index<usize> for SeqSlice<A> {
     type Output = SeqSlice<A>;
 
     fn index(&self, i: usize) -> &Self::Output {
+        assert!(i < self.len(), "sequence index out of bounds");
         let s = i * A::BITS as usize;
         let e = s + A::BITS as usize;
         let bs: *const Bs = ptr::from_ref::<Bs>(&self.bs[s..e]);

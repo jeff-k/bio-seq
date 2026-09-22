@@ -168,10 +168,12 @@ pub trait Codec: fmt::Debug + Copy + Clone + PartialEq + Hash + Eq {
 
 #[cfg(test)]
 mod tests {
+    use crate::ComplementMut;
+    #[cfg(feature = "extra_codecs")]
+    use crate::MaskableMut;
     use crate::codec::{Codec, amino, dna::Dna, iupac::Iupac, text};
     #[cfg(feature = "extra_codecs")]
     use crate::codec::{degenerate, masked};
-    use crate::{ComplementMut, MaskableMut};
 
     fn check_codec<C: Codec>() {
         for symbol in C::items() {
@@ -191,6 +193,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "extra_codecs")]
     fn check_mask_comp<C: Codec + ComplementMut + MaskableMut>() {
         for symbol in C::items() {
             let mut symcomp = symbol;

@@ -10,6 +10,7 @@ use core::iter::Chain;
 use core::marker::PhantomData;
 
 /// An iterator over fixed-size non-overlapping chunks of a sequence
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SeqChunks<'a, A: Codec> {
     slice: &'a SeqSlice<A>,
     width: usize,
@@ -18,6 +19,7 @@ pub struct SeqChunks<'a, A: Codec> {
 }
 
 /// An iterator over the elements of a sequence
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct SeqIter<'a, A: Codec> {
     slice: &'a SeqSlice<A>,
     index: usize,
@@ -104,6 +106,7 @@ impl<'a, A: Codec> SeqSlice<A> {
 }
 
 /// An iterator over the elements of a sequence in reverse order
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct RevIter<'a, A: Codec> {
     pub(crate) slice: &'a SeqSlice<A>,
     pub(crate) index: usize,
