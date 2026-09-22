@@ -187,14 +187,11 @@ impl<A: Codec, B: Codec> PartialTranslationTable<A, B> for CodonTable<A, B> {
     }
 
     fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError<A, B>> {
-        if let Some(codon) = self.inverse_table.get(&amino) {
-            match codon {
-                Some(codon) => Ok(codon.clone()),
-                None => Err(TranslationError::AmbiguousCodon(amino)),
-            }
-        } else {
-            Err(TranslationError::InvalidAmino(amino))
-        }
+        self.inverse_table
+            .get(&amino)
+            .ok_or(TranslationError::InvalidAmino(amino))?
+            .clone()
+            .ok_or(TranslationError::AmbiguousCodon(amino))
     }
 }
 

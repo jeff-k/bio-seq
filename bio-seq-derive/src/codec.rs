@@ -12,7 +12,10 @@ use syn::punctuated::Punctuated;
 
 /// Allow the user to request more bits than used by their encodings
 pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Result<u8, syn::Error> {
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the bit width of a u8 is at most 8"
+    )]
     let min_width = (max_variant.bit_width()).max(1) as u8;
     for attr in attrs {
         if attr.path().is_ident("bits") {
@@ -20,8 +23,7 @@ pub(crate) fn parse_width(attrs: &Vec<syn::Attribute>, max_variant: u8) -> Resul
                 Ok(w) => {
                     let chosen_width = w.base10_parse::<u8>()?;
                     // test whether the specified width is too small or large
-                    #[allow(clippy::cast_possible_truncation)]
-                    if chosen_width > u8::BITS as u8 {
+                    if u32::from(chosen_width) > u8::BITS {
                         Err(syn::Error::new_spanned(
                             attr,
                             "Codec bit width cannot exceed 8",

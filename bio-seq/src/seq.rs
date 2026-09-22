@@ -73,6 +73,7 @@ impl<A: Codec> Default for Seq<A> {
 }
 
 impl<A: Codec> Seq<A> {
+    #[must_use]
     pub fn new() -> Self {
         Seq {
             _p: PhantomData,
@@ -128,6 +129,7 @@ impl<A: Codec> Seq<A> {
             .collect()
     }
 
+    #[must_use]
     pub fn with_capacity(len: usize) -> Self {
         Seq {
             _p: PhantomData,
@@ -135,6 +137,7 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    #[must_use]
     pub fn bit_and(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
@@ -142,6 +145,7 @@ impl<A: Codec> Seq<A> {
         }
     }
 
+    #[must_use]
     pub fn bit_or(self, rhs: Seq<A>) -> Seq<A> {
         Seq::<A> {
             _p: PhantomData,
@@ -260,6 +264,7 @@ impl<A: Codec> Seq<A> {
     /// let seq: Option<Seq<Dna>> = Seq::from_raw(36, &ints);
     /// assert_eq!(seq.unwrap(), dna!("TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCACGT"));
     /// ```
+    #[must_use]
     pub fn from_raw(len: usize, bits: &[usize]) -> Option<Self> {
         let mut bv: Bv = Bv::from_slice(bits);
         let bit_len = len.checked_mul(A::BITS as usize)?;
@@ -282,6 +287,7 @@ impl<A: Codec> Seq<A> {
     /// assert_eq!(ints[0], 0b0101010101010101010101010101010111111111111111111111111111111111);
     /// assert_eq!(ints[1], 0b11100100); // ACGT
     /// ```
+    #[must_use]
     pub fn into_raw(&self) -> &[usize] {
         self.bv.as_raw_slice()
     }
@@ -480,27 +486,22 @@ impl<A: Codec> From<&Vec<A>> for Seq<A> {
     }
 }
 
-impl<A: Codec, B: Codec> From<&SeqSlice<A>> for Seq<B>
-where
-    A: Into<B>,
-{
+impl<A: Codec + Into<B>, B: Codec> From<&SeqSlice<A>> for Seq<B> {
     fn from(slice: &SeqSlice<A>) -> Self {
         slice.iter().map(Into::into).collect()
     }
 }
 
-impl<A: Codec, B: Codec, const N: usize, const W: usize> From<&SeqArray<A, N, W>> for Seq<B>
-where
-    A: Into<B>,
+impl<A: Codec + Into<B>, B: Codec, const N: usize, const W: usize> From<&SeqArray<A, N, W>>
+    for Seq<B>
 {
     fn from(slice: &SeqArray<A, N, W>) -> Self {
         slice.iter().map(Into::into).collect()
     }
 }
 
-impl<A: Codec, B: Codec, const N: usize, const W: usize> From<SeqArray<A, N, W>> for Seq<B>
-where
-    A: Into<B>,
+impl<A: Codec + Into<B>, B: Codec, const N: usize, const W: usize> From<SeqArray<A, N, W>>
+    for Seq<B>
 {
     fn from(slice: SeqArray<A, N, W>) -> Self {
         slice.iter().map(Into::into).collect()
@@ -675,7 +676,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::redundant_slicing)]
+    #[expect(clippy::redundant_slicing, reason = "exercise full-range indexing")]
     fn slice_index_owned() {
         let seq = dna!("GCTCGATCACT");
 
@@ -688,7 +689,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::redundant_slicing)]
+    #[expect(clippy::redundant_slicing, reason = "exercise full-range indexing")]
     fn slice_indexing() {
         let seq = dna!("TGCATCGAT");
 
@@ -708,7 +709,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::redundant_slicing)]
+    #[expect(clippy::redundant_slicing, reason = "exercise full-range indexing")]
     fn slice_index_ranges() {
         let s1: &'static SeqSlice<Dna> = dna!("ACGACTGATCGA");
         let s2: &'static SeqSlice<Dna> = dna!("TCGAACGACTGA");
@@ -739,7 +740,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::redundant_slicing)]
+    #[expect(clippy::redundant_slicing, reason = "exercise full-range indexing")]
     fn slice_rangeto_and_full() {
         let s1 = dna!("ATCGACTAGCATGCTACG");
         let s2 = dna!("ATCGACTAG");
@@ -890,7 +891,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::explicit_auto_deref)]
+    #[expect(
+        clippy::explicit_auto_deref,
+        reason = "exercise the Deref implementation"
+    )]
     fn test_deref() {
         let seq: Seq<Dna> = dna!("AGAATGATCG").into();
         let slice: &SeqSlice<Dna> = &*seq;
@@ -1022,7 +1026,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::similar_names)]
+    #[expect(
+        clippy::similar_names,
+        reason = "names identify the source sequence and slice variant"
+    )]
     fn test_seq_slice_eq() {
         let seq1: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTA".try_into().unwrap();
         let seq2: Seq<Dna> = "ACGTAAAAAAAAAAAAACGTAAAACCCCGGGGTTTTAA".try_into().unwrap();

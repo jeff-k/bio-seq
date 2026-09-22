@@ -116,6 +116,7 @@ impl From<Dna> for Iupac {
 }
 
 impl Seq<Iupac> {
+    #[must_use]
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if rhs.len() != self.len() {
             return false;
@@ -126,6 +127,7 @@ impl Seq<Iupac> {
 }
 
 impl<const N: usize, const W: usize> SeqArray<Iupac, N, W> {
+    #[must_use]
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if N != rhs.len() {
             return false;
@@ -135,6 +137,7 @@ impl<const N: usize, const W: usize> SeqArray<Iupac, N, W> {
 }
 
 impl SeqSlice<Iupac> {
+    #[must_use]
     pub fn contains(&self, rhs: &SeqSlice<Iupac>) -> bool {
         if self.len() != rhs.len() {
             return false;
@@ -224,7 +227,7 @@ mod tests {
         assert_eq!(gap, iupac!("-"));
 
         for symbol in Iupac::items() {
-            let seq: Seq<Iupac> = [symbol].into_iter().collect();
+            let seq: Seq<Iupac> = std::iter::once(symbol).collect();
             assert!(seq.contains(&gap));
             assert!(seq.as_ref().contains(&gap));
             assert_eq!(gap.contains(&seq), symbol == Iupac::X);

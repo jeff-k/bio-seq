@@ -72,8 +72,8 @@ impl sealed::KmerStorage for u64 {
     #[cfg(target_pointer_width = "32")]
     fn to_bitarray(self) -> Self::BaN {
         Self::BaN::new([
-            (self & 0xFFFFFFFF) as usize,
-            ((self >> 32) & 0xFFFFFFFF) as usize,
+            (self & 0xFFFF_FFFF) as usize,
+            ((self >> 32) & 0xFFFF_FFFF) as usize,
         ])
     }
 
@@ -119,6 +119,10 @@ impl sealed::KmerStorage for u128 {
     type BaN = Ba<{ (Self::BITS / usize::BITS) as usize }>;
 
     #[cfg(target_pointer_width = "64")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "split the u128 into its low and high 64-bit words"
+    )]
     fn to_bitarray(self) -> Self::BaN {
         Self::BaN::new([self as usize, (self >> 64) as usize])
     }
@@ -126,10 +130,10 @@ impl sealed::KmerStorage for u128 {
     #[cfg(target_pointer_width = "32")]
     fn to_bitarray(self) -> Self::BaN {
         Self::BaN::new([
-            (self & 0xFFFFFFFF) as usize,
-            ((self >> 32) & 0xFFFFFFFF) as usize,
-            ((self >> 64) & 0xFFFFFFFF) as usize,
-            ((self >> 96) & 0xFFFFFFFF) as usize,
+            (self & 0xFFFF_FFFF) as usize,
+            ((self >> 32) & 0xFFFF_FFFF) as usize,
+            ((self >> 64) & 0xFFFF_FFFF) as usize,
+            ((self >> 96) & 0xFFFF_FFFF) as usize,
         ])
     }
 

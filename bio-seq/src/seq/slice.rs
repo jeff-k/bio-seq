@@ -57,15 +57,18 @@ impl<A: Codec> From<&SeqSlice<A>> for u8 {
 
 impl<A: Codec> SeqSlice<A> {
     /// unsafely index into the `i`th position of a sequence
+    #[must_use]
     pub fn nth(&self, i: usize) -> A {
         A::unsafe_from_bits(self[i].into())
     }
 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.bs.len() / A::BITS as usize
     }
 
     /// Get the `i`th element of a `Seq`. Returns `None` if index out of range.
+    #[must_use]
     pub fn get(&self, i: usize) -> Option<A> {
         if i >= self.bs.len() / A::BITS as usize {
             None
@@ -74,6 +77,7 @@ impl<A: Codec> SeqSlice<A> {
         }
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

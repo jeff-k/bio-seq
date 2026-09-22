@@ -9,7 +9,7 @@ documentation = "https://docs.rs/bio-seq"
 license = "MIT"
 keywords = ["bioinformatics", "genomics", "kmer", "dna", "sequence"]
 categories = ["science::bioinformatics", "science::bioinformatics::genomics", "science::bioinformatics::proteomics", "science::bioinformatics::sequence-analysis"]
-readme = "../README.md"
+readme = "README.md"
 rust-version = "1.95"
 
 [dev-dependencies]
