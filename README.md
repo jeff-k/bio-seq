@@ -4,9 +4,11 @@
 
 ### Bit-packed and well-typed biological sequences
 
-[![Docs.rs](https://docs.rs/bio-seq/badge.svg)](https://docs.rs/bio-seq)
-[![CI status](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml/badge.svg)](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml)
-[![codecov](https://codecov.io/gh/jeff-k/bio-seq/graph/badge.svg?token=8KUETH9JVT)](https://codecov.io/gh/jeff-k/bio-seq)
+[![Crates.io](https://img.shields.io/crates/v/bio-seq)](https://crates.io/crates/bio-seq)
+[![Downloads](https://img.shields.io/crates/d/bio-seq)](https://crates.io/crates/bio-seq)
+[![Docs.rs](https://img.shields.io/docsrs/bio-seq)](https://docs.rs/bio-seq)
+[![CI](https://img.shields.io/github/actions/workflow/status/jeff-k/bio-seq/rust.yml?branch=main)](https://github.com/jeff-k/bio-seq/actions/workflows/rust.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/jeff-k/bio-seq)](https://codecov.io/gh/jeff-k/bio-seq)
 
 </div>
 
@@ -47,12 +49,14 @@ for kmer in seq.to_revcomp().kmers::<8>() {
 Sequences are analogous to rust's string types and follow similar dereferencing conventions:
 
 ```rust
+use bio_seq::prelude::*;
+
 // Static sequences behave like static string literals:
 let s: &'static str = "hello!";
 let seq: &'static SeqSlice<Dna> = dna!("CGCTAGCTACGATCGCAT");
 
 // Sequences can also be copied as `Kmer`s:
-let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").try_into()?;
+let kmer: Kmer<Dna, 18> = dna!("CGCTAGCTACGATCGCAT").try_into().unwrap();
 // or with the kmer! macro:
 let kmer = kmer!("CGCTAGCTACGATCGCAT");
 
@@ -61,7 +65,7 @@ let s: String = "hello!".into();
 let seq: Seq<Dna> = dna!("CGCTAGCTACGATCGCAT").into();
 
 // Alternatively, a `Seq` can be fallibly encoded at runtime:
-let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into()?;
+let seq: Seq<Dna> = "CGCTAGCTACGATCGCAT".try_into().unwrap();
 
 // `&SeqSlice`s are analogous to `&str`, `String` slices:
 let slice: &str = &s[1..3];
@@ -70,19 +74,23 @@ let seqslice: &SeqSlice<Dna> = &seq[2..4];
 
 Sequences can be read from popular third-party crates like [noodles](https://crates.io/crates/noodles):
 
-```rust
-let mut reader = noodles::fasta::Reader::new(BufReader::new(fasta));
+```rust,no_run
+use bio_seq::prelude::*;
+use noodles::fasta;
 
-for result in reader.records() {
-    let record = result?;
-    let seq: Seq<Dna> = record
-        .sequence()
-        .as_ref()
-        .try_into()
-        .unwrap();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut reader = fasta::io::reader::Builder.build_from_path("sequences.fa")?;
 
-    // ...
+    for result in reader.records() {
+        let record = result?;
+        let seq: Seq<Dna> = record.sequence().as_ref().try_into()?;
+
+        // ...
+    }
+
+    Ok(())
 }
+
 ```
 
 ## Application examples
@@ -110,7 +118,7 @@ Contributions and suggestions are very much welcome. Check out the [Roadmap](htt
 
 ## [Sequences](https://docs.rs/bio-seq/latest/bio_seq/seq)
 
-Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, `Seq`s are stored on the heap and implement `Clone`, `SeqSlice`s are unsized views.
+Strings of encoded symbols are packed into [`Seq`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.Seq.html). Slicing, chunking, and windowing return [`SeqSlice`](https://docs.rs/bio-seq/latest/bio_seq/seq/struct.SeqSlice.html). `Seq<A: Codec>` and `&SeqSlice<A: Codec>` are analogous to `String` and `&str`. As with the standard string types, `Seq`s are stored on the heap and implement `Clone`, `SeqSlice`s are unsized views. Static `SeqArrays` are currently constructed by `dna!`/`iupac!` macros and should be dereferenced as `&'static SeqSlice`.
 
 ## [Kmers](https://docs.rs/bio-seq/latest/bio_seq/kmer)
 
@@ -119,12 +127,14 @@ kmers are short sequences of length `K` that generally fit into a register (e.g.
 All data is stored little-endian. This affects the order that sequences map to the integers:
 
 ```rust
+use bio_seq::prelude::*;
+
 for i in 0..=15 {
     println!("{}: {}", i, Kmer::<Dna, 5>::from(i));
 }
 ```
 
-```
+```text
 0: AAAAA
 1: CAAAA
 2: GAAAA
@@ -133,14 +143,7 @@ for i in 0..=15 {
 5: CCAAA
 6: GCAAA
 7: TCAAA
-8: AGAAA
-9: CGAAA
-10: GGAAA
-11: TGAAA
-12: ATAAA
-13: CTAAA
-14: GTAAA
-15: TTAAA
+...
 ```
 
 ### Succinct encodings
@@ -148,6 +151,9 @@ for i in 0..=15 {
 A lookup table can be indexed in constant time by treating kmers directly as `usize`:
 
 ```rust
+use bio_seq::prelude::*;
+use std::marker::PhantomData;
+
 struct Histogram<C: Codec, const K: usize> {
     counts: Vec<usize>,
     _p: PhantomData<C>,
@@ -179,50 +185,37 @@ impl<C: Codec, const K: usize> Histogram<C, K> {
 The [2-bit representation](https://docs.rs/bio-seq/latest/bio_seq/codec/dna) of nucleotides is ordered `A < C < G < T`. Sequences and kmers are stored little-endian and are ordered "colexicographically". This means that `AAAA` < `CAAA` < `GAAA` < `...` < `AAAC` < `...` < `TTTT`:
 
 ```rust
+use bio_seq::prelude::*;
+
 let seq = dna!("GCTCGATCGTAAAAAATCGTATT");
 let minimiser = seq.kmers::<8>().min().unwrap();
 
 assert_eq!(minimiser, dna!("GTAAAAAA"));
 ```
 
-### Hashing
+### Hashing and minimisers
 
 `Hash` is implemented for sequence and kmer types so equal values of these types will hash identically:
 
 ```rust
+use bio_seq::prelude::*;
+use std::cmp::min;
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 fn hash<T: Hash>(seq: T) -> u64 {
     let mut hasher = DefaultHasher::new();
     seq.hash(&mut hasher);
     hasher.finish()
 }
 
-let seq_arr: &'static SeqSlice<Dna> = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
-let seq: Seq<Dna> = seq_arr.into();
-let seq_slice: &SeqSlice<Dna> = &seq;
-let kmer: Kmer<Dna, 32> = seq_arr.try_into()?;
+let seq = dna!("AGCGCTAGTCGTACTGCCGCATCGCTAGCGCT");
 
-assert_eq!(hash(seq_arr), hash(&seq));
-assert_eq!(hash(&seq), hash(&seq_slice));
-assert_eq!(hash(&seq_slice), hash(&kmer));
-```
-
-### Hashing minimisers
-
-In practice we want to hash sequences that we minimise:
-
-```rust
 let (minimiser, min_hash) = seq
     .kmers::<16>()
     .map(|kmer| (kmer, hash(&kmer)))
     .min_by_key(|&(_, hash)| hash)
     .unwrap();
-```
 
-### Canonical kmers
-
-To consider both the forward and reverse complement of kmers when minimising:
-
-```rust
 let (canonical_minimiser, canonical_hash) = seq
     .kmers::<16>()
     .map(|kmer| {
@@ -244,12 +237,14 @@ The `Codec` trait describes the coding/decoding process for the symbols of a bio
 * `codec::iupac::Iupac`, IUPAC nucleotide ambiguity codes are represented with 4 bits. This automatically gives us membership semantics for bitwise operations. Logical `or` is the union:
 
     ```rust
+    use bio_seq::prelude::*;
     assert_eq!(iupac!("AS-GYTNA") | iupac!("ANTGCAT-"), iupac!("ANTGYWNA"));
     ```
 
     Logical `and` is the intersection of two iupac sequences:
 
     ```rust
+    use bio_seq::prelude::*;
     assert_eq!(iupac!("ACGTSWKM") & iupac!("WKMSTNNA"), iupac!("A----WKA"));
     ```
 
@@ -263,7 +258,7 @@ The `extra_codecs` feature add two experimental families:
 
 * `codec::degenerate`, 1-bit encodings that split nucleotides into two classes:
     * `WS`: weak/strong
-    * `RY`: purine/pyramidine
+    * `RY`: purine/pyrimidine
     * `MK`: amino/ketone
 
 ## Defining new codecs
@@ -273,7 +268,6 @@ Custom codecs can be defined by implementing the `Codec` trait.
 In simple cases the `Codec` trait can be derived from the variant names and discriminants of enum types:
 
 ```rust
-use bio_seq_derive::Codec;
 use bio_seq::codec::Codec;
 
 #[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Codec)]
@@ -292,11 +286,13 @@ A `#[bits(n)]` attribute specifies how many bits the encoding requires per symbo
 
 `#[alt(...,)]` and `#[display('x')]` attributes can be used to define alternative representations or display the item with a special character. Here is the definition for the stop codon in `codec::Amino`:
 
-```rust
+```rust,ignore
 pub enum Amino {
     #[display('*')] // print the stop codon as a '*'
     #[alt(0b001011, 0b100011)] // TGA, TAG
     X = 0b000011, // TAA (stop)
+    // ...
+}
 ```
 
 ## Sequence conversions
@@ -311,86 +307,3 @@ Enable the translation feature in `Cargo.toml`:
 [dependencies]
 bio-seq = { version="0.15", features=["translation"] }
 ```
-
-```rust
-pub trait TranslationTable<A: Codec, B: Codec> {
-    fn to_amino(&self, codon: &SeqSlice<A>) -> B;
-    fn to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError>;
-}
-
-/// A partial translation table where not all triples of characters map to amino acids
-pub trait PartialTranslationTable<A: Codec, B: Codec> {
-    fn try_to_amino(&self, codon: &SeqSlice<A>) -> Result<B, TranslationError>;
-    fn try_to_codon(&self, amino: B) -> Result<Seq<A>, TranslationError>;
-}
-```
-
-The standard genetic code is provided as a `translation::STANDARD` constant:
-
-```rust
-use bio_seq::prelude::*;
-use bio_seq::translation::STANDARD;
-use bio_seq::translation::TranslationTable;
-
-let seq = dna!("AATTTGTGGGTTCGTCTGCGGCTCCGCCCTTAGTACTATGAGGACGATCAGCACCATAAGAACAAA");
-
-let aminos: Seq<Amino> = seq
-    .windows(3)
-    .map(|codon| STANDARD.to_amino(&codon))
-    .collect::<Seq<Amino>>();
-
-assert_eq!(
-    aminos,
-    Seq::<Amino>::try_from("NIFLCVWGGVFSRVSLCARGALSPRAPPLL*SVYTLYM*ERGDTRDISQSAHTPHI*KRENTQK").unwrap()
-);
-```
-
-### Custom translation tables
-
-Instantiate a translation table from a type that implements `Into<HashMap<Seq<A>, B>>`:
-
-```rust
-let codon_mapping: [(Seq<Dna>, Amino); 6] = [
-    (dna!("AAA").into(), Amino::A),
-    (dna!("ATG").into(), Amino::A),
-    (dna!("CCC").into(), Amino::C),
-    (dna!("GGG").into(), Amino::E),
-    (dna!("TTT").into(), Amino::D),
-    (dna!("TTA").into(), Amino::F),
-];
-
-let table = CodonTable::from_map(codon_mapping);
-
-let seq: Seq<Dna> = dna!("AAACCCGGGTTTTTATTAATG").into();
-let mut amino_seq: Seq<Amino> = Seq::new();
-
-for codon in seq.chunks(3) {
-    amino_seq.push(table.try_to_amino(codon).unwrap());
-}
-```
-
-Implementing the `TranslationTable` trait directly:
-
-```rust
-struct Mitochondria;
-
-impl TranslationTable<Dna, Amino> for Mitochondria {
-    fn to_amino(&self, codon: &SeqSlice<Dna>) -> Amino {
-        if codon == dna!("AGA") || codon == dna!("AGG") {
-            Amino::X
-        } else if codon == dna!("ATA") {
-            Amino::M
-        } else if codon == dna!("TGA") {
-            Amino::W
-        } else {
-            Amino::unsafe_from_bits(Into::<u8>::into(codon))
-        }
-    }
-
-    fn to_codon(&self, _amino: Amino) -> Result<Seq<Dna>, TranslationError> {
-        unimplemented!()
-    }
-}
-```
-
-
